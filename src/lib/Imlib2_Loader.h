@@ -107,6 +107,9 @@ unsigned int        __imlib_time_us(void);
 
 #endif /* IMLIB2_DEBUG */
 
+#define E(fmt...) __imlib_perror(DBG_PFX, fmt)
+__PRINTF_2__ void   __imlib_perror(const char *pfx, const char *fmt, ...);
+
 /* image.h */
 
 /* 32767 is the maximum pixmap dimension and ensures that
@@ -207,7 +210,7 @@ int                 __imlib_LoadProgressRows(ImlibImage * im,
 
 /* loader.h */
 
-#define IMLIB2_LOADER_VERSION 2
+#define IMLIB2_LOADER_VERSION 3
 
 #define LDR_FLAG_KEEP   0x01    /* Don't unload loader */
 
@@ -216,25 +219,30 @@ typedef struct {
    unsigned char       ldr_flags;       /* LDR_FLAG_... */
    unsigned short      num_formats;     /* Length og known extension list */
    const char         *const *formats;  /* Known extension list */
+   void                (*inex)(int init);       /* Module init/exit */
    int                 (*load)(ImlibImage * im, int load_data);
    int                 (*save)(ImlibImage * im);
 } ImlibLoaderModule;
 
-#define IMLIB_LOADER_(_fmts, _ldr, _svr, _flags) \
+#define IMLIB_LOADER_(_fmts, _ldr, _svr, _inex, _flags) \
     __EXPORT__ ImlibLoaderModule loader = { \
         .ldr_version = IMLIB2_LOADER_VERSION, \
         .ldr_flags = _flags, \
         .num_formats = ARRAY_SIZE(_fmts), \
         .formats = _fmts, \
+        .inex = _inex, \
         .load = _ldr, \
         .save = _svr, \
     }
 
 #define IMLIB_LOADER(_fmts, _ldr, _svr) \
-    IMLIB_LOADER_(_fmts, _ldr, _svr, 0)
+    IMLIB_LOADER_(_fmts, _ldr, _svr, NULL, 0)
 
 #define IMLIB_LOADER_KEEP(_fmts, _ldr, _svr) \
-    IMLIB_LOADER_(_fmts, _ldr, _svr, LDR_FLAG_KEEP)
+    IMLIB_LOADER_(_fmts, _ldr, _svr, NULL, LDR_FLAG_KEEP)
+
+#define IMLIB_LOADER_INEX(_fmts, _ldr, _svr, _inex) \
+    IMLIB_LOADER_(_fmts, _ldr, _svr, _inex, 0)
 
 #define QUIT_WITH_RC(_err) { rc = _err; goto quit; }
 

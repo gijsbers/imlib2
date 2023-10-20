@@ -95,14 +95,15 @@ host_triplet = @host@
 @BUILD_JXL_LOADER_TRUE@am__append_5 = jxl.la
 @BUILD_PNG_LOADER_TRUE@am__append_6 = png.la
 @BUILD_PS_LOADER_TRUE@am__append_7 = ps.la
-@BUILD_SVG_LOADER_TRUE@am__append_8 = svg.la
-@BUILD_TIFF_LOADER_TRUE@am__append_9 = tiff.la
-@BUILD_WEBP_LOADER_TRUE@am__append_10 = webp.la
-@BUILD_Y4M_LOADER_TRUE@am__append_11 = y4m.la
-@BUILD_BZ2_LOADER_TRUE@am__append_12 = bz2.la
-@BUILD_LZMA_LOADER_TRUE@am__append_13 = lzma.la
-@BUILD_ZLIB_LOADER_TRUE@am__append_14 = zlib.la
-@BUILD_ID3_LOADER_TRUE@am__append_15 = id3.la
+@BUILD_RAW_LOADER_TRUE@am__append_8 = raw.la
+@BUILD_SVG_LOADER_TRUE@am__append_9 = svg.la
+@BUILD_TIFF_LOADER_TRUE@am__append_10 = tiff.la
+@BUILD_WEBP_LOADER_TRUE@am__append_11 = webp.la
+@BUILD_Y4M_LOADER_TRUE@am__append_12 = y4m.la
+@BUILD_BZ2_LOADER_TRUE@am__append_13 = bz2.la
+@BUILD_LZMA_LOADER_TRUE@am__append_14 = lzma.la
+@BUILD_ZLIB_LOADER_TRUE@am__append_15 = zlib.la
+@BUILD_ID3_LOADER_TRUE@am__append_16 = id3.la
 subdir = src/modules/loaders
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ec_asan.m4 \
@@ -275,6 +276,20 @@ ps_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(ps_la_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(ps_la_LDFLAGS) $(LDFLAGS) -o $@
 @BUILD_PS_LOADER_TRUE@am_ps_la_rpath = -rpath $(pkgdir)
+qoi_la_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+am_qoi_la_OBJECTS = qoi_la-loader_qoi.lo
+qoi_la_OBJECTS = $(am_qoi_la_OBJECTS)
+qoi_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(qoi_la_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(qoi_la_LDFLAGS) $(LDFLAGS) -o $@
+raw_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/lib/libImlib2.la
+am_raw_la_OBJECTS = raw_la-loader_raw.lo
+raw_la_OBJECTS = $(am_raw_la_OBJECTS)
+raw_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(raw_la_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(raw_la_LDFLAGS) $(LDFLAGS) -o $@
+@BUILD_RAW_LOADER_TRUE@am_raw_la_rpath = -rpath $(pkgdir)
 svg_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/lib/libImlib2.la
 am_svg_la_OBJECTS = svg_la-loader_svg.lo
@@ -367,6 +382,8 @@ am__depfiles_remade = ./$(DEPDIR)/ani_la-loader_ani.Plo \
 	./$(DEPDIR)/png_la-loader_png.Plo \
 	./$(DEPDIR)/pnm_la-loader_pnm.Plo \
 	./$(DEPDIR)/ps_la-loader_ps.Plo \
+	./$(DEPDIR)/qoi_la-loader_qoi.Plo \
+	./$(DEPDIR)/raw_la-loader_raw.Plo \
 	./$(DEPDIR)/svg_la-loader_svg.Plo \
 	./$(DEPDIR)/tga_la-loader_tga.Plo \
 	./$(DEPDIR)/tiff_la-loader_tiff.Plo \
@@ -400,19 +417,19 @@ SOURCES = $(ani_la_SOURCES) $(argb_la_SOURCES) $(bmp_la_SOURCES) \
 	$(heif_la_SOURCES) $(ico_la_SOURCES) $(id3_la_SOURCES) \
 	$(j2k_la_SOURCES) $(jpeg_la_SOURCES) $(jxl_la_SOURCES) \
 	$(lbm_la_SOURCES) $(lzma_la_SOURCES) $(png_la_SOURCES) \
-	$(pnm_la_SOURCES) $(ps_la_SOURCES) $(svg_la_SOURCES) \
-	$(tga_la_SOURCES) $(tiff_la_SOURCES) $(webp_la_SOURCES) \
-	$(xbm_la_SOURCES) $(xpm_la_SOURCES) $(y4m_la_SOURCES) \
-	$(zlib_la_SOURCES)
+	$(pnm_la_SOURCES) $(ps_la_SOURCES) $(qoi_la_SOURCES) \
+	$(raw_la_SOURCES) $(svg_la_SOURCES) $(tga_la_SOURCES) \
+	$(tiff_la_SOURCES) $(webp_la_SOURCES) $(xbm_la_SOURCES) \
+	$(xpm_la_SOURCES) $(y4m_la_SOURCES) $(zlib_la_SOURCES)
 DIST_SOURCES = $(ani_la_SOURCES) $(argb_la_SOURCES) $(bmp_la_SOURCES) \
 	$(bz2_la_SOURCES) $(ff_la_SOURCES) $(gif_la_SOURCES) \
 	$(heif_la_SOURCES) $(ico_la_SOURCES) $(id3_la_SOURCES) \
 	$(j2k_la_SOURCES) $(jpeg_la_SOURCES) $(jxl_la_SOURCES) \
 	$(lbm_la_SOURCES) $(lzma_la_SOURCES) $(png_la_SOURCES) \
-	$(pnm_la_SOURCES) $(ps_la_SOURCES) $(svg_la_SOURCES) \
-	$(tga_la_SOURCES) $(tiff_la_SOURCES) $(webp_la_SOURCES) \
-	$(xbm_la_SOURCES) $(xpm_la_SOURCES) $(y4m_la_SOURCES) \
-	$(zlib_la_SOURCES)
+	$(pnm_la_SOURCES) $(ps_la_SOURCES) $(qoi_la_SOURCES) \
+	$(raw_la_SOURCES) $(svg_la_SOURCES) $(tga_la_SOURCES) \
+	$(tiff_la_SOURCES) $(webp_la_SOURCES) $(xbm_la_SOURCES) \
+	$(xpm_la_SOURCES) $(y4m_la_SOURCES) $(zlib_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -536,6 +553,8 @@ PNG_LIBS = @PNG_LIBS@
 PS_CFLAGS = @PS_CFLAGS@
 PS_LIBS = @PS_LIBS@
 RANLIB = @RANLIB@
+RAW_CFLAGS = @RAW_CFLAGS@
+RAW_LIBS = @RAW_LIBS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -622,12 +641,12 @@ AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/src/lib \
 
 pkgdir = $(libdir)/imlib2/loaders
 pkg_LTLIBRARIES = ani.la argb.la bmp.la ff.la ico.la lbm.la pnm.la \
-	tga.la xbm.la xpm.la $(am__append_1) $(am__append_2) \
+	qoi.la tga.la xbm.la xpm.la $(am__append_1) $(am__append_2) \
 	$(am__append_3) $(am__append_4) $(am__append_5) \
 	$(am__append_6) $(am__append_7) $(am__append_8) \
 	$(am__append_9) $(am__append_10) $(am__append_11) \
 	$(am__append_12) $(am__append_13) $(am__append_14) \
-	$(am__append_15)
+	$(am__append_15) $(am__append_16)
 ani_la_SOURCES = loader_ani.c
 ani_la_LDFLAGS = -module -avoid-version
 ani_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
@@ -690,6 +709,15 @@ ps_la_CPPFLAGS = $(PS_CFLAGS) $(AM_CPPFLAGS)
 ps_la_LDFLAGS = -module -avoid-version
 ps_la_LIBADD = $(PS_LIBS) $(top_builddir)/src/lib/libImlib2.la
 ps_la_LIBTOOLFLAGS = --tag=disable-static
+raw_la_SOURCES = loader_raw.c
+raw_la_CPPFLAGS = $(RAW_CFLAGS) $(AM_CPPFLAGS)
+raw_la_LDFLAGS = -module -avoid-version
+raw_la_LIBADD = $(RAW_LIBS) $(top_builddir)/src/lib/libImlib2.la
+raw_la_LIBTOOLFLAGS = --tag=disable-static
+qoi_la_SOURCES = loader_qoi.c
+qoi_la_LDFLAGS = -module -avoid-version
+qoi_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
+qoi_la_LIBTOOLFLAGS = --tag=disable-static
 svg_la_SOURCES = loader_svg.c
 svg_la_CPPFLAGS = $(SVG_CFLAGS) $(AM_CPPFLAGS)
 svg_la_LDFLAGS = -module -avoid-version
@@ -862,6 +890,12 @@ pnm.la: $(pnm_la_OBJECTS) $(pnm_la_DEPENDENCIES) $(EXTRA_pnm_la_DEPENDENCIES)
 ps.la: $(ps_la_OBJECTS) $(ps_la_DEPENDENCIES) $(EXTRA_ps_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(ps_la_LINK) $(am_ps_la_rpath) $(ps_la_OBJECTS) $(ps_la_LIBADD) $(LIBS)
 
+qoi.la: $(qoi_la_OBJECTS) $(qoi_la_DEPENDENCIES) $(EXTRA_qoi_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(qoi_la_LINK) -rpath $(pkgdir) $(qoi_la_OBJECTS) $(qoi_la_LIBADD) $(LIBS)
+
+raw.la: $(raw_la_OBJECTS) $(raw_la_DEPENDENCIES) $(EXTRA_raw_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(raw_la_LINK) $(am_raw_la_rpath) $(raw_la_OBJECTS) $(raw_la_LIBADD) $(LIBS)
+
 svg.la: $(svg_la_OBJECTS) $(svg_la_DEPENDENCIES) $(EXTRA_svg_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(svg_la_LINK) $(am_svg_la_rpath) $(svg_la_OBJECTS) $(svg_la_LIBADD) $(LIBS)
 
@@ -912,6 +946,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/png_la-loader_png.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pnm_la-loader_pnm.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ps_la-loader_ps.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/qoi_la-loader_qoi.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/raw_la-loader_raw.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/svg_la-loader_svg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tga_la-loader_tga.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tiff_la-loader_tiff.Plo@am__quote@ # am--include-marker
@@ -1088,6 +1124,20 @@ ps_la-loader_ps.lo: loader_ps.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_ps.c' object='ps_la-loader_ps.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(ps_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ps_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ps_la-loader_ps.lo `test -f 'loader_ps.c' || echo '$(srcdir)/'`loader_ps.c
+
+qoi_la-loader_qoi.lo: loader_qoi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(qoi_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT qoi_la-loader_qoi.lo -MD -MP -MF $(DEPDIR)/qoi_la-loader_qoi.Tpo -c -o qoi_la-loader_qoi.lo `test -f 'loader_qoi.c' || echo '$(srcdir)/'`loader_qoi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/qoi_la-loader_qoi.Tpo $(DEPDIR)/qoi_la-loader_qoi.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_qoi.c' object='qoi_la-loader_qoi.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(qoi_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o qoi_la-loader_qoi.lo `test -f 'loader_qoi.c' || echo '$(srcdir)/'`loader_qoi.c
+
+raw_la-loader_raw.lo: loader_raw.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(raw_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(raw_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT raw_la-loader_raw.lo -MD -MP -MF $(DEPDIR)/raw_la-loader_raw.Tpo -c -o raw_la-loader_raw.lo `test -f 'loader_raw.c' || echo '$(srcdir)/'`loader_raw.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/raw_la-loader_raw.Tpo $(DEPDIR)/raw_la-loader_raw.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_raw.c' object='raw_la-loader_raw.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(raw_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(raw_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o raw_la-loader_raw.lo `test -f 'loader_raw.c' || echo '$(srcdir)/'`loader_raw.c
 
 svg_la-loader_svg.lo: loader_svg.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(svg_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(svg_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT svg_la-loader_svg.lo -MD -MP -MF $(DEPDIR)/svg_la-loader_svg.Tpo -c -o svg_la-loader_svg.lo `test -f 'loader_svg.c' || echo '$(srcdir)/'`loader_svg.c
@@ -1305,6 +1355,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/png_la-loader_png.Plo
 	-rm -f ./$(DEPDIR)/pnm_la-loader_pnm.Plo
 	-rm -f ./$(DEPDIR)/ps_la-loader_ps.Plo
+	-rm -f ./$(DEPDIR)/qoi_la-loader_qoi.Plo
+	-rm -f ./$(DEPDIR)/raw_la-loader_raw.Plo
 	-rm -f ./$(DEPDIR)/svg_la-loader_svg.Plo
 	-rm -f ./$(DEPDIR)/tga_la-loader_tga.Plo
 	-rm -f ./$(DEPDIR)/tiff_la-loader_tiff.Plo
@@ -1379,6 +1431,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/png_la-loader_png.Plo
 	-rm -f ./$(DEPDIR)/pnm_la-loader_pnm.Plo
 	-rm -f ./$(DEPDIR)/ps_la-loader_ps.Plo
+	-rm -f ./$(DEPDIR)/qoi_la-loader_qoi.Plo
+	-rm -f ./$(DEPDIR)/raw_la-loader_raw.Plo
 	-rm -f ./$(DEPDIR)/svg_la-loader_svg.Plo
 	-rm -f ./$(DEPDIR)/tga_la-loader_tga.Plo
 	-rm -f ./$(DEPDIR)/tiff_la-loader_tiff.Plo

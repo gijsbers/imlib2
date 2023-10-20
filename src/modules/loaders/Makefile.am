@@ -12,6 +12,7 @@ ff.la \
 ico.la \
 lbm.la \
 pnm.la \
+qoi.la \
 tga.la \
 xbm.la \
 xpm.la
@@ -36,6 +37,9 @@ pkg_LTLIBRARIES += png.la
 endif
 if BUILD_PS_LOADER
 pkg_LTLIBRARIES += ps.la
+endif
+if BUILD_RAW_LOADER
+pkg_LTLIBRARIES += raw.la
 endif
 if BUILD_SVG_LOADER
 pkg_LTLIBRARIES += svg.la
@@ -139,6 +143,17 @@ ps_la_CPPFLAGS      = $(PS_CFLAGS) $(AM_CPPFLAGS)
 ps_la_LDFLAGS       = -module -avoid-version
 ps_la_LIBADD        = $(PS_LIBS) $(top_builddir)/src/lib/libImlib2.la
 ps_la_LIBTOOLFLAGS  = --tag=disable-static
+
+raw_la_SOURCES       = loader_raw.c
+raw_la_CPPFLAGS      = $(RAW_CFLAGS) $(AM_CPPFLAGS)
+raw_la_LDFLAGS       = -module -avoid-version
+raw_la_LIBADD        = $(RAW_LIBS) $(top_builddir)/src/lib/libImlib2.la
+raw_la_LIBTOOLFLAGS  = --tag=disable-static
+
+qoi_la_SOURCES       = loader_qoi.c
+qoi_la_LDFLAGS       = -module -avoid-version
+qoi_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
+qoi_la_LIBTOOLFLAGS  = --tag=disable-static
 
 svg_la_SOURCES       = loader_svg.c
 svg_la_CPPFLAGS      = $(SVG_CFLAGS) $(AM_CPPFLAGS)

@@ -97,27 +97,22 @@ __imlib_FileContextOpen(ImlibImageFileInfo * fi, FILE * fp,
      {
         fi->keep_fp = true;
         fi->fp = fp;
+        /* fsize must be given */
      }
    else if (fdata)
      {
         fi->keep_mem = true;
+        /* fsize must be given */
      }
    else
      {
-        fi->fp = __imlib_FileOpen(fi->name, "rb");
+        fi->fp = __imlib_FileOpen(fi->name, "rb", &st);
         if (!fi->fp)
            return -1;
+        fsize = st.st_size;
      }
 
-   if (fi->fsize == 0)
-     {
-        if (fsize == 0)
-          {
-             __imlib_FileStat(fi->name, &st);
-             fsize = st.st_size;
-          }
-        fi->fsize = fsize;
-     }
+   fi->fsize = fsize;
 
    if (!fdata)
      {
@@ -250,26 +245,48 @@ __imlib_AddImageToCache(ImlibImage * im)
    images = im;
 }
 
-/* remove (unlink) an image from the cache of images */
+/* Remove invalidated images from image cache */
 static void
-__imlib_RemoveImageFromCache(ImlibImage * im_del)
+__imlib_PruneImageCache(void)
 {
-   ImlibImage         *im, *im_prev;
+   ImlibImage         *im, *im_prev, *im_next;
 
-   im = im_del;
-   DP("%s: %p: '%s' frame %d\n", __func__, im, im->fi->name, im->frame);
-
-   for (im = images, im_prev = NULL; im; im_prev = im, im = im->next)
+   for (im = images, im_prev = NULL; im; im = im_next)
      {
-        if (im == im_del)
+        im_next = im->next;
+
+        if (im->references <= 0 && IM_FLAG_ISSET(im, F_INVALID))
           {
+             DP("%s: %p: '%s' frame %d\n", __func__,
+                im, im->fi->name, im->frame);
+
              if (im_prev)
-                im_prev->next = im->next;
+                im_prev->next = im_next;
              else
-                images = im->next;
-             return;
+                images = im_next;
+             __imlib_ConsumeImage(im);
+          }
+        else
+          {
+             im_prev = im;
           }
      }
+}
+
+static int
+__imlib_ImageCacheSize(void)
+{
+   ImlibImage         *im;
+   int                 current_cache;
+
+   current_cache = 0;
+   for (im = images; im; im = im->next)
+     {
+        if (im->references == 0 && im->data)
+           current_cache += im->w * im->h * sizeof(uint32_t);
+     }
+
+   return current_cache;
 }
 
 /* work out how much we have floaitng aroudn in our speculative cache */
@@ -277,26 +294,11 @@ __imlib_RemoveImageFromCache(ImlibImage * im_del)
 int
 __imlib_CurrentCacheSize(void)
 {
-   ImlibImage         *im, *im_next;
-   int                 current_cache = 0;
+   int                 current_cache;
 
-   for (im = images; im; im = im_next)
-     {
-        im_next = im->next;
+   __imlib_PruneImageCache();
 
-        /* mayaswell clean out stuff thats invalid that we dont need anymore */
-        if (im->references == 0)
-          {
-             if (IM_FLAG_ISSET(im, F_INVALID))
-               {
-                  __imlib_RemoveImageFromCache(im);
-                  __imlib_ConsumeImage(im);
-               }
-             /* it's valid but has 0 ref's - append to cache size count */
-             else
-                current_cache += im->w * im->h * sizeof(uint32_t);
-          }
-     }
+   current_cache = __imlib_ImageCacheSize();
 
 #ifdef BUILD_X11
    current_cache += __imlib_PixmapCacheSize();
@@ -309,38 +311,26 @@ __imlib_CurrentCacheSize(void)
 static void
 __imlib_CleanupImageCache(void)
 {
-   ImlibImage         *im, *im_next, *im_del;
+   ImlibImage         *im;
    int                 current_cache;
 
    current_cache = __imlib_CurrentCacheSize();
-
-   /* remove 0 ref count invalid (dirty) images */
-   for (im = images; im; im = im_next)
-     {
-        im_next = im->next;
-        if (im->references <= 0 && IM_FLAG_ISSET(im, F_INVALID))
-          {
-             __imlib_RemoveImageFromCache(im);
-             __imlib_ConsumeImage(im);
-          }
-     }
 
    /* while the cache size of 0 ref coutn data is bigger than the set value */
    /* clean out the oldest members of the imaeg cache */
    while (current_cache > cache_size)
      {
-        for (im = images, im_del = NULL; im; im = im->next)
+        for (im = images; im; im = im->next)
           {
-             if (im->references <= 0)
-                im_del = im;
+             if (im->references > 0)
+                continue;
+
+             IM_FLAG_SET(im, F_INVALID);        /* Will be pruned shortly */
+             current_cache = __imlib_CurrentCacheSize();
+             break;
           }
-        if (!im_del)
-           break;
-
-        __imlib_RemoveImageFromCache(im_del);
-        __imlib_ConsumeImage(im_del);
-
-        current_cache = __imlib_CurrentCacheSize();
+        if (!im)
+           break;               /* Nothing left to clean out */
      }
 }
 
@@ -360,6 +350,25 @@ int
 __imlib_GetCacheSize(void)
 {
    return cache_size;
+}
+
+int
+__imlib_DecacheFile(const char *file)
+{
+   int                 n = 0;
+   ImlibImage         *im;
+
+   for (im = images; im; im = im->next)
+     {
+        if (!strcmp(file, im->file))
+          {
+             IM_FLAG_SET(im, F_INVALID);
+             ++n;
+          }
+     }
+   if (n > 0)
+      __imlib_CleanupImageCache();
+   return n;
 }
 
 /* Create a new image struct
@@ -485,6 +494,7 @@ __imlib_LoadImage(const char *file, ImlibLoadArgs * ila)
    int                 err, loader_ret;
    ImlibLoaderCtx      ilc;
    struct stat         st;
+   FILE               *fp;
    char               *im_file, *im_key;
 
    if (!file || file[0] == '\0')
@@ -502,7 +512,7 @@ __imlib_LoadImage(const char *file, ImlibLoadArgs * ila)
           {
              if (IM_FLAG_ISSET(im, F_ALWAYS_CHECK_DISK))
                {
-                  time_t              current_modified_time;
+                  uint64_t            current_modified_time;
 
                   current_modified_time = ila->fp ?
                      __imlib_FileModDateFd(fileno(ila->fp)) :
@@ -529,6 +539,7 @@ __imlib_LoadImage(const char *file, ImlibLoadArgs * ila)
           }
      }
 
+   fp = ila->fp;
    im_file = im_key = NULL;
    if (ila->fdata)
      {
@@ -536,34 +547,37 @@ __imlib_LoadImage(const char *file, ImlibLoadArgs * ila)
         st.st_size = ila->fsize;
         st.st_mtime = st.st_ctime = 0;
      }
-   else if (ila->fp)
+   else if (fp)
      {
-        err = fstat(fileno(ila->fp), &st);
+        err = fstat(fileno(fp), &st);
      }
    else
      {
-        err = __imlib_FileStat(file, &st);
-        if (err)
+        fp = __imlib_FileOpen(file, "rb", &st);
+        if (!fp)
           {
              im_key = __imlib_FileKey(file);
              if (im_key)
                {
                   im_file = __imlib_FileRealFile(file);
-                  err = __imlib_FileStat(im_file, &st);
+                  fp = __imlib_FileOpen(im_file, "rb", &st);
                }
           }
+        err = fp == NULL;
      }
 
    if (err)
       err = errno;
    else if (st.st_size == 0)
       err = IMLIB_ERR_BAD_IMAGE;
-   else if (!ila->fdata && __imlib_StatIsDir(&st))
+   else if (fp && __imlib_StatIsDir(&st))
       err = EISDIR;
 
    if (err)
      {
         ila->err = err;
+        if (fp && fp != ila->fp)
+           fclose(fp);
         free(im_file);
         free(im_key);
         return NULL;
@@ -577,12 +591,14 @@ __imlib_LoadImage(const char *file, ImlibLoadArgs * ila)
    im->frame = ila->frame;
 
    if (__imlib_ImageFileContextPush(im, im_file ? im_file : im->file) ||
-       __imlib_FileContextOpen(im->fi, ila->fp, ila->fdata, st.st_size))
+       __imlib_FileContextOpen(im->fi, fp, ila->fdata, st.st_size))
      {
         ila->err = errno;
         __imlib_ConsumeImage(im);
         return NULL;
      }
+
+   im->fi->keep_fp = ila->fp != NULL;
 
    im->moddate = __imlib_StatModDate(&st);
 
@@ -667,8 +683,7 @@ __imlib_LoadImage(const char *file, ImlibLoadArgs * ila)
 
    im->lc = NULL;
 
-   if (!ila->fp)
-      __imlib_FileContextClose(im->fi);
+   __imlib_FileContextClose(im->fi);
 
    if (loader_ret <= LOAD_FAIL)
      {
@@ -826,22 +841,16 @@ __imlib_GetFrame(ImlibImage * im)
 void
 __imlib_FreeImage(ImlibImage * im)
 {
-   /* if the refcount is positive */
-   if (im->references >= 0)
-     {
-        /* reduce a reference from the count */
-        im->references--;
-        /* if its uncachchable ... */
-        if (IM_FLAG_ISSET(im, F_UNCACHEABLE))
-          {
-             /* and we're down to no references for the image then free it */
-             if (im->references == 0)
-                __imlib_ConsumeImage(im);
-          }
-        /* otherwise clean up our cache if the image becoem 0 ref count */
-        else if (im->references == 0)
-           __imlib_CleanupImageCache();
-     }
+   if (im->references > 0)
+      im->references--;
+
+   if (im->references > 0)
+      return;
+
+   if (IM_FLAG_ISSET(im, F_UNCACHEABLE))
+      __imlib_ConsumeImage(im);
+   else
+      __imlib_CleanupImageCache();
 }
 
 /* dirty and image by settings its invalid flag */
@@ -886,7 +895,7 @@ __imlib_SaveImage(ImlibImage * im, const char *file, ImlibLoadArgs * ila)
 
    if (!fp)
      {
-        fp = __imlib_FileOpen(file, "wb");
+        fp = __imlib_FileOpen(file, "wb", NULL);
         if (!fp)
           {
              ila->err = errno;

@@ -1,6 +1,8 @@
 #include "config.h"
 #include "Imlib2_Loader.h"
 
+#define DBG_PFX "LDR-xpm"
+
 static const char  *const _formats[] = { "xpm" };
 
 static struct {
@@ -230,21 +232,17 @@ _load(ImlibImage * im, int load_data)
                   sscanf(line, "%i %i %i %i", &w, &h, &ncolors, &cpp);
                   if ((ncolors > 32766) || (ncolors < 1))
                     {
-                       fprintf(stderr,
-                               "IMLIB ERROR: XPM files with colors > 32766 or < 1 not supported\n");
+                       E("XPM files with colors > 32766 or < 1 not supported\n");
                        goto quit;
                     }
                   if ((cpp > 5) || (cpp < 1))
                     {
-                       fprintf(stderr,
-                               "IMLIB ERROR: XPM files with characters per pixel > 5 or < 1 not supported\n");
+                       E("XPM files with characters per pixel > 5 or < 1 not supported\n");
                        goto quit;
                     }
                   if (!IMAGE_DIMENSIONS_OK(w, h))
                     {
-                       fprintf(stderr,
-                               "IMLIB ERROR: Invalid image dimension: %dx%d\n",
-                               w, h);
+                       E("Invalid image dimension: %dx%d\n", w, h);
                        goto quit;
                     }
                   im->w = w;

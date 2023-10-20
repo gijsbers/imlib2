@@ -4,8 +4,8 @@
  * Imlib2 library API
  */
 #define IMLIB2_VERSION_MAJOR 1
-#define IMLIB2_VERSION_MINOR 11
-#define IMLIB2_VERSION_MICRO 1
+#define IMLIB2_VERSION_MINOR 12
+#define IMLIB2_VERSION_MICRO 0
 
 #define IMLIB2_VERSION_(maj, min, mic) (10000 * (maj) + 100 * (min) + (mic))
 #define IMLIB2_VERSION IMLIB2_VERSION_(IMLIB2_VERSION_MAJOR, IMLIB2_VERSION_MINOR, IMLIB2_VERSION_MICRO)
@@ -854,6 +854,15 @@ EAPI void           imlib_free_image(void);
  * Free the current image AND remove it from the cache
  */
 EAPI void           imlib_free_image_and_decache(void);
+
+/**
+ * Invalidate all cached images associated with file
+ *
+ * @param file          filename to decache
+ *
+ * @return The number of images decached
+ */
+EAPI int            imlib_image_decache_file(const char *file);
 
 /*--------------------------------
  * Query/modify image parameters

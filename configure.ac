@@ -1,4 +1,4 @@
-AC_INIT([imlib2],[1.11.1],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.12.0],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -20,9 +20,9 @@ define([AC_LIBTOOL_LANG_CXX_CONFIG], [:])dnl
 define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
-VERSION_CUR=12
-VERSION_REV=1
-VERSION_AGE=11
+VERSION_CUR=13
+VERSION_REV=0
+VERSION_AGE=12
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
 
@@ -69,6 +69,27 @@ AC_DEFUN([EC_LOADER_CHECK], [
   m4_popdef([NMDN])
   m4_popdef([NMUP])
 ])
+
+
+AC_ARG_ENABLE([filters],
+  [AS_HELP_STRING([--enable-filters], [Enable filters @<:@default=yes@:>@])],
+  enable_filters="$enableval",
+  enable_filters="yes"
+)
+if test "$enable_filters" = "yes"; then
+  AC_DEFINE(ENABLE_FILTERS, 1, [Enable filters])
+fi
+AM_CONDITIONAL(ENABLE_FILTERS, test "$enable_filters" = "yes")
+
+AC_ARG_ENABLE([text],
+  [AS_HELP_STRING([--enable-text], [Enable text (TrueType font functions) @<:@default=yes@:>@])],
+  enable_text="$enableval",
+  enable_text="yes"
+)
+if test "$enable_text" = "yes"; then
+  AC_DEFINE(ENABLE_TEXT, 1, [Enable text functions])
+fi
+AM_CONDITIONAL(ENABLE_TEXT, test "$enable_text" = "yes")
 
 
 mmx=no
@@ -123,8 +144,9 @@ fi
 AC_MSG_RESULT($amd64)
 AM_CONDITIONAL(BUILD_AMD64, test x$amd64 = xyes)
 
-# check for freetype
-PKG_CHECK_MODULES(FREETYPE, freetype2)
+if test "$enable_text" = "yes"; then
+  PKG_CHECK_MODULES(FREETYPE, freetype2)
+fi
 
 AC_PATH_X
 AC_PATH_XTRA
@@ -200,10 +222,11 @@ EC_LOADER_CHECK(J2K,  auto, libopenjp2)
 EC_LOADER_CHECK(JXL,  auto, libjxl libjxl_threads)
 EC_LOADER_CHECK(PNG,  auto, libpng)
 EC_LOADER_CHECK(PS,   auto, libspectre)
+EC_LOADER_CHECK(RAW,  auto, libraw)
 EC_LOADER_CHECK(SVG,  auto, librsvg-2.0 >= 2.46)
 EC_LOADER_CHECK(TIFF, auto, libtiff-4)
 EC_LOADER_CHECK(WEBP, auto, libwebpdemux)
-EC_LOADER_CHECK(Y4M,  auto, liby4m libyuv)
+EC_LOADER_CHECK(Y4M,  auto, libyuv)
 
 # Decompressors
 loader_check_bz2() {
@@ -226,26 +249,6 @@ EC_LOADER_CHECK(ID3,  auto, id3tag)
 
 AM_CONDITIONAL(BUILD_TEST, false)
 
-AC_ARG_ENABLE([filters],
-  [AS_HELP_STRING([--enable-filters], [Enable filters @<:@default=yes@:>@])],
-  enable_filters="$enableval",
-  enable_filters="yes"
-)
-if test "$enable_filters" = "yes"; then
-  AC_DEFINE(ENABLE_FILTERS, 1, [Enable filters])
-fi
-AM_CONDITIONAL(ENABLE_FILTERS, test "$enable_filters" = "yes")
-
-AC_ARG_ENABLE([text],
-  [AS_HELP_STRING([--enable-text], [Enable text (TrueType font functions) @<:@default=yes@:>@])],
-  enable_text="$enableval",
-  enable_text="yes"
-)
-if test "$enable_text" = "yes"; then
-  AC_DEFINE(ENABLE_TEXT, 1, [Enable text functions])
-fi
-AM_CONDITIONAL(ENABLE_TEXT, test "$enable_text" = "yes")
-
 AC_ARG_ENABLE([debug],
   [AS_HELP_STRING([--enable-debug], [Enable debug features @<:@default=no@:>@])],
   [
@@ -265,6 +268,9 @@ EC_C_WARNINGS()
 EC_C_VISIBILITY(yes)
 EC_C_PACKING()
 EC_C_ASAN()
+
+AC_CHECK_MEMBERS([struct stat.st_mtim.tv_nsec])
+AC_CHECK_MEMBERS([struct stat.st_mtimespec.tv_nsec])
 
 VERSION_MAJOR=`echo $VERSION | awk -F. '{print $1}'`
 VERSION_MINOR=`echo $VERSION | awk -F. '{print $2}'`
@@ -314,6 +320,7 @@ echo "  J2K.....................: $j2k_ok"
 echo "  JXL.....................: $jxl_ok"
 echo "  PNG.....................: $png_ok"
 echo "  PS......................: $ps_ok"
+echo "  RAW.....................: $raw_ok"
 echo "  SVG.....................: $svg_ok"
 echo "  TIFF....................: $tiff_ok"
 echo "  WEBP....................: $webp_ok"

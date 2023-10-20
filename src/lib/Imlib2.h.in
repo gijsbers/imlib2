@@ -855,6 +855,15 @@ EAPI void           imlib_free_image(void);
  */
 EAPI void           imlib_free_image_and_decache(void);
 
+/**
+ * Invalidate all cached images associated with file
+ *
+ * @param file          filename to decache
+ *
+ * @return The number of images decached
+ */
+EAPI int            imlib_image_decache_file(const char *file);
+
 /*--------------------------------
  * Query/modify image parameters
  */

@@ -5,6 +5,8 @@
 #include <limits.h>
 #include <id3tag.h>
 
+#define DBG_PFX "LDR-id3"
+
 #define USE_TAGS 0
 
 static const char  *const _formats[] = { "mp3" };
@@ -56,14 +58,13 @@ context_create(const char *filename, FILE * f)
       if (!file)
         {
            close(fd);
-           fprintf(stderr, "Unable to open tagged file %s: %s\n",
-                   filename, strerror(errno));
+           E("Unable to open tagged file %s: %m\n", filename);
            goto fail_free;
         }
       tag = id3_file_tag(file);
       if (!tag)
         {
-           fprintf(stderr, "Unable to find ID3v2 tags in file %s\n", filename);
+           E("Unable to find ID3v2 tags in file %s\n", filename);
            id3_file_close(file);
            goto fail_free;
         }
@@ -96,7 +97,7 @@ context_create(const char *filename, FILE * f)
    /* Paranoid! this can occur only if there are INT_MAX contexts :) */
    if (!ptr)
      {
-        fprintf(stderr, "Too many open ID3 contexts\n");
+        E("Too many open ID3 contexts\n");
         goto fail_close;
      }
 
@@ -150,7 +151,7 @@ context_get(int id)
           }
         ptr = ptr->next;
      }
-   fprintf(stderr, "No context by handle %d found\n", id);
+   E("No context by handle %d found\n", id);
    return NULL;
 }
 
@@ -302,7 +303,7 @@ get_options(lopt * opt, const ImlibImage * im)
        (index == 0 && id3_tag_get_numframes(ctx->tag) < 1))
      {
         if (index)
-           fprintf(stderr, "No picture frame # %d found\n", index);
+           E("No picture frame # %d found\n", index);
         context_delref(ctx);
         return 0;
      }
@@ -328,7 +329,7 @@ extract_pic(struct id3_frame *frame, int dest)
    data = id3_field_getbinarydata(field, &length);
    if (!data)
      {
-        fprintf(stderr, "No image data found for frame\n");
+        E("No image data found for frame\n");
         return 0;
      }
    while (length > 0)
@@ -364,7 +365,7 @@ get_loader(lopt * opt, ImlibLoader ** loader)
    data = (char const *)id3_field_getlatin1(field);
    if (!data)
      {
-        fprintf(stderr, "No mime type data found for image frame\n");
+        E("No mime type data found for image frame\n");
         return 0;
      }
    if (strncasecmp(data, "image/", 6))
@@ -374,14 +375,13 @@ get_loader(lopt * opt, ImlibLoader ** loader)
              *loader = NULL;
              return 1;
           }
-        fprintf(stderr,
-                "Picture frame with unknown mime-type \'%s\' found\n", data);
+        E("Picture frame with unknown mime-type \'%s\' found\n", data);
         return 0;
      }
    strncpy(ext + 1, data + 6, EXT_LEN);
    if (!(*loader = __imlib_FindBestLoader(ext, NULL, 0)))
      {
-        fprintf(stderr, "No loader found for extension %s\n", ext);
+        E("No loader found for extension %s\n", ext);
         return 0;
      }
    return 1;
@@ -518,7 +518,7 @@ _load(ImlibImage * im, int load_data)
 
         if ((dest = mkstemp(tmp)) < 0)
           {
-             fprintf(stderr, "Unable to create a temporary file\n");
+             E("Unable to create a temporary file\n");
              goto quit;
           }
 
@@ -551,7 +551,7 @@ _load(ImlibImage * im, int load_data)
         data = (char const *)id3_field_getbinarydata(field, &length);
         if (!data || !length)
           {
-             fprintf(stderr, "No link image URL present\n");
+             E("No link image URL present\n");
              goto quit;
           }
         url = (char *)malloc((length + 1) * sizeof(char));
@@ -560,7 +560,7 @@ _load(ImlibImage * im, int load_data)
         file = (strncmp(url, "file://", 7) ? url : url + 7);
         if (!(loader = __imlib_FindBestLoader(file, NULL, 0)))
           {
-             fprintf(stderr, "No loader found for file %s\n", file);
+             E("No loader found for file %s\n", file);
              free(url);
              goto quit;
           }
@@ -588,8 +588,7 @@ _load(ImlibImage * im, int load_data)
         fprintf(stderr, "Tags for file %s:\n", im->file);
         while (cur)
           {
-             fprintf(stderr, "\t%s: (%d) %s\n", cur->key,
-                     cur->val, (char *)cur->data);
+             E("\t%s: (%d) %s\n", cur->key, cur->val, (char *)cur->data);
              cur = cur->next;
           }
      }

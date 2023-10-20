@@ -333,11 +333,24 @@ put_separate_and_raster(TIFFRGBAImage * img, uint32_t * rast,
 }
 
 static int
+_sig_check(const uint8_t * data, unsigned int size)
+{
+   if (size < 8)
+      return 1;
+
+   if (data[0] == 'I' && data[1] == 'I')
+      return !(data[2] == 42 && data[3] == 0);
+   if (data[0] == 'M' && data[1] == 'M')
+      return !(data[2] == 0 && data[3] == 42);
+
+   return 1;
+}
+
+static int
 _load(ImlibImage * im, int load_data)
 {
    int                 rc;
    TIFF               *tif = NULL;
-   uint16_t            magic_number;
    TIFFRGBAImage_Extra rgba_image;
    uint32_t           *rast = NULL;
    char                txt[1024];
@@ -345,16 +358,9 @@ _load(ImlibImage * im, int load_data)
    rc = LOAD_FAIL;
    rgba_image.image = NULL;
 
-   /* Do initial signature check */
-#define TIFF_BYTES_TO_CHECK sizeof(magic_number)
-
-   if (im->fi->fsize < (int)TIFF_BYTES_TO_CHECK)
-      return rc;
-
-   magic_number = *(const uint16_t *)im->fi->fdata;
-
-   if (magic_number != TIFF_BIGENDIAN && magic_number != TIFF_LITTLEENDIAN)
-      return rc;
+   /* Signature check */
+   if (_sig_check(im->fi->fdata, im->fi->fsize))
+      goto quit;
 
    mm_init(im->fi->fdata, im->fi->fsize);
 
@@ -378,7 +384,7 @@ _load(ImlibImage * im, int load_data)
 
    if (!rgba_image.rgba.put.any)
      {
-        fprintf(stderr, "imlib2-tiffloader: No put function");
+        E("No put function\n");
         goto quit;
      }
 
@@ -415,10 +421,7 @@ _load(ImlibImage * im, int load_data)
 
    rast = _TIFFmalloc(sizeof(uint32_t) * im->w * im->h);
    if (!rast)
-     {
-        fprintf(stderr, "imlib2-tiffloader: Out of memory\n");
-        QUIT_WITH_RC(LOAD_OOM);
-     }
+      QUIT_WITH_RC(LOAD_OOM);
 
    if (rgba_image.rgba.isContig)
      {

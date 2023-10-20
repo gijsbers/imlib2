@@ -16,16 +16,6 @@
 #define DBG_PFX "FILE"
 #define DP(fmt...) DC(DBG_FILE, fmt)
 
-int
-__imlib_IsRealFile(const char *s)
-{
-   struct stat         st;
-
-   DP("%s: '%s'\n", __func__, s);
-
-   return (stat(s, &st) != -1) && (S_ISREG(st.st_mode));
-}
-
 char               *
 __imlib_FileKey(const char *file)
 {
@@ -110,7 +100,7 @@ __imlib_FileExtension(const char *file)
    return *p != '\0' ? p : NULL;
 }
 
-int
+static int
 __imlib_FileStat(const char *file, struct stat *st)
 {
    DP("%s: '%s'\n", __func__, file);
@@ -119,16 +109,6 @@ __imlib_FileStat(const char *file, struct stat *st)
       return -1;
 
    return stat(file, st);
-}
-
-int
-__imlib_FileExists(const char *s)
-{
-   struct stat         st;
-
-   DP("%s: '%s'\n", __func__, s);
-
-   return __imlib_FileStat(s, &st) == 0;
 }
 
 int
@@ -144,20 +124,28 @@ __imlib_FileIsFile(const char *s)
    return (S_ISREG(st.st_mode)) ? 1 : 0;
 }
 
-int
-__imlib_FileIsDir(const char *s)
+#define STONS 1000000000ULL
+
+uint64_t
+__imlib_StatModDate(const struct stat *st)
 {
-   struct stat         st;
+   uint64_t            mtime_ns, ctime_ns;
 
-   DP("%s: '%s'\n", __func__, s);
+#if HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
+   mtime_ns = st->st_mtim.tv_sec * STONS + st->st_mtim.tv_nsec;
+   ctime_ns = st->st_ctim.tv_sec * STONS + st->st_ctim.tv_nsec;
+#elif HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC
+   mtime_ns = st->st_mtimespec.tv_sec * STONS + st->st_mtimespec.tv_nsec;
+   ctime_ns = st->st_ctimespec.tv_sec * STONS + st->st_ctimespec.tv_nsec;
+#else
+   mtime_ns = st->st_mtime;
+   ctime_ns = st->st_ctime;
+#endif
 
-   if (__imlib_FileStat(s, &st))
-      return 0;
-
-   return (S_ISDIR(st.st_mode)) ? 1 : 0;
+   return (mtime_ns > ctime_ns) ? mtime_ns : ctime_ns;
 }
 
-time_t
+uint64_t
 __imlib_FileModDate(const char *s)
 {
    struct stat         st;
@@ -167,10 +155,10 @@ __imlib_FileModDate(const char *s)
    if (__imlib_FileStat(s, &st))
       return 0;
 
-   return (st.st_mtime > st.st_ctime) ? st.st_mtime : st.st_ctime;
+   return __imlib_StatModDate(&st);
 }
 
-time_t
+uint64_t
 __imlib_FileModDateFd(int fd)
 {
    struct stat         st;
@@ -178,7 +166,7 @@ __imlib_FileModDateFd(int fd)
    if (fstat(fd, &st) < 0)
       return 0;
 
-   return (st.st_mtime > st.st_ctime) ? st.st_mtime : st.st_ctime;
+   return __imlib_StatModDate(&st);
 }
 
 char              **
@@ -263,46 +251,6 @@ __imlib_FileFreeDirList(char **l, int num)
    free(l);
 }
 
-void
-__imlib_FileDel(const char *s)
-{
-   if ((!s) || (!*s))
-      return;
-   unlink(s);
-}
-
-char               *
-__imlib_FileHomeDir(int uid)
-{
-   static int          usr_uid = -1;
-   static char        *usr_s = NULL;
-   char               *s;
-   struct passwd      *pwd;
-
-   s = getenv("HOME");
-   if (s)
-      return strdup(s);
-
-   if (usr_uid < 0)
-      usr_uid = getuid();
-
-   if ((uid == usr_uid) && (usr_s))
-     {
-        return strdup(usr_s);
-     }
-
-   pwd = getpwuid(uid);
-   if (pwd)
-     {
-        s = strdup(pwd->pw_dir);
-        if (uid == usr_uid)
-           usr_s = strdup(s);
-        return s;
-     }
-
-   return NULL;
-}
-
 int
 __imlib_ItemInList(char **list, int size, char *item)
 {
@@ -324,7 +272,7 @@ __imlib_ItemInList(char **list, int size, char *item)
 #include <errno.h>
 
 FILE               *
-__imlib_FileOpen(const char *path, const char *mode)
+__imlib_FileOpen(const char *path, const char *mode, struct stat *st)
 {
    FILE               *fp;
 
@@ -337,5 +285,18 @@ __imlib_FileOpen(const char *path, const char *mode)
            break;
      }
 
+   /* Only stat if all is good and we want to read */
+   if (!fp || !st)
+      goto done;
+   if (mode[0] == 'w')
+      goto done;
+
+   if (fstat(fileno(fp), st) < 0)
+     {
+        fclose(fp);
+        fp = NULL;
+     }
+
+ done:
    return fp;
 }

@@ -7,6 +7,8 @@
 
 #define DBG_PFX "LDR-webp"
 
+#define CLAMP(X, MIN, MAX)  ((X) < (MIN) ? (MIN) : ((X) > (MAX) ? (MAX) : (X)))
+
 static const char  *const _formats[] = { "webp" };
 
 static int
@@ -115,51 +117,75 @@ _load(ImlibImage * im, int load_data)
 }
 
 static int
+webp_write(const uint8_t * data, size_t size, const WebPPicture * pic)
+{
+   FILE               *f = pic->custom_ptr;
+
+   return fwrite(data, 1, size, f) == size;
+}
+
+static int
 _save(ImlibImage * im)
 {
    int                 rc;
    FILE               *f = im->fi->fp;
    ImlibImageTag      *quality_tag;
-   float               quality;
-   uint8_t            *fdata;
-   size_t              encoded_size;
+   ImlibImageTag      *compression_tag;
+   WebPConfig          conf;
+   WebPPicture         pic;
+   int                 compression;
+   int                 lossless;
+   int                 free_pic = 0;
 
    rc = LOAD_FAIL;
-   fdata = NULL;
 
-   quality = 75;
+   if (!WebPConfigInit(&conf) || !WebPPictureInit(&pic))
+      goto quit;
+
+   conf.quality = 75;
    quality_tag = __imlib_GetTag(im, "quality");
    if (quality_tag)
-     {
-        quality = quality_tag->val;
-        if (quality < 0)
-          {
-             fprintf(stderr,
-                     "Warning: 'quality' setting %f too low for WebP, using 0\n",
-                     quality);
-             quality = 0;
-          }
+      conf.quality = CLAMP(quality_tag->val, 0, 100);
 
-        if (quality > 100)
-          {
-             fprintf(stderr,
-                     "Warning, 'quality' setting %f too high for WebP, using 100\n",
-                     quality);
-             quality = 100;
-          }
+   compression_tag = __imlib_GetTag(im, "compression");
+   /* other savers seem to treat quality 100 as lossless, do the same here. */
+   lossless = conf.quality == 100;
+   if (lossless)
+     {
+        compression = 9 - (conf.quality / 10);  /* convert to compression */
+        if (compression_tag)
+           compression = compression_tag->val;
+        WebPConfigLosslessPreset(&conf, CLAMP(compression, 0, 9));
+     }
+   else if (compression_tag)    /* for lossly encoding, only change conf.method if compression_tag was set */
+     {
+        conf.method = CLAMP(compression_tag->val, 0, 9);
+        conf.method *= 0.67;    /* convert from [0, 9] to [0, 6]. (6/9 == 0.67) */
      }
 
-   encoded_size = WebPEncodeBGRA((uint8_t *) im->data, im->w, im->h,
-                                 im->w * 4, quality, &fdata);
+   if (!WebPValidateConfig(&conf))
+     {
+        D("WebPValidateConfig failed");
+        goto quit;
+     }
 
-   if (fwrite(fdata, encoded_size, 1, f) != 1)
+   pic.use_argb = lossless;     /* use_argb is recommended for lossless */
+   pic.width = im->w;
+   pic.height = im->h;
+   pic.writer = webp_write;
+   pic.custom_ptr = f;
+   if (!WebPPictureImportBGRA(&pic, (uint8_t *) im->data, im->w * 4))
+      QUIT_WITH_RC(LOAD_OOM);
+   free_pic = 1;
+
+   if (!WebPEncode(&conf, &pic))
       goto quit;
 
    rc = LOAD_SUCCESS;
 
  quit:
-   if (fdata)
-      WebPFree(fdata);
+   if (free_pic)
+      WebPPictureFree(&pic);
 
    return rc;
 }

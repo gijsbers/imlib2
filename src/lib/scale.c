@@ -11,8 +11,9 @@
 /*\ NB: If you change this, don't forget asm_scale.S \*/
 struct _imlib_scale_info {
    int                *xpoints;
-   uint32_t          **ypoints;
-   int                *xapoints, *yapoints;
+   int                *ypoints;
+   int                *xapoints;
+   int                *yapoints;
    int                 xup_yup;
    uint32_t           *pix_assert;
 };
@@ -22,80 +23,15 @@ struct _imlib_scale_info {
 #define INV_YAP                   (256 - yapoints[dyy + y])
 #define YAP                       (yapoints[dyy + y])
 
-static uint32_t   **
-__imlib_CalcYPoints(uint32_t * src, int sw, int sh, int dh, int b1, int b2)
-{
-   uint32_t          **p;
-   int                 i, j = 0;
-   int                 val, inc, rv = 0;
-
-   if (dh < 0)
-     {
-        dh = -dh;
-        rv = 1;
-     }
-
-   p = malloc((dh + 1) * sizeof(uint32_t *));
-   if (!p)
-      return NULL;
-
-   val = MIN(sh, dh);
-   inc = b1 + b2;
-   if (val < inc)
-     {
-        b1 = (val * b1 + inc / 2) / inc;
-        b2 = val - b1;
-     }
-
-   val = 0;
-   inc = 1 << 16;
-   for (i = 0; i < b1; i++)
-     {
-        p[j++] = src + ((val >> 16) * sw);
-        val += inc;
-     }
-   if (dh > (b1 + b2))
-     {
-        val = (b1 << 16);
-        inc = ((sh - b1 - b2) << 16) / (dh - (b1 + b2));
-        for (i = 0; i < (dh - b1 - b2); i++)
-          {
-             p[j++] = src + ((val >> 16) * sw);
-             val += inc;
-          }
-     }
-   val = (sh - b2) << 16;
-   inc = 1 << 16;
-   for (i = 0; i <= b2; i++)
-     {
-        p[j++] = src + ((val >> 16) * sw);
-        val += inc;
-     }
-
-   if (rv)
-      for (i = dh / 2; --i >= 0;)
-        {
-           uint32_t           *tmp = p[i];
-
-           p[i] = p[dh - i - 1];
-           p[dh - i - 1] = tmp;
-        }
-   return p;
-}
-
 static int         *
-__imlib_CalcXPoints(int sw, int dw, int b1, int b2)
+__imlib_CalcPoints(int sw, int dw_, int b1, int b2, bool aa, int up)
 {
-   int                *p, i, j = 0;
-   int                 val, inc, rv = 0;
+   int                *p, i;
+   int                 val, inc, dw, ss, dd, corr;
 
-   if (dw < 0)
-     {
-        dw = -dw;
-        rv = 1;
-     }
+   dw = (dw_ >= 0) ? dw_ : -dw_;
 
-   p = malloc((dw + 1) * sizeof(int));
+   p = malloc(dw * sizeof(int));
    if (!p)
       return NULL;
 
@@ -107,32 +43,40 @@ __imlib_CalcXPoints(int sw, int dw, int b1, int b2)
         b2 = val - b1;
      }
 
-   val = 0;
-   inc = 1 << 16;
+   /* Border 1 */
    for (i = 0; i < b1; i++)
+      p[i] = i;
+
+   /* Center */
+   ss = sw - (b1 + b2);
+   dd = dw - (b1 + b2);
+   if (dd > 0)
      {
-        p[j++] = (val >> 16);
-        val += inc;
-     }
-   if (dw > (b1 + b2))
-     {
-        val = (b1 << 16);
-        inc = ((sw - b1 - b2) << 16) / (dw - (b1 + b2));
-        for (i = 0; i < (dw - b1 - b2); i++)
+        if (aa && dd > 1)
           {
-             p[j++] = (val >> 16);
-             val += inc;
+             corr = (up) ? 1 : 0;
+             val = b1 << 16;
+             inc = ((ss - corr) << 16) / (dd - corr);
+             for (; i < dw - b2; i++)
+               {
+                  p[i] = val >> 16;
+                  val += inc;
+               }
+          }
+        else
+          {
+             for (i = 0; i < dd; i++)
+                p[b1 + i] = b1 + (i * ss) / dd;
+             i = dw - b2;
           }
      }
-   val = (sw - b2) << 16;
-   inc = 1 << 16;
-   for (i = 0; i <= b2; i++)
-     {
-        p[j++] = (val >> 16);
-        val += inc;
-     }
 
-   if (rv)
+   /* Border 2 */
+   val = sw - b2;
+   for (; i < dw; i++)
+      p[i] = val++;
+
+   if (dw_ < 0)
       for (i = dw / 2; --i >= 0;)
         {
            int                 tmp = p[i];
@@ -140,26 +84,23 @@ __imlib_CalcXPoints(int sw, int dw, int b1, int b2)
            p[i] = p[dw - i - 1];
            p[dw - i - 1] = tmp;
         }
+
    return p;
 }
 
 static int         *
-__imlib_CalcApoints(int s, int d, int b1, int b2, int up)
+__imlib_CalcApoints(int sw, int dw_, int b1, int b2, int up)
 {
-   int                *p, i, j = 0, rv = 0;
-   int                 val, inc;
+   int                *p, i;
+   int                 val, inc, dw, ss, dd, corr;
 
-   if (d < 0)
-     {
-        rv = 1;
-        d = -d;
-     }
+   dw = (dw_ >= 0) ? dw_ : -dw_;
 
-   p = malloc(d * sizeof(int));
+   p = malloc(dw * sizeof(int));
    if (!p)
       return NULL;
 
-   val = MIN(s, d);
+   val = MIN(sw, dw);
    inc = b1 + b2;
    if (val < inc)
      {
@@ -167,66 +108,75 @@ __imlib_CalcApoints(int s, int d, int b1, int b2, int up)
         b2 = val - b1;
      }
 
-   /* scaling up */
+   ss = sw - (b1 + b2);
+   dd = dw - (b1 + b2);
    if (up)
      {
-        for (i = 0; i < b1; i++)
-           p[j++] = 0;
-        if (d > (b1 + b2))
-          {
-             int                 ss, dd;
+        /* Scaling up */
 
-             ss = s - b1 - b2;
-             dd = d - b1 - b2;
+        /* Border 1 */
+        for (i = 0; i < b1; i++)
+           p[i] = 0;
+
+        /* Center */
+        if (dd > 0)
+          {
+             corr = (dd > 1) ? 1 : 0;
+             ss -= corr;
+             dd -= corr;
              val = 0;
              inc = (ss << 16) / dd;
-             for (i = 0; i < dd; i++)
+             for (; i < dw - b2; i++)
                {
-                  p[j++] = (val >> 8) - ((val >> 8) & 0xffffff00);
-                  if (((val >> 16) + b1) >= (s - 1))
-                     p[j - 1] = 0;
+                  p[i] = (val >> 8) - ((val >> 8) & 0xffffff00);
                   val += inc;
                }
           }
-        for (i = 0; i < b2; i++)
-           p[j++] = 0;
+
+        /* Border 2 */
+        for (; i < dw; i++)
+           p[i] = 0;
      }
-   /* scaling down */
    else
      {
-        for (i = 0; i < b1; i++)
-           p[j++] = (1 << (16 + 14)) + (1 << 14);
-        if (d > (b1 + b2))
-          {
-             int                 ss, dd, ap, Cp;
+        /* Scaling down */
 
-             ss = s - (b1 + b2);
-             dd = d - (b1 + b2);
+        /* Border 1 */
+        for (i = 0; i < b1; i++)
+           p[i] = (1 << (16 + 14)) + (1 << 14);
+
+        /* Center */
+        if (dd > 0)
+          {
+             int                 ap, Cp;
+
              val = 0;
              inc = (ss << 16) / dd;
              Cp = ((dd << 14) / ss) + 1;
-             for (i = 0; i < dd; i++)
+             for (; i < dw - b2; i++)
                {
                   ap = ((0x100 - ((val >> 8) & 0xff)) * Cp) >> 8;
-                  p[j] = ap | (Cp << 16);
-                  j++;
+                  p[i] = ap | (Cp << 16);
                   val += inc;
                }
           }
-        for (i = 0; i < b2; i++)
-           p[j++] = (1 << (16 + 14)) + (1 << 14);
+
+        /* Border 2 */
+        for (; i < dw; i++)
+           p[i] = (1 << (16 + 14)) + (1 << 14);
      }
 
-   if (rv)
+   if (dw_ < 0)
      {
-        for (i = d / 2; --i >= 0;)
+        for (i = dw / 2; --i >= 0;)
           {
              int                 tmp = p[i];
 
-             p[i] = p[d - i - 1];
-             p[d - i - 1] = tmp;
+             p[i] = p[dw - i - 1];
+             p[dw - i - 1] = tmp;
           }
      }
+
    return p;
 }
 
@@ -245,7 +195,7 @@ __imlib_FreeScaleInfo(ImlibScaleInfo * isi)
 }
 
 ImlibScaleInfo     *
-__imlib_CalcScaleInfo(ImlibImage * im, int sw, int sh, int dw, int dh, char aa)
+__imlib_CalcScaleInfo(ImlibImage * im, int sw, int sh, int dw, int dh, bool aa)
 {
    ImlibScaleInfo     *isi;
    int                 scw, sch;
@@ -262,48 +212,59 @@ __imlib_CalcScaleInfo(ImlibImage * im, int sw, int sh, int dw, int dh, char aa)
 
    isi->xup_yup = (abs(dw) >= sw) + ((abs(dh) >= sh) << 1);
 
-   isi->xpoints = __imlib_CalcXPoints(im->w, scw,
-                                      im->border.left, im->border.right);
+   isi->xpoints = __imlib_CalcPoints(im->w, scw,
+                                     im->border.left, im->border.right,
+                                     aa, isi->xup_yup & 1);
    if (!isi->xpoints)
-      return __imlib_FreeScaleInfo(isi);
-   isi->ypoints = __imlib_CalcYPoints(im->data, im->w, im->h, sch,
-                                      im->border.top, im->border.bottom);
+      goto bail;
+
+   isi->ypoints = __imlib_CalcPoints(im->h, sch,
+                                     im->border.top, im->border.bottom,
+                                     aa, isi->xup_yup & 2);
    if (!isi->ypoints)
-      return __imlib_FreeScaleInfo(isi);
+      goto bail;
+
    if (aa)
      {
-        isi->xapoints = __imlib_CalcApoints(im->w, scw, im->border.left,
-                                            im->border.right, isi->xup_yup & 1);
+        isi->xapoints = __imlib_CalcApoints(im->w, scw,
+                                            im->border.left, im->border.right,
+                                            isi->xup_yup & 1);
         if (!isi->xapoints)
-           return __imlib_FreeScaleInfo(isi);
-        isi->yapoints = __imlib_CalcApoints(im->h, sch, im->border.top,
-                                            im->border.bottom,
+           goto bail;
+
+        isi->yapoints = __imlib_CalcApoints(im->h, sch,
+                                            im->border.top, im->border.bottom,
                                             isi->xup_yup & 2);
         if (!isi->yapoints)
-           return __imlib_FreeScaleInfo(isi);
+           goto bail;
      }
+
    return isi;
+
+ bail:
+   return __imlib_FreeScaleInfo(isi);
 }
 
 /* scale by pixel sampling only */
-void
-__imlib_ScaleSampleRGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
-                        int dx, int dy, int dw, int dh, int dow)
+static void
+__imlib_ScaleSampleRGBA(ImlibScaleInfo * isi, uint32_t * srce, uint32_t * dest,
+                        int dxx, int dyy, int dx, int dy, int dw, int dh,
+                        int dow, int sow)
 {
    uint32_t           *sptr, *dptr;
    int                 x, y, end;
-   uint32_t          **ypoints = isi->ypoints;
+   int                *ypoints = isi->ypoints;
    int                *xpoints = isi->xpoints;
 
    /* whats the last pixel on the line so we stop there */
    end = dxx + dw;
-   /* go through every scanline in the output buffer */
+
    for (y = 0; y < dh; y++)
      {
         /* get the pointer to the start of the destination scanline */
-        dptr = dest + dx + ((y + dy) * dow);
+        dptr = dest + dx + (y + dy) * dow;
         /* calculate the source line we'll scan from */
-        sptr = ypoints[dyy + y];
+        sptr = srce + ypoints[dyy + y] * sow;
         /* go thru the scanline and copy across */
         for (x = dxx; x < end; x++)
            *dptr++ = sptr[xpoints[x]];
@@ -313,13 +274,14 @@ __imlib_ScaleSampleRGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
 /* FIXME: NEED to optimise ScaleAARGBA - currently its "ok" but needs work*/
 
 /* scale by area sampling */
-void
-__imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
-                    int dx, int dy, int dw, int dh, int dow, int sow)
+static void
+__imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * srce, uint32_t * dest,
+                    int dxx, int dyy, int dx, int dy, int dw, int dh, int dow,
+                    int sow)
 {
    uint32_t           *sptr, *dptr;
    int                 x, y, end;
-   uint32_t          **ypoints;
+   int                *ypoints;
    int                *xpoints;
    int                *xapoints;
    int                *yapoints;
@@ -338,15 +300,15 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
    yapoints = isi->yapoints;
 
    end = dxx + dw;
-   /* scaling up both ways */
    if (isi->xup_yup == 3)
      {
-        /* go through every scanline in the output buffer */
+        /* Scaling up both ways */
+
         for (y = 0; y < dh; y++)
           {
              /* calculate the source line we'll scan from */
-             dptr = dest + dx + ((y + dy) * dow);
-             sptr = ypoints[dyy + y];
+             sptr = srce + ypoints[dyy + y] * sow;
+             dptr = dest + dx + (y + dy) * dow;
              if (YAP > 0)
                {
                   for (x = dxx; x < end; x++)
@@ -355,9 +317,9 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        int                 rr, gg, bb, aa;
                        uint32_t           *pix;
 
+                       pix = sptr + xpoints[x];
                        if (XAP > 0)
                          {
-                            pix = ypoints[dyy + y] + xpoints[x];
                             r = R_VAL(pix) * INV_XAP;
                             g = G_VAL(pix) * INV_XAP;
                             b = B_VAL(pix) * INV_XAP;
@@ -385,7 +347,6 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                          }
                        else
                          {
-                            pix = ypoints[dyy + y] + xpoints[x];
                             r = R_VAL(pix) * INV_YAP;
                             g = G_VAL(pix) * INV_YAP;
                             b = B_VAL(pix) * INV_YAP;
@@ -410,9 +371,9 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        int                 r, g, b, a;
                        uint32_t           *pix;
 
+                       pix = sptr + xpoints[x];
                        if (XAP > 0)
                          {
-                            pix = ypoints[dyy + y] + xpoints[x];
                             r = R_VAL(pix) * INV_XAP;
                             g = G_VAL(pix) * INV_XAP;
                             b = B_VAL(pix) * INV_XAP;
@@ -429,31 +390,32 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                             *dptr++ = PIXEL_ARGB(a, r, g, b);
                          }
                        else
-                          *dptr++ = sptr[xpoints[x]];
+                         {
+                            *dptr++ = *pix;
+                         }
                     }
                }
           }
      }
-   /* if we're scaling down vertically */
    else if (isi->xup_yup == 1)
-#ifndef OLD_SCALE_DOWN
      {
-        /*\ 'Correct' version, with math units prepared for MMXification \ */
+        /* Scaling down vertically */
+
         int                 Cy, j;
         uint32_t           *pix;
         int                 r, g, b, a, rr, gg, bb, aa;
         int                 yap;
 
-        /* go through every scanline in the output buffer */
         for (y = 0; y < dh; y++)
           {
              Cy = YAP >> 16;
              yap = YAP & 0xffff;
 
-             dptr = dest + dx + ((y + dy) * dow);
+             sptr = srce + ypoints[dyy + y] * sow;
+             dptr = dest + dx + (y + dy) * dow;
              for (x = dxx; x < end; x++)
                {
-                  pix = ypoints[dyy + y] + xpoints[x];
+                  pix = sptr + xpoints[x];
                   r = (R_VAL(pix) * yap) >> 10;
                   g = (G_VAL(pix) * yap) >> 10;
                   b = (B_VAL(pix) * yap) >> 10;
@@ -477,7 +439,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                   assert(pix < isi->pix_assert);
                   if (XAP > 0)
                     {
-                       pix = ypoints[dyy + y] + xpoints[x] + 1;
+                       pix = sptr + xpoints[x] + 1;
                        rr = (R_VAL(pix) * yap) >> 10;
                        gg = (G_VAL(pix) * yap) >> 10;
                        bb = (B_VAL(pix) * yap) >> 10;
@@ -515,128 +477,29 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        b >>= 4;
                        a >>= 4;
                     }
-                  *dptr = PIXEL_ARGB(a, r, g, b);
-                  dptr++;
+                  *dptr++ = PIXEL_ARGB(a, r, g, b);
                }
           }
      }
-#else
-     {
-        /* go through every scanline in the output buffer */
-        for (y = 0; y < dh; y++)
-          {
-             int                 yap;
-
-             /* calculate the source line we'll scan from */
-             dptr = dest + dx + ((y + dy) * dow);
-             sptr = ypoints[dyy + y];
-
-             yap = (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
-             if (yap > 1)
-               {
-                  for (x = dxx; x < end; x++)
-                    {
-                       int                 r = 0, g = 0, b = 0, a = 0;
-                       int                 rr = 0, gg = 0, bb = 0, aa = 0;
-                       uint32_t           *pix;
-
-                       if (XAP > 0)
-                         {
-                            pix = sptr + xpoints[x];
-                            for (j = 0; j < yap; j++)
-                              {
-                                 r += R_VAL(pix);
-                                 g += G_VAL(pix);
-                                 b += B_VAL(pix);
-                                 a += A_VAL(pix);
-                                 rr += R_VAL(pix + 1);
-                                 gg += G_VAL(pix + 1);
-                                 bb += B_VAL(pix + 1);
-                                 aa += A_VAL(pix + 1);
-                                 pix += sow;
-                              }
-                            r = r * INV_XAP / yap;
-                            g = g * INV_XAP / yap;
-                            b = b * INV_XAP / yap;
-                            a = a * INV_XAP / yap;
-                            r = (r + ((rr * XAP) / yap)) >> 8;
-                            g = (g + ((gg * XAP) / yap)) >> 8;
-                            b = (b + ((bb * XAP) / yap)) >> 8;
-                            a = (a + ((aa * XAP) / yap)) >> 8;
-                            *dptr++ = PIXEL_ARGB(a, r, g, b);
-                         }
-                       else
-                         {
-                            pix = sptr + xpoints[x];
-                            for (j = 0; j < yap; j++)
-                              {
-                                 r += R_VAL(pix);
-                                 g += G_VAL(pix);
-                                 b += B_VAL(pix);
-                                 a += A_VAL(pix);
-                                 pix += sow;
-                              }
-                            r /= yap;
-                            g /= yap;
-                            b /= yap;
-                            a /= yap;
-                            *dptr++ = PIXEL_ARGB(a, r, g, b);
-                         }
-                    }
-               }
-             else
-               {
-                  for (x = dxx; x < end; x++)
-                    {
-                       int                 r = 0, g = 0, b = 0, a = 0;
-                       int                 count;
-                       uint32_t           *pix;
-
-                       if (XAP > 0)
-                         {
-                            pix = ypoints[dyy + y] + xpoints[x];
-                            r = R_VAL(pix) * INV_XAP;
-                            g = G_VAL(pix) * INV_XAP;
-                            b = B_VAL(pix) * INV_XAP;
-                            a = A_VAL(pix) * INV_XAP;
-                            pix++;
-                            r += R_VAL(pix) * XAP;
-                            g += G_VAL(pix) * XAP;
-                            b += B_VAL(pix) * XAP;
-                            a += A_VAL(pix) * XAP;
-                            r >>= 8;
-                            g >>= 8;
-                            b >>= 8;
-                            a >>= 8;
-                            *dptr++ = PIXEL_ARGB(a, r, g, b);
-                         }
-                       else
-                          *dptr++ = sptr[xpoints[x]];
-                    }
-               }
-          }
-     }
-#endif
-   /* if we're scaling down horizontally */
    else if (isi->xup_yup == 2)
-#ifndef OLD_SCALE_DOWN
      {
-        /*\ 'Correct' version, with math units prepared for MMXification \ */
+        /* Scaling down horizontally */
+
         int                 Cx, j;
         uint32_t           *pix;
         int                 r, g, b, a, rr, gg, bb, aa;
         int                 xap;
 
-        /* go through every scanline in the output buffer */
         for (y = 0; y < dh; y++)
           {
-             dptr = dest + dx + ((y + dy) * dow);
+             sptr = srce + ypoints[dyy + y] * sow;
+             dptr = dest + dx + (y + dy) * dow;
              for (x = dxx; x < end; x++)
                {
                   Cx = XAP >> 16;
                   xap = XAP & 0xffff;
 
-                  pix = ypoints[dyy + y] + xpoints[x];
+                  pix = sptr + xpoints[x];
                   r = (R_VAL(pix) * xap) >> 10;
                   g = (G_VAL(pix) * xap) >> 10;
                   b = (B_VAL(pix) * xap) >> 10;
@@ -660,7 +523,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                   assert(pix < isi->pix_assert);
                   if (YAP > 0)
                     {
-                       pix = ypoints[dyy + y] + xpoints[x] + sow;
+                       pix = sptr + xpoints[x] + sow;
                        rr = (R_VAL(pix) * xap) >> 10;
                        gg = (G_VAL(pix) * xap) >> 10;
                        bb = (B_VAL(pix) * xap) >> 10;
@@ -698,118 +561,14 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        b >>= 4;
                        a >>= 4;
                     }
-                  *dptr = PIXEL_ARGB(a, r, g, b);
-                  dptr++;
+                  *dptr++ = PIXEL_ARGB(a, r, g, b);
                }
           }
      }
-#else
-     {
-        /* go through every scanline in the output buffer */
-        for (y = 0; y < dh; y++)
-          {
-             /* calculate the source line we'll scan from */
-             dptr = dest + dx + ((y + dy) * dow);
-             sptr = ypoints[dyy + y];
-             if (YAP > 0)
-               {
-                  for (x = dxx; x < end; x++)
-                    {
-                       int                 r = 0, g = 0, b = 0, a = 0;
-                       int                 rr = 0, gg = 0, bb = 0, aa = 0;
-                       int                 xap;
-                       uint32_t           *pix;
-
-                       xap = xpoints[x + 1] - xpoints[x];
-                       if (xap > 1)
-                         {
-                            pix = ypoints[dyy + y] + xpoints[x];
-                            for (i = 0; i < xap; i++)
-                              {
-                                 r += R_VAL(pix + i);
-                                 g += G_VAL(pix + i);
-                                 b += B_VAL(pix + i);
-                                 a += A_VAL(pix + i);
-                              }
-                            r = r * INV_YAP / xap;
-                            g = g * INV_YAP / xap;
-                            b = b * INV_YAP / xap;
-                            a = a * INV_YAP / xap;
-                            pix = ypoints[dyy + y] + xpoints[x] + sow;
-                            for (i = 0; i < xap; i++)
-                              {
-                                 rr += R_VAL(pix + i);
-                                 gg += G_VAL(pix + i);
-                                 bb += B_VAL(pix + i);
-                                 aa += A_VAL(pix + i);
-                              }
-                            r = (r + ((rr * YAP) / xap)) >> 8;
-                            g = (g + ((gg * YAP) / xap)) >> 8;
-                            b = (b + ((bb * YAP) / xap)) >> 8;
-                            a = (a + ((aa * YAP) / xap)) >> 8;
-                            *dptr++ = PIXEL_ARGB(a, r, g, b);
-                         }
-                       else
-                         {
-                            pix = ypoints[dyy + y] + xpoints[x];
-                            r = R_VAL(pix) * INV_YAP;
-                            g = G_VAL(pix) * INV_YAP;
-                            b = B_VAL(pix) * INV_YAP;
-                            a = A_VAL(pix) * INV_YAP;
-                            pix += sow;
-                            r += R_VAL(pix) * YAP;
-                            g += G_VAL(pix) * YAP;
-                            b += B_VAL(pix) * YAP;
-                            a += A_VAL(pix) * YAP;
-                            r >>= 8;
-                            g >>= 8;
-                            b >>= 8;
-                            a >>= 8;
-                            *dptr++ = PIXEL_ARGB(a, r, g, b);
-                         }
-                    }
-               }
-             else
-               {
-                  for (x = dxx; x < end; x++)
-                    {
-                       int                 r = 0, g = 0, b = 0, a = 0;
-                       int                 xap;
-                       uint32_t           *pix;
-
-                       xap = xpoints[x + 1] - xpoints[x];
-                       if (xap > 1)
-                         {
-                            pix = ypoints[dyy + y] + xpoints[x];
-                            for (i = 0; i < xap; i++)
-                              {
-                                 r += R_VAL(pix + i);
-                                 g += G_VAL(pix + i);
-                                 b += B_VAL(pix + i);
-                                 a += A_VAL(pix + i);
-                              }
-                            r /= xap;
-                            g /= xap;
-                            b /= xap;
-                            a /= xap;
-                            *dptr++ = PIXEL_ARGB(a, r, g, b);
-                         }
-                       else
-                          *dptr++ = sptr[xpoints[x]];
-                    }
-               }
-          }
-     }
-#endif
-   /* if we're scaling down horizontally & vertically */
    else
-#ifndef OLD_SCALE_DOWN
      {
-        /*\ 'Correct' version, with math units prepared for MMXification:
-         * |*|  The operation 'b = (b * c) >> 16' translates to pmulhw,
-         * |*|  so the operation 'b = (b * c) >> d' would translate to
-         * |*|  psllw (16 - d), %mmb; pmulh %mmc, %mmb
-         * \ */
+        /* Scaling down horizontally & vertically */
+
         int                 Cx, Cy, i, j;
         uint32_t           *pix;
         int                 a, r, g, b, ax, rx, gx, bx;
@@ -820,30 +579,30 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
              Cy = YAP >> 16;
              yap = YAP & 0xffff;
 
-             dptr = dest + dx + ((y + dy) * dow);
+             dptr = dest + dx + (y + dy) * dow;
              for (x = dxx; x < end; x++)
                {
                   Cx = XAP >> 16;
                   xap = XAP & 0xffff;
 
-                  sptr = ypoints[dyy + y] + xpoints[x];
+                  sptr = srce + ypoints[dyy + y] * sow + xpoints[x];
                   pix = sptr;
                   sptr += sow;
                   rx = (R_VAL(pix) * xap) >> 9;
                   gx = (G_VAL(pix) * xap) >> 9;
                   bx = (B_VAL(pix) * xap) >> 9;
                   ax = (A_VAL(pix) * xap) >> 9;
-                  pix++;
                   for (i = (1 << 14) - xap; i > Cx; i -= Cx)
                     {
+                       pix++;
                        rx += (R_VAL(pix) * Cx) >> 9;
                        gx += (G_VAL(pix) * Cx) >> 9;
                        bx += (B_VAL(pix) * Cx) >> 9;
                        ax += (A_VAL(pix) * Cx) >> 9;
-                       pix++;
                     }
                   if (i > 0)
                     {
+                       pix++;
                        rx += (R_VAL(pix) * i) >> 9;
                        gx += (G_VAL(pix) * i) >> 9;
                        bx += (B_VAL(pix) * i) >> 9;
@@ -863,17 +622,17 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        gx = (G_VAL(pix) * xap) >> 9;
                        bx = (B_VAL(pix) * xap) >> 9;
                        ax = (A_VAL(pix) * xap) >> 9;
-                       pix++;
                        for (i = (1 << 14) - xap; i > Cx; i -= Cx)
                          {
+                            pix++;
                             rx += (R_VAL(pix) * Cx) >> 9;
                             gx += (G_VAL(pix) * Cx) >> 9;
                             bx += (B_VAL(pix) * Cx) >> 9;
                             ax += (A_VAL(pix) * Cx) >> 9;
-                            pix++;
                          }
                        if (i > 0)
                          {
+                            pix++;
                             rx += (R_VAL(pix) * i) >> 9;
                             gx += (G_VAL(pix) * i) >> 9;
                             bx += (B_VAL(pix) * i) >> 9;
@@ -892,17 +651,17 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        gx = (G_VAL(pix) * xap) >> 9;
                        bx = (B_VAL(pix) * xap) >> 9;
                        ax = (A_VAL(pix) * xap) >> 9;
-                       pix++;
                        for (i = (1 << 14) - xap; i > Cx; i -= Cx)
                          {
+                            pix++;
                             rx += (R_VAL(pix) * Cx) >> 9;
                             gx += (G_VAL(pix) * Cx) >> 9;
                             bx += (B_VAL(pix) * Cx) >> 9;
                             ax += (A_VAL(pix) * Cx) >> 9;
-                            pix++;
                          }
                        if (i > 0)
                          {
+                            pix++;
                             rx += (R_VAL(pix) * i) >> 9;
                             gx += (G_VAL(pix) * i) >> 9;
                             bx += (B_VAL(pix) * i) >> 9;
@@ -923,64 +682,17 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                }
           }
      }
-#else
-     {
-        int                 count;
-        uint32_t           *pix;
-        int                 a, r, g, b;
-
-        /* go through every scanline in the output buffer */
-        for (y = 0; y < dh; y++)
-          {
-             int                 yap =
-                (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
-             /* calculate the source line we'll scan from */
-             dptr = dest + dx + ((y + dy) * dow);
-             sptr = ypoints[dyy + y];
-             for (x = dxx; x < end; x++)
-               {
-                  int                 xap = xpoints[x + 1] - xpoints[x];
-
-                  if ((xap > 1) || (yap > 1))
-                    {
-                       r = 0;
-                       g = 0;
-                       b = 0;
-                       pix = ypoints[dyy + y] + xpoints[x];
-                       for (j = yap; --j >= 0;)
-                         {
-                            for (i = xap; --i >= 0;)
-                              {
-                                 r += R_VAL(pix + i);
-                                 g += G_VAL(pix + i);
-                                 b += B_VAL(pix + i);
-                                 a += A_VAL(pix + i);
-                              }
-                            pix += sow;
-                         }
-                       count = xap * yap;
-                       R_VAL(dptr) = r / count;
-                       G_VAL(dptr) = g / count;
-                       B_VAL(dptr) = b / count;
-                       A_VAL(dptr) = a / count;
-                       dptr++;
-                    }
-                  else
-                     *dptr++ = sptr[xpoints[x]];
-               }
-          }
-     }
-#endif
 }
 
 /* scale by area sampling - IGNORE the ALPHA byte*/
-void
-__imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
-                   int dx, int dy, int dw, int dh, int dow, int sow)
+static void
+__imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * srce, uint32_t * dest,
+                   int dxx, int dyy, int dx, int dy, int dw, int dh, int dow,
+                   int sow)
 {
    uint32_t           *sptr, *dptr;
    int                 x, y, end;
-   uint32_t          **ypoints;
+   int                *ypoints;
    int                *xpoints;
    int                *xapoints;
    int                *yapoints;
@@ -999,26 +711,26 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
    yapoints = isi->yapoints;
 
    end = dxx + dw;
-   /* scaling up both ways */
    if (isi->xup_yup == 3)
      {
-        /* go through every scanline in the output buffer */
+        /* Scaling up both ways */
+
         for (y = 0; y < dh; y++)
           {
              /* calculate the source line we'll scan from */
-             dptr = dest + dx + ((y + dy) * dow);
-             sptr = ypoints[dyy + y];
+             sptr = srce + ypoints[dyy + y] * sow;
+             dptr = dest + dx + (y + dy) * dow;
              if (YAP > 0)
                {
                   for (x = dxx; x < end; x++)
                     {
-                       int                 r = 0, g = 0, b = 0;
-                       int                 rr = 0, gg = 0, bb = 0;
+                       int                 r, g, b;
+                       int                 rr, gg, bb;
                        uint32_t           *pix;
 
+                       pix = sptr + xpoints[x];
                        if (XAP > 0)
                          {
-                            pix = ypoints[dyy + y] + xpoints[x];
                             r = R_VAL(pix) * INV_XAP;
                             g = G_VAL(pix) * INV_XAP;
                             b = B_VAL(pix) * INV_XAP;
@@ -1041,7 +753,6 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                          }
                        else
                          {
-                            pix = ypoints[dyy + y] + xpoints[x];
                             r = R_VAL(pix) * INV_YAP;
                             g = G_VAL(pix) * INV_YAP;
                             b = B_VAL(pix) * INV_YAP;
@@ -1063,9 +774,9 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        int                 r = 0, g = 0, b = 0;
                        uint32_t           *pix;
 
+                       pix = sptr + xpoints[x];
                        if (XAP > 0)
                          {
-                            pix = ypoints[dyy + y] + xpoints[x];
                             r = R_VAL(pix) * INV_XAP;
                             g = G_VAL(pix) * INV_XAP;
                             b = B_VAL(pix) * INV_XAP;
@@ -1079,64 +790,65 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                             *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                          }
                        else
-                          *dptr++ = sptr[xpoints[x]];
+                         {
+                            *dptr++ = *pix;
+                         }
                     }
                }
           }
      }
-   /* if we're scaling down vertically */
    else if (isi->xup_yup == 1)
-#ifndef OLD_SCALE_DOWN
      {
-        /*\ 'Correct' version, with math units prepared for MMXification \ */
+        /* Scaling down vertically */
+
         int                 Cy, j;
         uint32_t           *pix;
         int                 r, g, b, rr, gg, bb;
         int                 yap;
 
-        /* go through every scanline in the output buffer */
         for (y = 0; y < dh; y++)
           {
              Cy = YAP >> 16;
              yap = YAP & 0xffff;
 
-             dptr = dest + dx + ((y + dy) * dow);
+             sptr = srce + ypoints[dyy + y] * sow;
+             dptr = dest + dx + (y + dy) * dow;
              for (x = dxx; x < end; x++)
                {
-                  pix = ypoints[dyy + y] + xpoints[x];
+                  pix = sptr + xpoints[x];
                   r = (R_VAL(pix) * yap) >> 10;
                   g = (G_VAL(pix) * yap) >> 10;
                   b = (B_VAL(pix) * yap) >> 10;
-                  pix += sow;
                   for (j = (1 << 14) - yap; j > Cy; j -= Cy)
                     {
+                       pix += sow;
                        r += (R_VAL(pix) * Cy) >> 10;
                        g += (G_VAL(pix) * Cy) >> 10;
                        b += (B_VAL(pix) * Cy) >> 10;
-                       pix += sow;
                     }
                   if (j > 0)
                     {
+                       pix += sow;
                        r += (R_VAL(pix) * j) >> 10;
                        g += (G_VAL(pix) * j) >> 10;
                        b += (B_VAL(pix) * j) >> 10;
                     }
                   if (XAP > 0)
                     {
-                       pix = ypoints[dyy + y] + xpoints[x] + 1;
+                       pix = sptr + xpoints[x] + 1;
                        rr = (R_VAL(pix) * yap) >> 10;
                        gg = (G_VAL(pix) * yap) >> 10;
                        bb = (B_VAL(pix) * yap) >> 10;
-                       pix += sow;
                        for (j = (1 << 14) - yap; j > Cy; j -= Cy)
                          {
+                            pix += sow;
                             rr += (R_VAL(pix) * Cy) >> 10;
                             gg += (G_VAL(pix) * Cy) >> 10;
                             bb += (B_VAL(pix) * Cy) >> 10;
-                            pix += sow;
                          }
                        if (j > 0)
                          {
+                            pix += sow;
                             rr += (R_VAL(pix) * j) >> 10;
                             gg += (G_VAL(pix) * j) >> 10;
                             bb += (B_VAL(pix) * j) >> 10;
@@ -1154,151 +866,62 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        g >>= 4;
                        b >>= 4;
                     }
-                  *dptr = PIXEL_ARGB(0xff, r, g, b);
-                  dptr++;
+                  *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                }
           }
      }
-#else
-     {
-        /* go through every scanline in the output buffer */
-        for (y = 0; y < dh; y++)
-          {
-             int                 yap;
-
-             /* calculate the source line we'll scan from */
-             dptr = dest + dx + ((y + dy) * dow);
-             sptr = ypoints[dyy + y];
-
-             yap = (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
-             if (yap > 1)
-               {
-                  for (x = dxx; x < end; x++)
-                    {
-                       int                 r = 0, g = 0, b = 0;
-                       int                 rr = 0, gg = 0, bb = 0;
-                       uint32_t           *pix;
-
-                       if (XAP > 0)
-                         {
-                            pix = sptr + xpoints[x];
-                            for (j = 0; j < yap; j++)
-                              {
-                                 r += R_VAL(pix);
-                                 g += G_VAL(pix);
-                                 b += B_VAL(pix);
-                                 rr += R_VAL(pix + 1);
-                                 gg += G_VAL(pix + 1);
-                                 bb += B_VAL(pix + 1);
-                                 pix += sow;
-                              }
-                            r = r * INV_XAP / yap;
-                            g = g * INV_XAP / yap;
-                            b = b * INV_XAP / yap;
-                            r = (r + ((rr * XAP) / yap)) >> 8;
-                            g = (g + ((gg * XAP) / yap)) >> 8;
-                            b = (b + ((bb * XAP) / yap)) >> 8;
-                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
-                         }
-                       else
-                         {
-                            pix = sptr + xpoints[x];
-                            for (j = 0; j < yap; j++)
-                              {
-                                 r += R_VAL(pix);
-                                 g += G_VAL(pix);
-                                 b += B_VAL(pix);
-                                 pix += sow;
-                              }
-                            r /= yap;
-                            g /= yap;
-                            b /= yap;
-                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
-                         }
-                    }
-               }
-             else
-               {
-                  for (x = dxx; x < end; x++)
-                    {
-                       int                 r = 0, g = 0, b = 0;
-                       uint32_t           *pix;
-
-                       if (XAP > 0)
-                         {
-                            pix = ypoints[dyy + y] + xpoints[x];
-                            r = R_VAL(pix) * INV_XAP;
-                            g = G_VAL(pix) * INV_XAP;
-                            b = B_VAL(pix) * INV_XAP;
-                            pix++;
-                            r += R_VAL(pix) * XAP;
-                            g += G_VAL(pix) * XAP;
-                            b += B_VAL(pix) * XAP;
-                            r >>= 8;
-                            g >>= 8;
-                            b >>= 8;
-                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
-                         }
-                       else
-                          *dptr++ = sptr[xpoints[x]];
-                    }
-               }
-          }
-     }
-#endif
-   /* if we're scaling down horizontally */
    else if (isi->xup_yup == 2)
-#ifndef OLD_SCALE_DOWN
      {
-        /*\ 'Correct' version, with math units prepared for MMXification \ */
+        /* Scaling down horizontally */
+
         int                 Cx, j;
         uint32_t           *pix;
         int                 r, g, b, rr, gg, bb;
         int                 xap;
 
-        /* go through every scanline in the output buffer */
         for (y = 0; y < dh; y++)
           {
-             dptr = dest + dx + ((y + dy) * dow);
+             sptr = srce + ypoints[dyy + y] * sow;
+             dptr = dest + dx + (y + dy) * dow;
              for (x = dxx; x < end; x++)
                {
                   Cx = XAP >> 16;
                   xap = XAP & 0xffff;
 
-                  pix = ypoints[dyy + y] + xpoints[x];
+                  pix = sptr + xpoints[x];
                   r = (R_VAL(pix) * xap) >> 10;
                   g = (G_VAL(pix) * xap) >> 10;
                   b = (B_VAL(pix) * xap) >> 10;
-                  pix++;
                   for (j = (1 << 14) - xap; j > Cx; j -= Cx)
                     {
+                       pix++;
                        r += (R_VAL(pix) * Cx) >> 10;
                        g += (G_VAL(pix) * Cx) >> 10;
                        b += (B_VAL(pix) * Cx) >> 10;
-                       pix++;
                     }
                   if (j > 0)
                     {
+                       pix++;
                        r += (R_VAL(pix) * j) >> 10;
                        g += (G_VAL(pix) * j) >> 10;
                        b += (B_VAL(pix) * j) >> 10;
                     }
                   if (YAP > 0)
                     {
-                       pix = ypoints[dyy + y] + xpoints[x] + sow;
+                       pix = sptr + xpoints[x] + sow;
                        rr = (R_VAL(pix) * xap) >> 10;
                        gg = (G_VAL(pix) * xap) >> 10;
                        bb = (B_VAL(pix) * xap) >> 10;
-                       pix++;
                        for (j = (1 << 14) - xap; j > Cx; j -= Cx)
                          {
+                            pix++;
                             rr += (R_VAL(pix) * Cx) >> 10;
                             gg += (G_VAL(pix) * Cx) >> 10;
                             bb += (B_VAL(pix) * Cx) >> 10;
-                            pix++;
                          }
                        if (j > 0)
                          {
+                            pix++;
                             rr += (R_VAL(pix) * j) >> 10;
                             gg += (G_VAL(pix) * j) >> 10;
                             bb += (B_VAL(pix) * j) >> 10;
@@ -1316,106 +939,14 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        g >>= 4;
                        b >>= 4;
                     }
-                  *dptr = PIXEL_ARGB(0xff, r, g, b);
-                  dptr++;
+                  *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                }
           }
      }
-#else
-     {
-        /* go through every scanline in the output buffer */
-        for (y = 0; y < dh; y++)
-          {
-             /* calculate the source line we'll scan from */
-             dptr = dest + dx + ((y + dy) * dow);
-             sptr = ypoints[dyy + y];
-             if (YAP > 0)
-               {
-                  for (x = dxx; x < end; x++)
-                    {
-                       int                 r = 0, g = 0, b = 0;
-                       int                 rr = 0, gg = 0, bb = 0;
-                       int                 xap;
-                       uint32_t           *pix;
-
-                       xap = xpoints[x + 1] - xpoints[x];
-                       if (xap > 1)
-                         {
-                            pix = ypoints[dyy + y] + xpoints[x];
-                            for (i = 0; i < xap; i++)
-                              {
-                                 r += R_VAL(pix + i);
-                                 g += G_VAL(pix + i);
-                                 b += B_VAL(pix + i);
-                              }
-                            r = r * INV_YAP / xap;
-                            g = g * INV_YAP / xap;
-                            b = b * INV_YAP / xap;
-                            pix = ypoints[dyy + y] + xpoints[x] + sow;
-                            for (i = 0; i < xap; i++)
-                              {
-                                 rr += R_VAL(pix + i);
-                                 gg += G_VAL(pix + i);
-                                 bb += B_VAL(pix + i);
-                              }
-                            r = (r + ((rr * YAP) / xap)) >> 8;
-                            g = (g + ((gg * YAP) / xap)) >> 8;
-                            b = (b + ((bb * YAP) / xap)) >> 8;
-                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
-                         }
-                       else
-                         {
-                            pix = ypoints[dyy + y] + xpoints[x];
-                            r = R_VAL(pix) * INV_YAP;
-                            g = G_VAL(pix) * INV_YAP;
-                            b = B_VAL(pix) * INV_YAP;
-                            pix += sow;
-                            r += R_VAL(pix) * YAP;
-                            g += G_VAL(pix) * YAP;
-                            b += B_VAL(pix) * YAP;
-                            r >>= 8;
-                            g >>= 8;
-                            b >>= 8;
-                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
-                         }
-                    }
-               }
-             else
-               {
-                  for (x = dxx; x < end; x++)
-                    {
-                       int                 r = 0, g = 0, b = 0;
-                       int                 xap;
-                       uint32_t           *pix;
-
-                       xap = xpoints[x + 1] - xpoints[x];
-                       if (xap > 1)
-                         {
-                            pix = ypoints[dyy + y] + xpoints[x];
-                            for (i = 0; i < xap; i++)
-                              {
-                                 r += R_VAL(pix + i);
-                                 g += G_VAL(pix + i);
-                                 b += B_VAL(pix + i);
-                              }
-                            r /= xap;
-                            g /= xap;
-                            b /= xap;
-                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
-                         }
-                       else
-                          *dptr++ = sptr[xpoints[x]];
-                    }
-               }
-          }
-     }
-#endif
-   /* fully optimized (i think) - only change of algorithm can help */
-   /* if we're scaling down horizontally & vertically */
    else
-#ifndef OLD_SCALE_DOWN
      {
-        /*\ 'Correct' version, with math units prepared for MMXification \ */
+        /* Scaling down horizontally & vertically */
+
         int                 Cx, Cy, i, j;
         uint32_t           *pix;
         int                 r, g, b, rx, gx, bx;
@@ -1426,28 +957,28 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
              Cy = YAP >> 16;
              yap = YAP & 0xffff;
 
-             dptr = dest + dx + ((y + dy) * dow);
+             dptr = dest + dx + (y + dy) * dow;
              for (x = dxx; x < end; x++)
                {
                   Cx = XAP >> 16;
                   xap = XAP & 0xffff;
 
-                  sptr = ypoints[dyy + y] + xpoints[x];
+                  sptr = srce + ypoints[dyy + y] * sow + xpoints[x];
                   pix = sptr;
                   sptr += sow;
                   rx = (R_VAL(pix) * xap) >> 9;
                   gx = (G_VAL(pix) * xap) >> 9;
                   bx = (B_VAL(pix) * xap) >> 9;
-                  pix++;
                   for (i = (1 << 14) - xap; i > Cx; i -= Cx)
                     {
+                       pix++;
                        rx += (R_VAL(pix) * Cx) >> 9;
                        gx += (G_VAL(pix) * Cx) >> 9;
                        bx += (B_VAL(pix) * Cx) >> 9;
-                       pix++;
                     }
                   if (i > 0)
                     {
+                       pix++;
                        rx += (R_VAL(pix) * i) >> 9;
                        gx += (G_VAL(pix) * i) >> 9;
                        bx += (B_VAL(pix) * i) >> 9;
@@ -1464,16 +995,16 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        rx = (R_VAL(pix) * xap) >> 9;
                        gx = (G_VAL(pix) * xap) >> 9;
                        bx = (B_VAL(pix) * xap) >> 9;
-                       pix++;
                        for (i = (1 << 14) - xap; i > Cx; i -= Cx)
                          {
+                            pix++;
                             rx += (R_VAL(pix) * Cx) >> 9;
                             gx += (G_VAL(pix) * Cx) >> 9;
                             bx += (B_VAL(pix) * Cx) >> 9;
-                            pix++;
                          }
                        if (i > 0)
                          {
+                            pix++;
                             rx += (R_VAL(pix) * i) >> 9;
                             gx += (G_VAL(pix) * i) >> 9;
                             bx += (B_VAL(pix) * i) >> 9;
@@ -1489,16 +1020,16 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                        rx = (R_VAL(pix) * xap) >> 9;
                        gx = (G_VAL(pix) * xap) >> 9;
                        bx = (B_VAL(pix) * xap) >> 9;
-                       pix++;
                        for (i = (1 << 14) - xap; i > Cx; i -= Cx)
                          {
+                            pix++;
                             rx += (R_VAL(pix) * Cx) >> 9;
                             gx += (G_VAL(pix) * Cx) >> 9;
                             bx += (B_VAL(pix) * Cx) >> 9;
-                            pix++;
                          }
                        if (i > 0)
                          {
+                            pix++;
                             rx += (R_VAL(pix) * i) >> 9;
                             gx += (G_VAL(pix) * i) >> 9;
                             bx += (B_VAL(pix) * i) >> 9;
@@ -1516,50 +1047,23 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                }
           }
      }
-#else
+}
+
+void
+__imlib_Scale(ImlibScaleInfo * isi, bool aa, bool alpha,
+              uint32_t * srce, uint32_t * dest, int dxx, int dyy, int dx,
+              int dy, int dw, int dh, int dow, int sow)
+{
+   if (aa)
      {
-        int                 count;
-        uint32_t           *pix;
-        int                 r, g, b;
-
-        /* go through every scanline in the output buffer */
-        for (y = 0; y < dh; y++)
-          {
-             int                 yap =
-                (ypoints[dyy + y + 1] - ypoints[dyy + y]) / sow;
-             /* calculate the source line we'll scan from */
-             dptr = dest + dx + ((y + dy) * dow);
-             sptr = ypoints[dyy + y];
-             for (x = dxx; x < end; x++)
-               {
-                  int                 xap = xpoints[x + 1] - xpoints[x];
-
-                  if ((xap > 1) || (yap > 1))
-                    {
-                       r = 0;
-                       g = 0;
-                       b = 0;
-                       pix = sptr + xpoints[x];
-                       for (j = yap; --j >= 0;)
-                         {
-                            for (i = xap; --i >= 0;)
-                              {
-                                 r += R_VAL(pix + i);
-                                 g += G_VAL(pix + i);
-                                 b += B_VAL(pix + i);
-                              }
-                            pix += sow;
-                         }
-                       count = xap * yap;
-                       R_VAL(dptr) = r / count;
-                       G_VAL(dptr) = g / count;
-                       B_VAL(dptr) = b / count;
-                       dptr++;
-                    }
-                  else
-                     *dptr++ = sptr[xpoints[x]];
-               }
-          }
+        if (alpha)
+           __imlib_ScaleAARGBA(isi, srce, dest, dxx, dyy, dx, dy, dw, dh,
+                               dow, sow);
+        else
+           __imlib_ScaleAARGB(isi, srce, dest, dxx, dyy, dx, dy, dw, dh,
+                              dow, sow);
      }
-#endif
+   else
+      __imlib_ScaleSampleRGBA(isi, srce, dest, dxx, dyy, dx, dy, dw, dh,
+                              dow, sow);
 }

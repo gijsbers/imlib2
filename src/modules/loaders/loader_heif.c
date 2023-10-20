@@ -172,4 +172,21 @@ _load(ImlibImage * im, int load_data)
    return rc;
 }
 
+#if !LIBHEIF_HAVE_VERSION(1, 13, 0)
+
 IMLIB_LOADER_KEEP(_formats, _load, NULL);
+
+#else
+
+static void
+_inex(int init)
+{
+   if (init)
+      heif_init(NULL);
+   else
+      heif_deinit();
+}
+
+IMLIB_LOADER_INEX(_formats, _load, NULL, _inex);
+
+#endif

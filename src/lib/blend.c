@@ -1937,30 +1937,22 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
           }
 
         /* scale in LINESIZE Y chunks and convert to depth */
-        for (y = 0; y < dh; y += LINESIZE)
+        for (y = 0; y < dh; y += LINESIZE, h -= LINESIZE)
           {
              hh = LINESIZE;
              if (h < LINESIZE)
                 hh = h;
+
              /* scale the imagedata for this LINESIZE lines chunk of image */
-             if (aa)
-               {
-                  if (im_src->has_alpha)
-                     __imlib_ScaleAARGBA(scaleinfo, buf, dxx, dyy + y,
-                                         0, 0, dw, hh, dw, im_src->w);
-                  else
-                     __imlib_ScaleAARGB(scaleinfo, buf, dxx, dyy + y,
-                                        0, 0, dw, hh, dw, im_src->w);
-               }
-             else
-                __imlib_ScaleSampleRGBA(scaleinfo, buf, dxx, dyy + y,
-                                        0, 0, dw, hh, dw);
+             __imlib_Scale(scaleinfo, aa, im_src->has_alpha,
+                           im_src->data, buf, dxx, dyy + y,
+                           0, 0, dw, hh, dw, im_src->w);
+
              __imlib_BlendRGBAToData(buf, dw, hh,
                                      im_dst->data, im_dst->w,
                                      im_dst->h,
                                      0, 0, dx, dy + y, dw, dh,
                                      blend, merge_alpha, cm, op, rgb_src);
-             h -= LINESIZE;
           }
         /* free up our buffers and point tables */
         free(buf);

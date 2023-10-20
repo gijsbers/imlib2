@@ -103,6 +103,7 @@ bg_im_init(int w, int h)
                 imlib_context_set_color(144, 144, 144, 255);
              else
                 imlib_context_set_color(100, 100, 100, 255);
+             imlib_context_set_blend(0);
              imlib_image_fill_rectangle(x, y, opt_cbfs, opt_cbfs);
              onoff++;
              if (onoff == 2)
@@ -192,6 +193,7 @@ anim_init(int w, int h)
         imlib_context_set_image(fg_im);
         imlib_image_set_has_alpha(1);
         imlib_context_set_color(0, 0, 0, 0);
+        imlib_context_set_blend(0);
         imlib_image_fill_rectangle(0, 0, w, h);
 
         /* Keep a clean copy of background image around for clearing parts */
@@ -244,6 +246,7 @@ anim_update(Imlib_Image im, const rect_t * r_up, const rect_t * r_out,
              Dprintf(" Clear %d,%d %dx%d\n",
                      r_prev.x, r_prev.y, r_prev.w, r_prev.h);
              imlib_context_set_color(0, 0, 0, 0);
+             imlib_context_set_blend(0);
              imlib_image_fill_rectangle(r_prev.x, r_prev.y, r_prev.w, r_prev.h);
           }
 

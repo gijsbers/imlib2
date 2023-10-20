@@ -50,8 +50,14 @@ static const char  *const ext_png[] = { "png", NULL };
 #endif
 static const char  *const ext_pnm[] =
    { "pnm", "ppm", "pgm", "pbm", "pam", NULL };
+static const char  *const ext_qoi[] = { "qoi", NULL };
 #ifdef BUILD_PS_LOADER
 static const char  *const ext_ps[] = { "ps", "eps", NULL };
+#endif
+#ifdef BUILD_RAW_LOADER
+static const char  *const ext_raw[] = { "raw",
+   "arw", "cr2", "dcr", "dng", "nef", "orf", "raf", "rw2", "rwl", "srw", NULL
+};
 #endif
 #ifdef BUILD_SVG_LOADER
 static const char  *const ext_svg[] = { "svg", NULL };
@@ -111,7 +117,11 @@ static const KnownLoader loaders_known[] = {
 #ifdef BUILD_PS_LOADER
    {"ps", ext_ps},
 #endif
+#ifdef BUILD_RAW_LOADER
+   {"raw", ext_raw},
+#endif
    {"pnm", ext_pnm},
+   {"qoi", ext_qoi},
 #ifdef BUILD_SVG_LOADER
    {"svg", ext_svg},
 #endif
@@ -181,14 +191,22 @@ __imlib_ProduceLoader(const char *file)
      }
 
    l = malloc(sizeof(ImlibLoader));
+   if (!l)
+      goto bail;
 
    l->handle = dlopen(file, RTLD_NOW | RTLD_LOCAL);
    if (!l->handle)
-      goto bail;
+     {
+        DP("%s: dlerror: %s\n", __func__, dlerror());
+        goto bail;
+     }
 
    l->module = m = dlsym(l->handle, "loader");
    if (!l->module)
-      goto bail;
+     {
+        DP("%s: dlerror: %s\n", __func__, dlerror());
+        goto bail;
+     }
 
    /* Check version and that we have at least load() or save() */
    if (m->ldr_version != IMLIB2_LOADER_VERSION ||
@@ -204,6 +222,9 @@ __imlib_ProduceLoader(const char *file)
  found:
    l->next = loaders;
    loaders = l;
+
+   if (l->module->inex)
+      l->module->inex(1);
 
    return l;
 
@@ -223,6 +244,9 @@ __imlib_ConsumeLoader(ImlibLoader * l)
         loaders_unloaded = l;
         return;
      }
+
+   if (l->module->inex)
+      l->module->inex(0);
 
    if (l->handle)
       dlclose(l->handle);

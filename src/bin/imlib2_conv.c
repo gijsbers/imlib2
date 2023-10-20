@@ -8,10 +8,13 @@
 #endif
 #include <Imlib2.h>
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "prog_util.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -80,8 +83,16 @@ main(int argc, char **argv)
    const char         *fin, *fout;
    char               *dot;
    Imlib_Image         im;
+   int                 cnt, save_cnt;
+   bool                show_time;
+   unsigned int        t0;
+   double              dt;
 
-   while ((opt = getopt(argc, argv, "hi:j:")) != -1)
+   show_time = false;
+   save_cnt = 1;
+   t0 = 0;
+
+   while ((opt = getopt(argc, argv, "hi:j:n:")) != -1)
      {
         switch (opt)
           {
@@ -92,6 +103,10 @@ main(int argc, char **argv)
           case 'i':
           case 'j':
              break;             /* Ignore this time around */
+          case 'n':
+             save_cnt = atoi(optarg);
+             show_time = true;
+             break;
           }
      }
 
@@ -117,7 +132,7 @@ main(int argc, char **argv)
 
    /* Re-parse options to attach parameters to be used by savers */
    optind = 1;
-   while ((opt = getopt(argc, argv, "hi:j:")) != -1)
+   while ((opt = getopt(argc, argv, "hi:j:n:")) != -1)
      {
         switch (opt)
           {
@@ -139,10 +154,22 @@ main(int argc, char **argv)
    else
       imlib_image_set_format("jpg");
 
-   imlib_save_image_with_errno_return(fout, &err);
-   if (err)
-      fprintf(stderr, "*** Error %d:'%s' saving image: '%s'\n",
-              err, imlib_strerror(err), fout);
+   if (show_time)
+      t0 = time_us();
+
+   for (cnt = 0; cnt < save_cnt; cnt++)
+     {
+        imlib_save_image_with_errno_return(fout, &err);
+        if (err)
+           fprintf(stderr, "*** Error %d:'%s' saving image: '%s'\n",
+                   err, imlib_strerror(err), fout);
+     }
+
+   if (show_time)
+     {
+        dt = 1e-3 * (time_us() - t0);
+        printf("Elapsed time: %.3f ms (%.3f ms per save)\n", dt, dt / save_cnt);
+     }
 
 #if DEBUG
    imlib_free_image_and_decache();

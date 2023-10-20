@@ -70,7 +70,7 @@ struct _ImlibImage {
 
    char               *file;
    char               *key;
-   time_t              moddate;
+   uint64_t            moddate;
    unsigned int        flags;
    int                 references;
    char               *format;
@@ -136,6 +136,7 @@ void                __imlib_FreeAllTags(ImlibImage * im);
 ImlibImageFrame    *__imlib_GetFrame(ImlibImage * im);
 
 void                __imlib_SetCacheSize(int size);
+int                 __imlib_DecacheFile(const char *file);
 int                 __imlib_GetCacheSize(void);
 int                 __imlib_CurrentCacheSize(void);
 

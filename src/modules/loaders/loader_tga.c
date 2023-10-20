@@ -32,7 +32,7 @@ static void         tgaflip(uint32_t * in, int w, int h, int fliph, int flipv);
 #define TGA_DESC_HORIZONTAL 0x10
 #define TGA_DESC_VERTICAL   0x20
 
-#define TGA_SIGNATURE "TRUEVISION-XFILE"
+static const char   tga_signature[18] = "TRUEVISION-XFILE.";
 
 typedef struct {
    unsigned char       idLength;
@@ -49,12 +49,10 @@ typedef struct {
    unsigned char       descriptor;
 } tga_header;
 
-typedef struct __PACKED__ {
-   unsigned int        extensionAreaOffset;
-   unsigned int        developerDirectoryOffset;
-   char                signature[16];
-   char                dot;
-   char                null;
+typedef struct {
+   unsigned char       extensionAreaOffset[4];
+   unsigned char       developerDirectoryOffset[4];
+   char                signature[18];
 } tga_footer;
 
 /* Load up a TGA file
@@ -95,10 +93,10 @@ _load(ImlibImage * im, int load_data)
    if (im->fi->fsize > (int)(sizeof(tga_footer)))
      {
         footer =
-           PCAST(const tga_footer *, fptr + im->fi->fsize - sizeof(tga_footer));
+           (const tga_footer *)(fptr + im->fi->fsize - sizeof(tga_footer));
 
         /* check the footer to see if we have a v2.0 TGA file */
-        footer_present = memcmp(footer->signature, TGA_SIGNATURE,
+        footer_present = memcmp(footer->signature, tga_signature,
                                 sizeof(footer->signature)) == 0;
      }
    else

@@ -69,7 +69,26 @@ __imlib_printf(const char *pfx, const char *fmt, ...)
         fmt = fmtx;
      }
    vfprintf(opt_fout, fmt, args);
+
    va_end(args);
 }
 
 #endif /* IMLIB2_DEBUG */
+
+__EXPORT__ void
+__imlib_perror(const char *pfx, const char *fmt, ...)
+{
+   char                fmtx[1024];
+   va_list             args;
+
+   va_start(args, fmt);
+
+   if (pfx)
+     {
+        snprintf(fmtx, sizeof(fmtx), "ERROR: %-4s: %s", pfx, fmt);
+        fmt = fmtx;
+     }
+   vfprintf(stderr, fmt, args);
+
+   va_end(args);
+}

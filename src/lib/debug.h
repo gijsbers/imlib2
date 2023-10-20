@@ -33,4 +33,6 @@ unsigned int        __imlib_time_us(void);
 
 #endif /* IMLIB2_DEBUG */
 
+__PRINTF_2__ void   __imlib_perror(const char *pfx, const char *fmt, ...);
+
 #endif /* IMLIB2_DEDUG_H */

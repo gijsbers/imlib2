@@ -369,29 +369,19 @@ __imlib_RenderImage(const ImlibContextX11 * x11, ImlibImage * im,
                                     x11->vis->blue_mask, hiq, ct->palette_type);
    if (m)
       masker = __imlib_GetMaskFunction(dither_mask);
-   for (y = 0; y < dh; y += LINESIZE)
+   for (y = 0; y < dh; y += LINESIZE, h -= LINESIZE)
      {
         hh = LINESIZE;
         if (h < LINESIZE)
            hh = h;
+
         /* if we're scaling it */
         if (scaleinfo)
           {
              /* scale the imagedata for this LINESIZE lines chunk of image data */
-             if (antialias)
-               {
-                  if (im->has_alpha)
-                     __imlib_ScaleAARGBA(scaleinfo, buf, ((sx * dw) / sw),
-                                         ((sy * dh) / sh) + y,
-                                         0, 0, dw, hh, dw, im->w);
-                  else
-                     __imlib_ScaleAARGB(scaleinfo, buf, ((sx * dw) / sw),
-                                        ((sy * dh) / sh) + y,
-                                        0, 0, dw, hh, dw, im->w);
-               }
-             else
-                __imlib_ScaleSampleRGBA(scaleinfo, buf, ((sx * dw) / sw),
-                                        ((sy * dh) / sh) + y, 0, 0, dw, hh, dw);
+             __imlib_Scale(scaleinfo, antialias, im->has_alpha,
+                           im->data, buf, (sx * dw) / sw,
+                           ((sy * dh) / sh) + y, 0, 0, dw, hh, dw, im->w);
              jump = 0;
              pointer = buf;
              if (cmod)
@@ -424,6 +414,7 @@ __imlib_RenderImage(const ImlibContextX11 * x11, ImlibImage * im,
                   pointer = im->data + ((y + sy) * im->w) + sx;
                }
           }
+
         /* if we have a back buffer - we're blending to the bg */
         if (back)
           {
@@ -431,6 +422,7 @@ __imlib_RenderImage(const ImlibContextX11 * x11, ImlibImage * im,
              pointer = back + (y * dw);
              jump = 0;
           }
+
         /* once scaled... convert chunk to bit depth into XImage bufer */
         if (rgbaer)
            rgbaer(pointer, jump,
@@ -443,19 +435,21 @@ __imlib_RenderImage(const ImlibContextX11 * x11, ImlibImage * im,
            masker(pointer, jump,
                   ((uint8_t *) mxim->data) + (y * (mxim->bytes_per_line)),
                   mxim->bytes_per_line, dw, hh, dx, dy + y, mat);
-        h -= LINESIZE;
      }
+
    /* free up our buffers and poit tables */
    free(buf);
    if (scaleinfo)
       __imlib_FreeScaleInfo(scaleinfo);
    free(back);
+
    /* if we changed diplays or depth since last time... free old gc */
    if ((gc) && ((last_depth != x11->depth) || (disp != x11->dpy)))
      {
         XFreeGC(disp, gc);
         gc = 0;
      }
+
    /* if we didn't have a gc... create it */
    if (!gc)
      {
@@ -464,6 +458,7 @@ __imlib_RenderImage(const ImlibContextX11 * x11, ImlibImage * im,
         gcv.graphics_exposures = False;
         gc = XCreateGC(x11->dpy, w, GCGraphicsExposures, &gcv);
      }
+
    if (m)
      {
         /* if we changed diplays since last time... free old gc */
@@ -485,6 +480,7 @@ __imlib_RenderImage(const ImlibContextX11 * x11, ImlibImage * im,
         else
            XPutImage(x11->dpy, m, gcm, mxim, 0, 0, dx, dy, dw, dh);
      }
+
    /* write the image */
    if (shm)
       /* write shm XImage */
@@ -492,6 +488,7 @@ __imlib_RenderImage(const ImlibContextX11 * x11, ImlibImage * im,
    /* write regular XImage */
    else
       XPutImage(x11->dpy, w, gc, xim, 0, 0, dx, dy, dw, dh);
+
    /* free the XImage and put onto our free list */
    /* wait for the write to be done */
    if (shm)
