@@ -208,14 +208,22 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                 if (ncols > 256)
                    ncols = 256;
                 for (i = 0; i < ncols; i++)
-                   fread(&rgbQuads[i], 3, 1, f);
+                   if (fread(&rgbQuads[i], 3, 1, f) != 1)
+                     {
+                        fclose(f);
+                        return 0;
+                     }
              }
            else
              {
                 ncols /= 4;
                 if (ncols > 256)
                    ncols = 256;
-                fread(rgbQuads, 4, ncols, f);
+                if (fread(rgbQuads, 4, ncols, f) != ncols)
+                  {
+                     fclose(f);
+                     return 0;
+                  }
              }
         }
       else if (bitcount == 16 || bitcount == 32)
@@ -293,12 +301,18 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         im->data = malloc(w * h * sizeof(DATA32));
         if (!im->data)
           {
-             fclose(f);
              free(buffer);
+             fclose(f);
              return 0;
           }
 
-        fread(buffer, imgsize, 1, f);
+        if (fread(buffer, imgsize, 1, f) != 1)
+          {
+             free(im->data);
+             free(buffer);
+             fclose(f);
+             return 0;
+          }
         fclose(f);
         buffer_ptr = buffer;
         buffer_end = buffer + imgsize;
@@ -849,8 +863,8 @@ char
 save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
    FILE               *f;
-   Imlib_Color         pixel_color;
    int                 i, j, pad;
+   DATA32              pixel;
 
    if (!im->data)
       return 0;
@@ -885,10 +899,10 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
      {
         for (j = 0; j < im->w; j++)
           {
-             imlib_image_query_pixel(j, im->h - i - 1, &pixel_color);
-             WriteleByte(f, pixel_color.blue);
-             WriteleByte(f, pixel_color.green);
-             WriteleByte(f, pixel_color.red);
+             pixel = im->data[im->w * (im->h - i - 1) + j];
+             WriteleByte(f, pixel & 0xff);
+             WriteleByte(f, (pixel >> 8) & 0xff);
+             WriteleByte(f, (pixel >> 16) & 0xff);
           }
         for (j = 0; j < pad; j++)
            WriteleByte(f, 0);

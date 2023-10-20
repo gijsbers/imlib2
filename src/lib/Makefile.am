@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS     = 1.4 foreign
 MAINTAINERCLEANFILES = Makefile.in
-AM_CFLAGS            = $(CWARNFLAGS)
+AM_CFLAGS            = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY)
 AM_CPPFLAGS          = -DPACKAGE_LIB_DIR=\"$(libdir)\" \
                        -I$(top_builddir) \
                        $(X_CFLAGS) \
@@ -39,8 +39,6 @@ font_draw.c \
 font_load.c \
 font_main.c \
 font_query.c \
-format.c \
-format.h \
 grab.c \
 grab.h \
 grad.c \
@@ -86,7 +84,10 @@ AMD64_OBJS = $(AMD64_SRCS:.S=.lo)
 
 EXTRA_DIST = $(MMX_SRCS) $(AMD64_SRCS) asm_loadimmq.S
 
-MY_LIBS = -lXext -lX11 $(FREETYPE_LIBS) $(DLOPEN_LIBS) -lm
+MY_LIBS = $(FREETYPE_LIBS) $(DLOPEN_LIBS) -lm
+if BUILD_X11
+MY_LIBS += -lXext -lX11
+endif
 
 if BUILD_MMX
 libImlib2_la_LIBADD       = $(MMX_OBJS) $(MY_LIBS)

@@ -1,50 +1,46 @@
 #include "config.h"
+
+#include <math.h>
+#include <string.h>
+#include <stdarg.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #ifdef BUILD_X11
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/shape.h>
 #else
+#ifndef X_DISPLAY_MISSING
 #define X_DISPLAY_MISSING
 #endif
-#include <string.h>
-#include <stdarg.h>
-#include "common.h"
-#include "colormod.h"
-#include "image.h"
-#include "scale.h"
+#endif
+
+#include "Imlib2.h"
 #include "blend.h"
+#include "colormod.h"
+#include "color_helpers.h"
+#include "common.h"
+#include "dynamic_filters.h"
+#include "file.h"
+#include "filter.h"
+#include "font.h"
+#include "grad.h"
+#include "image.h"
+#include "rgbadraw.h"
+#include "rotate.h"
+#include "scale.h"
+#include "script.h"
 #include "span.h"
+#include "updates.h"
 #ifdef BUILD_X11
-#include "context.h"
 #include "color.h"
+#include "context.h"
+#include "draw.h"
 #include "grab.h"
 #include "rend.h"
 #include "rgba.h"
 #include "ximage.h"
-#include "draw.h"
 #endif
-#include "file.h"
-#include "updates.h"
-#include "rgbadraw.h"
-#include "Imlib2.h"
-#include <ft2build.h>
-#include FT_FREETYPE_H
-/*#ifdef HAVE_FREETYPE1_FREETYPE_FREETYPE_H
-#include <freetype1/freetype/freetype.h>
-#elif defined(HAVE_FREETYPE_FREETYPE_H)
-#include <freetype/freetype.h>
-#else
-#include <freetype.h>
-#endif
-*/
-#include "font.h"
-#include "grad.h"
-#include "rotate.h"
-#include "filter.h"
-#include "dynamic_filters.h"
-#include "script.h"
-#include <math.h>
-#include "color_helpers.h"
 
 /* convenience macros */
 #define   CAST_IMAGE(im, image) (im) = (ImlibImage *)(image)
@@ -3000,7 +2996,7 @@ imlib_image_tile(void)
 EAPI                Imlib_Font
 imlib_load_font(const char *font_name)
 {
-   return imlib_font_load_joined(font_name);
+   return __imlib_font_load_joined(font_name);
 }
 
 /**
@@ -3012,7 +3008,7 @@ imlib_free_font(void)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_free_font", "font", ctx->font);
    imlib_remove_font_from_fallback_chain(ctx->font);
-   imlib_font_free(ctx->font);
+   __imlib_font_free(ctx->font);
    ctx->font = NULL;
 }
 
@@ -3039,7 +3035,7 @@ imlib_insert_font_into_fallback_chain(Imlib_Font font, Imlib_Font fallback_font)
                               "font", font, 1);
    CHECK_PARAM_POINTER_RETURN("imlib_insert_font_into_fallback_chain",
                               "fallback_font", fallback_font, 1);
-   return imlib_font_insert_into_fallback_chain_imp(font, fallback_font);
+   return __imlib_font_insert_into_fallback_chain_imp(font, fallback_font);
 }
 
 /**
@@ -3057,7 +3053,7 @@ imlib_remove_font_from_fallback_chain(Imlib_Font fallback_font)
 {
    CHECK_PARAM_POINTER("imlib_remove_font_from_fallback_chain",
                        "fallback_font", fallback_font);
-   imlib_font_remove_from_fallback_chain_imp(fallback_font);
+   __imlib_font_remove_from_fallback_chain_imp(fallback_font);
 }
 
 /**
@@ -3142,14 +3138,14 @@ imlib_text_draw_with_return_metrics(int x, int y, const char *text,
    if (ctx->direction == IMLIB_TEXT_TO_ANGLE && ctx->angle == 0.0)
       dir = IMLIB_TEXT_TO_RIGHT;
 
-   imlib_render_str(im, fn, x, y, text, (DATA8) ctx->color.red,
-                    (DATA8) ctx->color.green, (DATA8) ctx->color.blue,
-                    (DATA8) ctx->color.alpha, (char)dir,
-                    ctx->angle, width_return, height_return, 0,
-                    horizontal_advance_return, vertical_advance_return,
-                    ctx->operation,
-                    ctx->cliprect.x, ctx->cliprect.y,
-                    ctx->cliprect.w, ctx->cliprect.h);
+   __imlib_render_str(im, fn, x, y, text, (DATA8) ctx->color.red,
+                      (DATA8) ctx->color.green, (DATA8) ctx->color.blue,
+                      (DATA8) ctx->color.alpha, (char)dir,
+                      ctx->angle, width_return, height_return, 0,
+                      horizontal_advance_return, vertical_advance_return,
+                      ctx->operation,
+                      ctx->cliprect.x, ctx->cliprect.y,
+                      ctx->cliprect.w, ctx->cliprect.h);
 }
 
 /**
@@ -3176,7 +3172,7 @@ imlib_get_text_size(const char *text, int *width_return, int *height_return)
    if (ctx->direction == IMLIB_TEXT_TO_ANGLE && ctx->angle == 0.0)
       dir = IMLIB_TEXT_TO_RIGHT;
 
-   imlib_font_query_size(fn, text, &w, &h);
+   __imlib_font_query_size(fn, text, &w, &h);
 
    switch (dir)
      {
@@ -3275,7 +3271,7 @@ imlib_get_text_advance(const char *text, int *horizontal_advance_return,
    CHECK_PARAM_POINTER("imlib_get_text_advance", "font", ctx->font);
    CHECK_PARAM_POINTER("imlib_get_text_advance", "text", text);
    fn = (ImlibFont *) ctx->font;
-   imlib_font_query_advance(fn, text, &w, &h);
+   __imlib_font_query_advance(fn, text, &w, &h);
    if (horizontal_advance_return)
       *horizontal_advance_return = w;
    if (vertical_advance_return)
@@ -3299,7 +3295,7 @@ imlib_get_text_inset(const char *text)
    CHECK_PARAM_POINTER_RETURN("imlib_get_text_advance", "font", ctx->font, 0);
    CHECK_PARAM_POINTER_RETURN("imlib_get_text_advance", "text", text, 0);
    fn = (ImlibFont *) ctx->font;
-   return imlib_font_query_inset(fn, text);
+   return __imlib_font_query_inset(fn, text);
 }
 
 /**
@@ -3313,8 +3309,8 @@ imlib_add_path_to_font_path(const char *path)
 {
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_add_path_to_font_path", "path", path);
-   if (!imlib_font_path_exists(path))
-      imlib_font_add_font_path(path);
+   if (!__imlib_font_path_exists(path))
+      __imlib_font_add_font_path(path);
 }
 
 /**
@@ -3327,7 +3323,7 @@ imlib_remove_path_from_font_path(const char *path)
 {
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_remove_path_from_font_path", "path", path);
-   imlib_font_del_font_path(path);
+   __imlib_font_del_font_path(path);
 }
 
 /**
@@ -3348,7 +3344,7 @@ imlib_list_font_path(int *number_return)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_list_font_path", "number_return",
                               number_return, NULL);
-   return imlib_font_list_font_path(number_return);
+   return __imlib_font_list_font_path(number_return);
 }
 
 /**
@@ -3414,7 +3410,7 @@ imlib_text_get_index_and_location(const char *text, int x, int y,
         return -1;
      }
 
-   cp = imlib_font_query_text_at_pos(fn, text, xx, yy, &cx, &cy, &cw, &ch);
+   cp = __imlib_font_query_text_at_pos(fn, text, xx, yy, &cx, &cy, &cw, &ch);
 
    switch (dir)
      {
@@ -3496,7 +3492,7 @@ imlib_text_get_location_at_index(const char *text, int index,
    CHECK_PARAM_POINTER("imlib_text_get_index_and_location", "text", text);
    fn = (ImlibFont *) ctx->font;
 
-   imlib_font_query_char_coords(fn, text, index, &cx, &cy, &cw, &ch);
+   __imlib_font_query_char_coords(fn, text, index, &cx, &cy, &cw, &ch);
 
    imlib_get_text_size(text, &w, &h);
 
@@ -3567,7 +3563,7 @@ imlib_list_fonts(int *number_return)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_list_fonts", "number_return",
                               number_return, NULL);
-   return imlib_font_list_fonts(number_return);
+   return __imlib_font_list_fonts(number_return);
 }
 
 /**
@@ -3593,7 +3589,7 @@ EAPI int
 imlib_get_font_cache_size(void)
 {
    CHECK_CONTEXT(ctx);
-   return imlib_font_cache_get();
+   return __imlib_font_cache_get();
 }
 
 /**
@@ -3608,7 +3604,7 @@ EAPI void
 imlib_set_font_cache_size(int bytes)
 {
    CHECK_CONTEXT(ctx);
-   imlib_font_cache_set(bytes);
+   __imlib_font_cache_set(bytes);
 }
 
 /**
@@ -3619,7 +3615,7 @@ EAPI void
 imlib_flush_font_cache(void)
 {
    CHECK_CONTEXT(ctx);
-   imlib_font_flush();
+   __imlib_font_flush();
 }
 
 /**
@@ -3633,7 +3629,7 @@ imlib_get_font_ascent(void)
 {
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_get_font_ascent", "font", ctx->font, 0);
-   return imlib_font_ascent_get(ctx->font);
+   return __imlib_font_ascent_get(ctx->font);
 }
 
 /**
@@ -3647,7 +3643,7 @@ imlib_get_font_descent(void)
 {
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_get_font_ascent", "font", ctx->font, 0);
-   return imlib_font_descent_get(ctx->font);
+   return __imlib_font_descent_get(ctx->font);
 }
 
 /**
@@ -3661,7 +3657,7 @@ imlib_get_maximum_font_ascent(void)
 {
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_get_font_ascent", "font", ctx->font, 0);
-   return imlib_font_max_ascent_get(ctx->font);
+   return __imlib_font_max_ascent_get(ctx->font);
 }
 
 /**
@@ -3675,7 +3671,7 @@ imlib_get_maximum_font_descent(void)
 {
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_get_font_ascent", "font", ctx->font, 0);
-   return imlib_font_max_descent_get(ctx->font);
+   return __imlib_font_max_descent_get(ctx->font);
 }
 
 /**
@@ -4607,7 +4603,8 @@ imlib_save_image(const char *filename)
    CHECK_PARAM_POINTER("imlib_save_image", "filename", filename);
    CAST_IMAGE(im, ctx->image);
    if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
+      if (!im->loader->load(im, NULL, 0, 1))
+         return;
    if (!im->data)
       return;
    prev_ctxt_image = ctx->image;
@@ -4639,7 +4636,8 @@ imlib_save_image_with_error_return(const char *filename,
                        error_return);
    CAST_IMAGE(im, ctx->image);
    if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
+      if (!im->loader->load(im, NULL, 0, 1))
+         return;
    if (!im->data)
       return;
    prev_ctxt_image = ctx->image;

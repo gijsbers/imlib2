@@ -8,7 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef X_DISPLAY_MISSING
 #define X_DISPLAY_MISSING
+#endif
 #include <Imlib2.h>
 
 #define PROG_NAME "imlib2_conv"
@@ -57,7 +59,7 @@ main(int argc, char **argv)
              char               *p, *q;
 
              /* max length of 8 for format name. seems reasonable. */
-             q = p = malloc(8);
+             q = p = malloc(9);
              memset(p, 0, 8);
              strncpy(p, dot, (strlen(dot) < 9) ? strlen(dot) : 8);
              /* Imlib2 only recognizes lowercase formats. convert it. */

@@ -1,18 +1,21 @@
 #include "common.h"
-#include <time.h>
+
+#include <ctype.h>
+#include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <string.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <ctype.h>
-#include <errno.h>
 #ifdef BUILD_X11
 #include <X11/Xlib.h>
 #endif
-#include "image.h"
-#include "file.h"
-#include "loaderpath.h"
+
 #include "Imlib2.h"
+#include "file.h"
+#include "image.h"
+#include "loaderpath.h"
 
 static ImlibImage  *images = NULL;
 
@@ -24,7 +27,7 @@ static int          cache_size = 4096 * 1024;
 
 /* attach a string key'd data and/or int value to an image that cna be */
 /* looked up later by its string key */
-void
+__EXPORT__ void
 __imlib_AttachTag(ImlibImage * im, const char *key, int val, void *data,
                   ImlibDataDestructorFunction destructor)
 {
@@ -50,7 +53,7 @@ __imlib_AttachTag(ImlibImage * im, const char *key, int val, void *data,
 }
 
 /* look up a tage by its key on the image it was attached to */
-ImlibImageTag      *
+__EXPORT__ ImlibImageTag *
 __imlib_GetTag(ImlibImage * im, const char *key)
 {
    ImlibImageTag      *t;
@@ -601,11 +604,7 @@ __imlib_ListLoaders(int *num_ret)
    /* same for system loader path */
    s = (char *)malloc(sizeof(SYS_LOADERS_PATH) + 8 + 1);
    sprintf(s, SYS_LOADERS_PATH "/loaders");
-#ifndef __EMX__
    l = __imlib_FileDir(s, &num);
-#else
-   l = __imlib_FileDir(__XOS2RedirRoot(s), &num);
-#endif
    if (num > 0)
      {
         *num_ret += num;
@@ -617,11 +616,7 @@ __imlib_ListLoaders(int *num_ret)
                                  sizeof(SYS_LOADERS_PATH) + 9 + strlen(l[i]) +
                                  1);
              sprintf(s, SYS_LOADERS_PATH "/loaders/%s", l[i]);
-#ifndef __EMX__
              list[pi + i] = strdup(s);
-#else
-             list[pi + i] = strdup(__XOS2RedirRoot(s));
-#endif
           }
         __imlib_FileFreeDirList(l, num);
      }
@@ -733,18 +728,9 @@ __imlib_RescanLoaders(void)
       return;
    /* ok - was the system loaders dir contents modified ? */
    last_scan_time = current_time;
-#ifndef __EMX__
    if (__imlib_FileIsDir(SYS_LOADERS_PATH "/loaders/"))
-#else
-   if (__imlib_FileIsDir(__XOS2RedirRoot(SYS_LOADERS_PATH "/loaders/")))
-#endif
      {
-#ifndef __EMX__
         current_time = __imlib_FileModDate(SYS_LOADERS_PATH "/loaders/");
-#else
-        current_time =
-           __imlib_FileModDate(__XOS2RedirRoot(SYS_LOADERS_PATH "/loaders/"));
-#endif
         if ((current_time > last_modified_system_time) || (!scanned))
           {
              /* yup - set the "do_reload" flag */
@@ -808,7 +794,7 @@ __imlib_LoadAllLoaders(void)
    free(list);
 }
 
-ImlibLoader        *
+__EXPORT__ ImlibLoader *
 __imlib_FindBestLoaderForFile(const char *file, int for_save)
 {
    char               *extension, *lower, *rfile;

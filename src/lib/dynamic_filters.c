@@ -1,20 +1,22 @@
 #include "common.h"
+
+#include <ctype.h>
+#include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
 #include <time.h>
-#include <string.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <ctype.h>
-#include <errno.h>
-#include "image.h"
-#include "file.h"
+#include <sys/types.h>
+
 #include "dynamic_filters.h"
-#include "script.h"
+#include "file.h"
+#include "image.h"
 #include "loaderpath.h"
+#include "script.h"
 
 static pImlibExternalFilter filters = NULL;
 static int          dyn_initialised = 0;
@@ -158,11 +160,7 @@ __imlib_ListFilters(int *num_ret)
    /* same for system loader path */
    s = (char *)malloc(sizeof(SYS_LOADERS_PATH) + 8 + 1);
    sprintf(s, SYS_LOADERS_PATH "/filters");
-#ifndef __EMX__
    l = __imlib_FileDir(s, &num);
-#else
-   l = __imlib_FileDir(__XOS2RedirRoot(s), &num);
-#endif
    if (num > 0)
      {
         *num_ret += num;
@@ -173,11 +171,7 @@ __imlib_ListFilters(int *num_ret)
                                  sizeof(SYS_LOADERS_PATH) + 9 + strlen(l[i]) +
                                  1);
              sprintf(s, SYS_LOADERS_PATH "/filters/%s", l[i]);
-#ifndef __EMX__
              list[pi + i] = strdup(s);
-#else
-             list[pi + i] = strdup(__XOS2RedirRoot(s));
-#endif
           }
         __imlib_FileFreeDirList(l, num);
      }

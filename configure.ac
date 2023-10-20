@@ -1,7 +1,7 @@
 # get rid of that stupid cache mechanism
 rm -f config.cache
 
-AC_INIT([imlib2], [1.4.6], [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2], [1.4.7], [enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -14,23 +14,16 @@ AC_C_BIGENDIAN
 AC_PROG_CC
 AM_PROG_AS
 
-dnl Set default visibility to hidden?
-AC_ARG_ENABLE([visibility-hiding],
-  [AS_HELP_STRING([--enable-visibility-hiding], [enable visibility hiding @<:@default=no@:>@])],
-  [enable_visibility_hiding=yes],
-  [enable_visibility_hiding=no]
-)
-
 AC_HEADER_STDC
 AC_C_CONST
 
 dnl Next two lines is a hack to prevent libtool checking for CXX/F77
 define([AC_LIBTOOL_LANG_CXX_CONFIG], [:])dnl
 define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
-AC_PROG_LIBTOOL
+LT_INIT
 
 VERSION_CUR=5
-VERSION_REV=6
+VERSION_REV=7
 VERSION_AGE=4
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
@@ -396,11 +389,8 @@ AM_CONDITIONAL(BUILD_ID3_LOADER, test "$id3_ok" = yes)
 AC_SUBST(ID3LIBS)
 
 
-AC_C_WARNFLAGS()
-
-if test "x$enable_visibility_hiding" = xyes ; then
-  CPPFLAGS="$CPPFLAGS -fvisibility=hidden"
-fi
+EC_C_WARNINGS()
+EC_C_VISIBILITY(yes)
 
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([

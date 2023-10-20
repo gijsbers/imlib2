@@ -51,15 +51,11 @@ xpm_parse_color(char *color, int *r, int *g, int *b)
      }
    /* look in rgb txt database */
    if (!rgb_txt)
-#ifndef __EMX__
       rgb_txt = fopen("/usr/share/X11/rgb.txt", "r");
    if (!rgb_txt)
       rgb_txt = fopen("/usr/X11R6/lib/X11/rgb.txt", "r");
    if (!rgb_txt)
       rgb_txt = fopen("/usr/openwin/lib/X11/rgb.txt", "r");
-#else
-      rgb_txt = fopen(__XOS2RedirRoot("/XFree86/lib/X11/rgb.txt"), "rt");
-#endif
    if (!rgb_txt)
       return;
    fseek(rgb_txt, 0, SEEK_SET);
@@ -129,7 +125,12 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
         xpm_parse_done();
         return 0;
      }
-   fread(s, 1, 9, f);
+   if (fread(s, 1, 9, f) != 9)
+     {
+        fclose(f);
+        xpm_parse_done();
+        return 0;
+     }
    rewind(f);
    s[9] = 0;
    if (strcmp("/* XPM */", s))

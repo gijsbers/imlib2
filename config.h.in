@@ -42,8 +42,11 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to 1 or 0, depending whether the compiler supports simple visibility
+   declarations. */
+#undef HAVE_VISIBILITY
+
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
 /* Name of package */
@@ -87,6 +90,9 @@
 
 /* Define to 1 if the X Window System is missing or not being used. */
 #undef X_DISPLAY_MISSING
+
+/* Symbol is exported */
+#undef __EXPORT__
 
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
