@@ -6,9 +6,7 @@
  * https://en.wikipedia.org/wiki/BMP_file_format
  */
 #include "loader_common.h"
-
 #include <limits.h>
-#include <string.h>
 
 #define DEBUG 0
 #if DEBUG
@@ -213,7 +211,7 @@ ico_read_icon(ico_t * ico, int ino)
 }
 
 static ico_t       *
-ico_read(FILE * fp)
+ico_read(ImlibImage * im)
 {
    ico_t              *ico;
    unsigned int        nr, i;
@@ -222,7 +220,7 @@ ico_read(FILE * fp)
    if (!ico)
       return NULL;
 
-   ico->fp = fp;
+   ico->fp = im->fp;
 
    nr = fread(&ico->idir, 1, sizeof(ico->idir), ico->fp);
    if (nr != sizeof(ico->idir))
@@ -240,7 +238,7 @@ ico_read(FILE * fp)
    if (!ico->ie)
       goto bail;
 
-   D("Loading '%s' Nicons = %d\n", filename, ico->idir.icons);
+   D("Loading '%s' Nicons = %d\n", im->real_file, ico->idir.icons);
 
    for (i = 0; i < ico->idir.icons; i++)
      {
@@ -308,13 +306,12 @@ ico_load(ico_t * ico, ImlibImage * im, int load_data)
      }
 
    /* Enable overriding selected index for debug purposes */
-   {
-      const char         *s = getenv("IMLIB2_LOADER_ICO");
-
-      ic = (s) ? atoi(s) : ic;
-      if (ic >= ico->idir.icons)
-         return 0;
-   }
+   if (im->key)
+     {
+        ic = atoi(im->key);
+        if (ic >= ico->idir.icons)
+           return 0;
+     }
 
    ie = &ico->ie[ic];
 
@@ -419,7 +416,7 @@ load2(ImlibImage * im, int load_data)
    ico_t              *ico;
    int                 ok;
 
-   ico = ico_read(im->fp);
+   ico = ico_read(im);
    if (!ico)
       return 0;
 

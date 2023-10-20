@@ -190,13 +190,10 @@ __imlib_object_list_prepend(void *in_list, void *in_item)
    if (!list)
      {
         new_l->next = NULL;
-        new_l->last = new_l;
         return new_l;
      }
    new_l->next = list;
    list->prev = new_l;
-   new_l->last = list->last;
-   list->last = NULL;
    return new_l;
 }
 
@@ -204,18 +201,18 @@ void               *
 __imlib_object_list_remove(void *in_list, void *in_item)
 {
    Imlib_Object_List  *return_l;
-   Imlib_Object_List  *list, *item;
+   Imlib_Object_List  *list = in_list;
+   Imlib_Object_List  *item = in_item;
 
    /* checkme */
-   if (!in_list)
-      return in_list;
-
-   list = in_list;
-   item = in_item;
+   if (!list)
+      return list;
    if (!item)
       return list;
+
    if (item->next)
       item->next->prev = item->prev;
+
    if (item->prev)
      {
         item->prev->next = item->next;
@@ -224,13 +221,11 @@ __imlib_object_list_remove(void *in_list, void *in_item)
    else
      {
         return_l = item->next;
-        if (return_l)
-           return_l->last = list->last;
      }
-   if (item == list->last)
-      list->last = item->prev;
+
    item->next = NULL;
    item->prev = NULL;
+
    return return_l;
 }
 
@@ -360,18 +355,16 @@ __imlib_hash_free(Imlib_Hash * hash)
 
    if (!hash)
       return;
+
    size = __imlib_hash_size(hash);
    for (i = 0; i < size; i++)
      {
-        while (hash->buckets[i])
-          {
-             Imlib_Hash_El      *el;
+        Imlib_Hash_El      *el, *el_next;
 
-             el = (Imlib_Hash_El *) hash->buckets[i];
-             if (el->key)
-                free(el->key);
-             hash->buckets[i] =
-                __imlib_object_list_remove(hash->buckets[i], el);
+        for (el = (Imlib_Hash_El *) hash->buckets[i]; el; el = el_next)
+          {
+             el_next = (Imlib_Hash_El *) el->_list_data.next;
+             free(el->key);
              free(el);
           }
      }

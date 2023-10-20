@@ -5,12 +5,6 @@
 #include "common.h"
 #include "image.h"
 
-#ifndef BUILD_X11
-#ifndef X_DISPLAY_MISSING
-#define X_DISPLAY_MISSING
-#endif
-#endif
-
 #define VAR_CHAR 1
 #define VAR_PTR  2
 

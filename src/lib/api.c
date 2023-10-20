@@ -9,10 +9,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/shape.h>
-#else
-#ifndef X_DISPLAY_MISSING
-#define X_DISPLAY_MISSING
-#endif
 #endif
 
 #include "Imlib2.h"
@@ -3677,6 +3673,7 @@ imlib_text_get_location_at_index(const char *text, int index,
 
    __imlib_font_query_char_coords(fn, text, index, &cx, &cy, &cw, &ch);
 
+   w = h = 0;
    imlib_get_text_size(text, &w, &h);
 
    switch (ctx->direction)

@@ -1894,10 +1894,6 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
              if ((dw < 1) || (dh < 1))
                 return;
           }
-        if (psx != dx)
-           sx += ((dx - psx) * ssw) / abs(ddw);
-        if (psy != dy)
-           sy += ((dy - psy) * ssh) / abs(ddh);
         if (psw != dw)
            sw = (sw * dw) / psw;
         if (psh != dh)

@@ -205,6 +205,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    ImlibImageTag      *tag;
    int                 quality = 75, compression = 3;
    int                 pass, n_passes = 1;
+   int                 has_alpha;
 
    f = fopen(im->real_file, "wb");
    if (!f)
@@ -235,7 +236,8 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
      }
 
    png_init_io(png_ptr, f);
-   if (im->flags & F_HAS_ALPHA)
+   has_alpha = IMAGE_HAS_ALPHA(im);
+   if (has_alpha)
      {
         png_set_IHDR(png_ptr, info_ptr, im->w, im->h, 8,
                      PNG_COLOR_TYPE_RGB_ALPHA, interlace,
@@ -251,7 +253,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
         png_set_IHDR(png_ptr, info_ptr, im->w, im->h, 8, PNG_COLOR_TYPE_RGB,
                      interlace, PNG_COMPRESSION_TYPE_BASE,
                      PNG_FILTER_TYPE_BASE);
-        data = malloc(im->w * 3 * sizeof(char));
+        data = malloc(im->w * 3 * sizeof(png_byte));
      }
    sig_bit.red = 8;
    sig_bit.green = 8;
@@ -309,7 +311,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 
         for (y = 0; y < im->h; y++)
           {
-             if (im->flags & F_HAS_ALPHA)
+             if (has_alpha)
                 row_ptr = (png_bytep) ptr;
              else
                {

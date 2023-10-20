@@ -1,5 +1,43 @@
 
 ***
+*** Version 1.7.2 ***
+***
+
+Kim Woelders (31):
+      Remove some unnecessary X_DISPLAY_MISSING stuff
+      rend.c: Remove some pointless lines
+      Add XBM loader
+      Add imlib2_load and /build to .gitignore
+      Remove obsolete and unused AC_HEADER_STDC
+      Restore file:key functionality
+      ICO loader: Fix (disabled) debug stuff
+      ICO loader: Enable specifying ico image index by key
+      Remove unused Context functions
+      context.c: Fix potential segv
+      LBM loader: Fix handling of missing RLE data
+      Fix clang-analyzer warnings - bin (trivial)
+      Fix clang-analyzer warnings - loaders (trivial)
+      Fix clang-analyzer warnings - loaders (suppress bogus)
+      Fix clang-analyzer warnings - lib (mostly trivial)
+      Fix clang-analyzer warnings - lib (less trivial)
+      autofoo: Move more to pkg-config
+      TIFF loader: Drop use of libtiff defined types deprecated in libtiff-4.3.0
+      TGA loader: Fix loading small images without footer
+      Spec file: Add git tag to rpm file name (if built from git checkout)
+      Cleanups: while->for loops (loaders list)
+      Cleanups: while->for loops (context list)
+      Cleanups: while->for loops (im->tags list)
+      Cleanups: while->for loops (images list)
+      Cleanups: while->for loops (pixmaps list)
+      Drop unused Imlib_Object_List:last
+      Add feature to build with ASAN (--enable-gcc-asan)
+      Correct (disabled) debug printouts
+      Loaders: Remove unnecessary headers
+      WEBP saver: Use fopen() etc. like all other savers
+      1.7.2
+
+
+***
 *** Version 1.7.1 ***
 ***
 

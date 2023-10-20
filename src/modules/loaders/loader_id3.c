@@ -1,7 +1,4 @@
 #include "loader_common.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <errno.h>
 #include <limits.h>
 #include <id3tag.h>
@@ -590,8 +587,6 @@ load2(ImlibImage * im, int load_data)
           }
      }
 #endif
-
-   res = LOAD_SUCCESS;
 
  fail_context:
    if (opt.ctx)

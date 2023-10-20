@@ -94,7 +94,7 @@ __imlib_MapRange(ImlibRange * rg, int len)
    for (p = rg->color; p; p = p->next)
       ll += p->distance;
    map = malloc(len * sizeof(DATA32));
-   pmap = malloc(ll * sizeof(DATA32));
+   pmap = calloc(ll, sizeof(DATA32));
    i = 0;
    for (p = rg->color; p; p = p->next)
      {
@@ -166,7 +166,7 @@ __imlib_MapHsvaRange(ImlibRange * rg, int len)
    for (p = rg->color; p; p = p->next)
       ll += p->distance;
    map = malloc(len * sizeof(DATA32));
-   pmap = malloc(ll * sizeof(DATA32));
+   pmap = calloc(ll, sizeof(DATA32));
    i = 0;
    for (p = rg->color; p; p = p->next)
      {
@@ -286,15 +286,23 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
         yoff += (y - py);
      }
 
+   vlut = NULL;
+   map = NULL;
+
    hlut = malloc(sizeof(int) * ww);
+   if (!hlut)
+      goto quit;
    vlut = malloc(sizeof(int) * hh);
+   if (!vlut)
+      goto quit;
+
    if (ww > hh)
       len = ww * 16;
    else
       len = hh * 16;
    map = __imlib_MapRange(rg, len);
    if (!map)
-      return;
+      goto quit;
 
    xx = (int)(32 * sin(((angle + 180) * 2 * 3.141592654) / 360));
    yy = -(int)(32 * cos(((angle + 180) * 2 * 3.141592654) / 360));
@@ -423,6 +431,7 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
         break;
      }
 
+ quit:
    free(vlut);
    free(hlut);
    free(map);
@@ -479,15 +488,23 @@ __imlib_DrawHsvaGradient(ImlibImage * im, int x, int y, int w, int h,
         yoff += (y - py);
      }
 
+   vlut = NULL;
+   map = NULL;
+
    hlut = malloc(sizeof(int) * ww);
+   if (!hlut)
+      goto quit;
    vlut = malloc(sizeof(int) * hh);
+   if (!vlut)
+      goto quit;
+
    if (ww > hh)
       len = ww * 16;
    else
       len = hh * 16;
    map = __imlib_MapHsvaRange(rg, len);
    if (!map)
-      return;
+      goto quit;
 
    xx = (int)(32 * sin(((angle + 180) * 2 * 3.141592654) / 360));
    yy = -(int)(32 * cos(((angle + 180) * 2 * 3.141592654) / 360));
@@ -616,6 +633,7 @@ __imlib_DrawHsvaGradient(ImlibImage * im, int x, int y, int w, int h,
         break;
      }
 
+ quit:
    free(vlut);
    free(hlut);
    free(map);

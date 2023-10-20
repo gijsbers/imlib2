@@ -92,8 +92,6 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    if (!f)
       return LOAD_FAIL;
 
-   rc = LOAD_FAIL;
-
    if (im->flags & F_HAS_ALPHA)
       alpha = 1;
 

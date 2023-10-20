@@ -54,7 +54,7 @@ __imlib_CalcYPoints(DATA32 * src, int sw, int sh, int dh, int b1, int b2)
    if (dh > (b1 + b2))
      {
         val = (b1 << 16);
-        inc = ((sh - b1 - b2) << 16) / (dh - b1 - b2);
+        inc = ((sh - b1 - b2) << 16) / (dh - (b1 + b2));
         for (i = 0; i < (dh - b1 - b2); i++)
           {
              p[j++] = src + ((val >> 16) * sw);
@@ -112,7 +112,7 @@ __imlib_CalcXPoints(int sw, int dw, int b1, int b2)
    if (dw > (b1 + b2))
      {
         val = (b1 << 16);
-        inc = ((sw - b1 - b2) << 16) / (dw - b1 - b2);
+        inc = ((sw - b1 - b2) << 16) / (dw - (b1 + b2));
         for (i = 0; i < (dw - b1 - b2); i++)
           {
              p[j++] = (val >> 16);
@@ -193,8 +193,8 @@ __imlib_CalcApoints(int s, int d, int b1, int b2, int up)
           {
              int                 ss, dd, ap, Cp;
 
-             ss = s - b1 - b2;
-             dd = d - b1 - b2;
+             ss = s - (b1 + b2);
+             dd = d - (b1 + b2);
              val = 0;
              inc = (ss << 16) / dd;
              Cp = ((dd << 14) / ss) + 1;
@@ -868,7 +868,6 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                   if (j > 0)
                     {
                        pix = sptr;
-                       sptr += sow;
                        rx = (R_VAL(pix) * xap) >> 9;
                        gx = (G_VAL(pix) * xap) >> 9;
                        bx = (B_VAL(pix) * xap) >> 9;
@@ -1454,7 +1453,6 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                   if (j > 0)
                     {
                        pix = sptr;
-                       sptr += sow;
                        rx = (R_VAL(pix) * xap) >> 9;
                        gx = (G_VAL(pix) * xap) >> 9;
                        bx = (B_VAL(pix) * xap) >> 9;

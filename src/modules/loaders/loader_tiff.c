@@ -3,55 +3,28 @@
 
 #include "loader_common.h"
 #include <setjmp.h>
-#include <stdarg.h>
+#include <stdint.h>
 #include <tiffio.h>
 
 /* This is a wrapper data structure for TIFFRGBAImage, so that data can be */
 /* passed into the callbacks. More elegent, I think, than a bunch of globals */
 
-struct TIFFRGBAImage_Extra {
+typedef struct {
    TIFFRGBAImage       rgba;
    tileContigRoutine   put_contig;
    tileSeparateRoutine put_separate;
    ImlibImage         *image;
-};
-
-typedef struct TIFFRGBAImage_Extra TIFFRGBAImage_Extra;
-
-static void         raster(TIFFRGBAImage_Extra * img, uint32 * raster, uint32 x,
-                           uint32 y, uint32 w, uint32 h);
-
-static void
-put_contig_and_raster(TIFFRGBAImage * img, uint32 * rast,
-                      uint32 x, uint32 y, uint32 w, uint32 h,
-                      int32 fromskew, int32 toskew, unsigned char *cp)
-{
-   (*(((TIFFRGBAImage_Extra *) img)->put_contig)) (img, rast, x, y, w, h,
-                                                   fromskew, toskew, cp);
-   raster((TIFFRGBAImage_Extra *) img, rast, x, y, w, h);
-}
-
-static void
-put_separate_and_raster(TIFFRGBAImage * img, uint32 * rast,
-                        uint32 x, uint32 y, uint32 w, uint32 h,
-                        int32 fromskew, int32 toskew,
-                        unsigned char *r, unsigned char *g, unsigned char *b,
-                        unsigned char *a)
-{
-   (*(((TIFFRGBAImage_Extra *) img)->put_separate))
-      (img, rast, x, y, w, h, fromskew, toskew, r, g, b, a);
-   raster((TIFFRGBAImage_Extra *) img, rast, x, y, w, h);
-}
+} TIFFRGBAImage_Extra;
 
 #define PIM(_x, _y) buffer + ((_x) + image_width * (_y))
 
 static void
-raster(TIFFRGBAImage_Extra * img, uint32 * rast,
-       uint32 x, uint32 y, uint32 w, uint32 h)
+raster(TIFFRGBAImage_Extra * img, uint32_t * rast,
+       uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
-   uint32              image_width, image_height;
-   uint32             *pixel, pixel_value;
-   uint32              i, j, k;
+   uint32_t            image_width, image_height;
+   uint32_t           *pixel, pixel_value;
+   uint32_t            i, j, k;
    DATA32             *buffer_pixel, *buffer = img->image->data;
    int                 alpha_premult;
    int                 a, r, g, b;
@@ -69,8 +42,8 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
    /* I don't understand why, but that seems to be what's going on. */
    /* libtiff needs better docs! */
 
-   if (img->rgba.alpha == EXTRASAMPLE_UNASSALPHA)
-      alpha_premult = 1;
+   alpha_premult = img->rgba.alpha == EXTRASAMPLE_UNASSALPHA;
+
    switch (img->rgba.orientation)
      {
      default:
@@ -237,22 +210,44 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
      }
 }
 
+static void
+put_contig_and_raster(TIFFRGBAImage * img, uint32_t * rast,
+                      uint32_t x, uint32_t y, uint32_t w, uint32_t h,
+                      int32_t fromskew, int32_t toskew, unsigned char *cp)
+{
+   ((TIFFRGBAImage_Extra *) img)->put_contig(img, rast, x, y, w, h,
+                                             fromskew, toskew, cp);
+   raster((TIFFRGBAImage_Extra *) img, rast, x, y, w, h);
+}
+
+static void
+put_separate_and_raster(TIFFRGBAImage * img, uint32_t * rast,
+                        uint32_t x, uint32_t y, uint32_t w, uint32_t h,
+                        int32_t fromskew, int32_t toskew,
+                        unsigned char *r, unsigned char *g, unsigned char *b,
+                        unsigned char *a)
+{
+   ((TIFFRGBAImage_Extra *) img)->put_separate(img, rast, x, y, w, h,
+                                               fromskew, toskew, r, g, b, a);
+   raster((TIFFRGBAImage_Extra *) img, rast, x, y, w, h);
+}
+
 int
 load2(ImlibImage * im, int load_data)
 {
    int                 rc;
    TIFF               *tif = NULL;
    int                 fd;
-   uint16              magic_number;
+   uint16_t            magic_number;
    TIFFRGBAImage_Extra rgba_image;
-   uint32             *rast = NULL;
+   uint32_t           *rast = NULL;
    char                txt[1024];
 
    rc = LOAD_FAIL;
    rgba_image.image = NULL;
 
    fd = fileno(im->fp);
-   if (read(fd, &magic_number, sizeof(uint16)) != sizeof(uint16))
+   if (read(fd, &magic_number, sizeof(uint16_t)) != sizeof(uint16_t))
       goto quit;
 
    if ((magic_number != TIFF_BIGENDIAN) /* Checks if actually tiff file */
@@ -322,7 +317,7 @@ load2(ImlibImage * im, int load_data)
    if (!__imlib_AllocateData(im))
       goto quit;
 
-   rast = (uint32 *) _TIFFmalloc(sizeof(uint32) * im->w * im->h);
+   rast = _TIFFmalloc(sizeof(uint32_t) * im->w * im->h);
    if (!rast)
      {
         fprintf(stderr, "imlib2-tiffloader: Out of memory\n");
@@ -367,11 +362,11 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
    int                 rc;
    TIFF               *tif = NULL;
-   uint8              *buf = NULL;
+   uint8_t            *buf = NULL;
    DATA32              pixel, *data = im->data;
    double              alpha_factor;
    int                 x, y;
-   uint8               r, g, b, a = 0;
+   uint8_t             r, g, b, a = 0;
    int                 has_alpha = IMAGE_HAS_ALPHA(im);
    int                 i;
 
@@ -440,7 +435,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 
    if (has_alpha)
      {
-        uint16              extras[] = { EXTRASAMPLE_ASSOCALPHA };
+        uint16_t            extras[] = { EXTRASAMPLE_ASSOCALPHA };
         TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 4);
         TIFFSetField(tif, TIFFTAG_EXTRASAMPLES, 1, extras);
      }
@@ -451,7 +446,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
    TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(tif, 0));
 
-   buf = (uint8 *) _TIFFmalloc(TIFFScanlineSize(tif));
+   buf = _TIFFmalloc(TIFFScanlineSize(tif));
    if (!buf)
       goto quit;
 

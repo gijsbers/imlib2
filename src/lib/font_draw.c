@@ -97,6 +97,7 @@ __imlib_render_str(ImlibImage * im, ImlibFont * fn, int drx, int dry,
 
    ascent = __imlib_font_max_ascent_get(fn);
 
+   nx = ny = 0;
    __imlib_font_draw(im2, pixel, fn, 0, ascent, text, &nx, &ny, 0, 0, w, h);
 
    /* OK, now we have small ImlibImage with text rendered, 

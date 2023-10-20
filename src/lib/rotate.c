@@ -45,7 +45,7 @@
 /*\ One colour, alpha between one value and three zeroes \*/
 #define INTERP_A000(dest, v, f1, f2) do {	\
 	*(dest) = *(v);				\
-	A_VAL(dest) = (A_VAL(dest) *		\
+	A_VAL(dest) = (A_VAL(v) *		\
 		((f1) & _ROTATE_PREC_BITS) * ((f2) & _ROTATE_PREC_BITS)) >> (2 * _ROTATE_PREC);	\
 	} while (0)
 

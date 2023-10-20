@@ -287,8 +287,6 @@ main(int argc, char **argv)
              break;
           case ButtonRelease:
              b = ev.xbutton.button;
-             x = ev.xbutton.x;
-             y = ev.xbutton.y;
              if (b == 3)
                 zoom_mode = 0;
              if (b == 1)
@@ -300,7 +298,6 @@ main(int argc, char **argv)
              while (XCheckTypedWindowEvent(disp, win, MotionNotify, &ev))
                 ;
              x = ev.xmotion.x;
-             y = ev.xmotion.y;
              if (zoom_mode)
                {
                   int                 sx, sy, sw, sh, dx, dy, dw, dh;
@@ -410,46 +407,42 @@ main(int argc, char **argv)
              if ((errno == ENOMEM) || (errno == EINVAL) || (errno == EBADF))
                 exit(1);
           }
-        else
+        else if (count == 0)
           {
-             if ((count == 0) && (timeout))
+             int                 sx, sy, sw, sh, dx, dy, dw, dh;
+
+             if (zoom > 1.0)
                {
-                  int                 sx, sy, sw, sh, dx, dy, dw, dh;
+                  dx = 0;
+                  dy = 0;
+                  dw = window_width;
+                  dh = window_height;
 
-                  if (zoom > 1.0)
-                    {
-                       dx = 0;
-                       dy = 0;
-                       dw = window_width;
-                       dh = window_height;
-
-                       sx = zx - (zx / zoom);
-                       sy = zy - (zy / zoom);
-                       sw = image_width / zoom;
-                       sh = image_height / zoom;
-                    }
-                  else
-                    {
-                       dx = zx - (zx * zoom);
-                       dy = zy - (zy * zoom);
-                       dw = window_width * zoom;
-                       dh = window_height * zoom;
-
-                       sx = 0;
-                       sy = 0;
-                       sw = image_width;
-                       sh = image_height;
-                    }
-                  imlib_context_set_anti_alias(1);
-                  imlib_context_set_dither(1);
-                  imlib_context_set_blend(0);
-                  imlib_context_set_image(bg_im);
-                  imlib_render_image_part_on_drawable_at_size
-                     (sx, sy, sw, sh, dx, dy, dw, dh);
-                  XClearWindow(disp, win);
-                  XFlush(disp);
-                  timeout = 0;
+                  sx = zx - (zx / zoom);
+                  sy = zy - (zy / zoom);
+                  sw = image_width / zoom;
+                  sh = image_height / zoom;
                }
+             else
+               {
+                  dx = zx - (zx * zoom);
+                  dy = zy - (zy * zoom);
+                  dw = window_width * zoom;
+                  dh = window_height * zoom;
+
+                  sx = 0;
+                  sy = 0;
+                  sw = image_width;
+                  sh = image_height;
+               }
+             imlib_context_set_anti_alias(1);
+             imlib_context_set_dither(1);
+             imlib_context_set_blend(0);
+             imlib_context_set_image(bg_im);
+             imlib_render_image_part_on_drawable_at_size
+                (sx, sy, sw, sh, dx, dy, dw, dh);
+             XClearWindow(disp, win);
+             XFlush(disp);
           }
      }
 

@@ -94,7 +94,6 @@ __imlib_FlipImageDiagonal(ImlibImage * im, int direction)
    int                 x, y, w, hw, tmp;
 
    data = malloc(im->w * im->h * sizeof(DATA32));
-   from = im->data;
    w = im->h;
    im->h = im->w;
    im->w = w;
@@ -143,6 +142,7 @@ __imlib_FlipImageDiagonal(ImlibImage * im, int direction)
         hw = hw - 1;
         break;
      }
+
    from = im->data;
    for (x = im->w; --x >= 0;)
      {
@@ -253,53 +253,55 @@ __imlib_SharpenImage(ImlibImage * im, int rad)
    DATA32             *data, *p1, *p2;
    int                 a, r, g, b, x, y;
 
-   data = malloc(im->w * im->h * sizeof(DATA32));
    if (rad == 0)
       return;
-   else
+
+   data = malloc(im->w * im->h * sizeof(DATA32));
+   if (!data)
+      return;
+
+   for (y = 1; y < (im->h - 1); y++)
      {
-        for (y = 1; y < (im->h - 1); y++)
+        p1 = im->data + 1 + (y * im->w);
+        p2 = data + 1 + (y * im->w);
+        for (x = 1; x < (im->w - 1); x++)
           {
-             p1 = im->data + 1 + (y * im->w);
-             p2 = data + 1 + (y * im->w);
-             for (x = 1; x < (im->w - 1); x++)
-               {
-                  b = (int)((p1[0]) & 0xff) * 5;
-                  g = (int)((p1[0] >> 8) & 0xff) * 5;
-                  r = (int)((p1[0] >> 16) & 0xff) * 5;
-                  a = (int)((p1[0] >> 24) & 0xff) * 5;
-                  b -= (int)((p1[-1]) & 0xff);
-                  g -= (int)((p1[-1] >> 8) & 0xff);
-                  r -= (int)((p1[-1] >> 16) & 0xff);
-                  a -= (int)((p1[-1] >> 24) & 0xff);
-                  b -= (int)((p1[1]) & 0xff);
-                  g -= (int)((p1[1] >> 8) & 0xff);
-                  r -= (int)((p1[1] >> 16) & 0xff);
-                  a -= (int)((p1[1] >> 24) & 0xff);
-                  b -= (int)((p1[-im->w]) & 0xff);
-                  g -= (int)((p1[-im->w] >> 8) & 0xff);
-                  r -= (int)((p1[-im->w] >> 16) & 0xff);
-                  a -= (int)((p1[-im->w] >> 24) & 0xff);
-                  b -= (int)((p1[im->w]) & 0xff);
-                  g -= (int)((p1[im->w] >> 8) & 0xff);
-                  r -= (int)((p1[im->w] >> 16) & 0xff);
-                  a -= (int)((p1[im->w] >> 24) & 0xff);
+             b = (int)((p1[0]) & 0xff) * 5;
+             g = (int)((p1[0] >> 8) & 0xff) * 5;
+             r = (int)((p1[0] >> 16) & 0xff) * 5;
+             a = (int)((p1[0] >> 24) & 0xff) * 5;
+             b -= (int)((p1[-1]) & 0xff);
+             g -= (int)((p1[-1] >> 8) & 0xff);
+             r -= (int)((p1[-1] >> 16) & 0xff);
+             a -= (int)((p1[-1] >> 24) & 0xff);
+             b -= (int)((p1[1]) & 0xff);
+             g -= (int)((p1[1] >> 8) & 0xff);
+             r -= (int)((p1[1] >> 16) & 0xff);
+             a -= (int)((p1[1] >> 24) & 0xff);
+             b -= (int)((p1[-im->w]) & 0xff);
+             g -= (int)((p1[-im->w] >> 8) & 0xff);
+             r -= (int)((p1[-im->w] >> 16) & 0xff);
+             a -= (int)((p1[-im->w] >> 24) & 0xff);
+             b -= (int)((p1[im->w]) & 0xff);
+             g -= (int)((p1[im->w] >> 8) & 0xff);
+             r -= (int)((p1[im->w] >> 16) & 0xff);
+             a -= (int)((p1[im->w] >> 24) & 0xff);
 
-                  a = (a & ((~a) >> 16));
-                  a = ((a | ((a & 256) - ((a & 256) >> 8))));
-                  r = (r & ((~r) >> 16));
-                  r = ((r | ((r & 256) - ((r & 256) >> 8))));
-                  g = (g & ((~g) >> 16));
-                  g = ((g | ((g & 256) - ((g & 256) >> 8))));
-                  b = (b & ((~b) >> 16));
-                  b = ((b | ((b & 256) - ((b & 256) >> 8))));
+             a = (a & ((~a) >> 16));
+             a = ((a | ((a & 256) - ((a & 256) >> 8))));
+             r = (r & ((~r) >> 16));
+             r = ((r | ((r & 256) - ((r & 256) >> 8))));
+             g = (g & ((~g) >> 16));
+             g = ((g | ((g & 256) - ((g & 256) >> 8))));
+             b = (b & ((~b) >> 16));
+             b = ((b | ((b & 256) - ((b & 256) >> 8))));
 
-                  *p2 = PIXEL_ARGB(a, r, g, b);
-                  p2++;
-                  p1++;
-               }
+             *p2 = PIXEL_ARGB(a, r, g, b);
+             p2++;
+             p1++;
           }
      }
+
    __imlib_ReplaceData(im, data);
 }
 

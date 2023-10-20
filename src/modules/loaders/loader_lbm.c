@@ -189,15 +189,22 @@ bodyrow(unsigned char *p, int z, ILBM * ilbm)
         return;
      }
 
-   for (i = 0; i < z;)
+#ifdef __clang_analyzer__
+   memset(p, 0, z);
+#endif
+
+   for (i = 0; i < z; i += w)
      {
         b = ilbm->body.data[ilbm->offset++];
         while (b == 0x80 && ilbm->offset < ilbm->body.size)
            b = ilbm->body.data[ilbm->offset++];
-        if (ilbm->offset >= ilbm->body.size)
-           break;
 
-        if (b & 0x80)
+        if (ilbm->offset >= ilbm->body.size)
+          {
+             w = z - i;
+             memset(p + i, 0, w);
+          }
+        else if (b & 0x80)
           {
              w = (0x100 - b) + 1;
              if (w > z - i)
@@ -205,7 +212,6 @@ bodyrow(unsigned char *p, int z, ILBM * ilbm)
 
              b = ilbm->body.data[ilbm->offset++];
              memset(p + i, b, w);
-             i += w;
           }
         else
           {
@@ -214,13 +220,10 @@ bodyrow(unsigned char *p, int z, ILBM * ilbm)
                 w = ilbm->body.size - ilbm->offset;
              x = (w <= z - i) ? w : z - i;
              memcpy(p + i, ilbm->body.data + ilbm->offset, x);
-             i += x;
              ilbm->offset += w;
+             w = x;
           }
      }
-
-   if (i < z)
-      memset(p, 0, z - i);
 }
 
 /*------------------------------------------------------------------------------

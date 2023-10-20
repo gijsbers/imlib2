@@ -1,7 +1,4 @@
 #include "loader_common.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 static FILE        *rgb_txt = NULL;
 
@@ -111,7 +108,7 @@ xpm_cmap_lookup(const cmap_t * cmap, int nc, int cpp, const char *s)
 {
    int                 i, i1, i2, x;
 
-   i1 = i = 0;
+   i1 = 0;
    i2 = nc - 1;
    while (i1 < i2)
      {
@@ -157,7 +154,6 @@ load2(ImlibImage * im, int load_data)
 
    rewind(im->fp);
 
-   i = 0;
    j = 0;
    w = 10;
    h = 10;

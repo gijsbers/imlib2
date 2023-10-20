@@ -122,10 +122,11 @@ load2(ImlibImage * im, int load_data)
         scans = cinfo.rec_outbuf_height;
         if ((h - l) < scans)
            scans = h - l;
-        ptr = jdata.data;
 
         for (y = 0; y < scans; y++)
           {
+             ptr = line[y];
+
              switch (cinfo.out_color_space)
                {
                default:
@@ -162,11 +163,10 @@ load2(ImlibImage * im, int load_data)
         if (im->lc && __imlib_LoadProgressRows(im, l, scans))
           {
              rc = LOAD_BREAK;
-             goto done;
+             goto quit;
           }
      }
 
- done:
    jpeg_finish_decompress(&cinfo);
 
    rc = LOAD_SUCCESS;

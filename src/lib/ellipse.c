@@ -6,6 +6,18 @@
 #include "rgbadraw.h"
 #include "span.h"
 
+/* Integer divide by 2^16 rounded */
+static int
+div_round_16(int n)
+{
+   int                 nn;
+
+   nn = n >> 15;
+   nn = (nn >> 1) + (nn & 1);
+
+   return nn;
+}
+
 static void
 __imlib_Ellipse_DrawToData(int xc, int yc, int a, int b, DATA32 color,
                            DATA32 * dst, int dstw, int clx, int cly, int clw,
@@ -47,8 +59,7 @@ __imlib_Ellipse_DrawToData(int xc, int yc, int a, int b, DATA32 color,
      {
         int                 len;
 
-        y = yy >> 16;
-        y += ((yy - (y << 16)) >> 15);
+        y = div_round_16(yy);
 
         if (prev_y != y)
           {
@@ -102,8 +113,7 @@ __imlib_Ellipse_DrawToData(int xc, int yc, int a, int b, DATA32 color,
      {
         int                 len;
 
-        x = xx >> 16;
-        x += ((xx - (x << 16)) >> 15);
+        x = div_round_16(xx);
 
         if (prev_x != x)
           {
@@ -197,7 +207,7 @@ __imlib_Ellipse_DrawToData_AA(int xc, int yc, int a, int b, DATA32 color,
              bp -= dstw;
           }
 
-        A_VAL(&col1) = (yy - (y << 16)) >> 8;
+        A_VAL(&col1) = yy >> 8;
         A_VAL(&col0) = 255 - A_VAL(&col1);
 
         if (ca < 255)
@@ -273,7 +283,7 @@ __imlib_Ellipse_DrawToData_AA(int xc, int yc, int a, int b, DATA32 color,
              bp--;
           }
 
-        A_VAL(&col1) = (xx - (x << 16)) >> 8;
+        A_VAL(&col1) = xx >> 8;
         A_VAL(&col0) = 255 - A_VAL(&col1);
 
         if (ca < 255)
@@ -365,8 +375,7 @@ __imlib_Ellipse_FillToData(int xc, int yc, int a, int b, DATA32 color,
         int                 len;
         DATA32             *tpp, *bpp;
 
-        y = yy >> 16;
-        y += ((yy - (y << 16)) >> 15);
+        y = div_round_16(yy);
 
         if (prev_y != y)
           {
@@ -437,8 +446,7 @@ __imlib_Ellipse_FillToData(int xc, int yc, int a, int b, DATA32 color,
         int                 len;
         DATA32             *tpp, *bpp;
 
-        x = xx >> 16;
-        x += ((xx - (x << 16)) >> 15);
+        x = div_round_16(xx);
 
         if (prev_x != x)
           {
@@ -559,7 +567,7 @@ __imlib_Ellipse_FillToData_AA(int xc, int yc, int a, int b, DATA32 color,
                 sfunc(color, bpp, len);
           }
 
-        A_VAL(&col1) = ((yy - (y << 16)) >> 8);
+        A_VAL(&col1) = yy >> 8;
         if (ca < 255)
            MULT(A_VAL(&col1), ca, A_VAL(&col1), tmp);
 
@@ -635,7 +643,7 @@ __imlib_Ellipse_FillToData_AA(int xc, int yc, int a, int b, DATA32 color,
         if (((unsigned)by < (unsigned)clh) && (len > 0))
            sfunc(color, bpp, len);
 
-        A_VAL(&col1) = ((xx - (x << 16)) >> 8);
+        A_VAL(&col1) = xx >> 8;
         if (ca < 255)
            MULT(A_VAL(&col1), ca, A_VAL(&col1), tmp);
 

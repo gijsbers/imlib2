@@ -210,7 +210,8 @@ __imlib_FileDir(const char *dir, int *num)
         return NULL;
      }
    /* count # of entries in dir (worst case) */
-   for (dirlen = 0; (dp = readdir(dirp)); dirlen++);
+   for (dirlen = 0; readdir(dirp) != NULL; dirlen++)
+      ;
    if (!dirlen)
      {
         closedir(dirp);

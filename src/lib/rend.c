@@ -160,9 +160,6 @@ __imlib_generic_render(DATA32 * src, int jump, int w, int h, int dx, int dy,
           {
              for (x = dx; x < w; x++)
                {
-                  r = R_VAL(src);
-                  g = G_VAL(src);
-                  b = B_VAL(src);
                   val = (R_VAL(src) + G_VAL(src) + B_VAL(src)) / 12;
                   if (val > _dither_88[x & 0x3][y & 0x3])
                      val = ct->palette[1];
@@ -174,6 +171,7 @@ __imlib_generic_render(DATA32 * src, int jump, int w, int h, int dx, int dy,
           }
         return;
      }
+
    rmask = xim->red_mask;
    gmask = xim->green_mask;
    bmask = xim->blue_mask;

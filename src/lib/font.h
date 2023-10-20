@@ -15,7 +15,6 @@ typedef struct _Imlib_Hash_El Imlib_Hash_El;
 
 struct _Imlib_Object_List {
    Imlib_Object_List  *next, *prev;
-   Imlib_Object_List  *last;
 };
 
 struct _Imlib_Hash {

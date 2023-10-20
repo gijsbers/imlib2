@@ -1,8 +1,5 @@
 #include "loader_common.h"
 #include <zlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 #define OUTBUF_SIZE 16484
 

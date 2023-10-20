@@ -75,14 +75,12 @@ __imlib_ConsumeLoader(ImlibLoader * l)
 void
 __imlib_RemoveAllLoaders(void)
 {
-   ImlibLoader        *l, *il;
+   ImlibLoader        *l, *l_next;
 
-   l = loaders;
-   while (l)
+   for (l = loaders; l; l = l_next)
      {
-        il = l;
-        l = l->next;
-        __imlib_ConsumeLoader(il);
+        l_next = l->next;
+        __imlib_ConsumeLoader(l);
      }
    loaders = NULL;
 }

@@ -36,7 +36,7 @@ __imlib_CreatePixmapsForImage(Display * d, Drawable w, Visual * v, int depth,
         ip->references++;
 #ifdef DEBUG_CACHE
         fprintf(stderr,
-                "[Imlib2]  Match found in cache.  Reference count is %d, pixmap 0x%08x, mask 0x%08x\n",
+                "[Imlib2]  Match found in cache.  Reference count is %d, pixmap 0x%08lx, mask 0x%08lx\n",
                 ip->references, ip->pixmap, ip->mask);
 #endif
         return 2;
@@ -83,7 +83,7 @@ __imlib_CreatePixmapsForImage(Display * d, Drawable w, Visual * v, int depth,
    __imlib_AddImagePixmapToCache(ip);
 #ifdef DEBUG_CACHE
    fprintf(stderr,
-           "[Imlib2]  Created pixmap.  Reference count is %d, pixmap 0x%08x, mask 0x%08x\n",
+           "[Imlib2]  Created pixmap.  Reference count is %d, pixmap 0x%08lx, mask 0x%08lx\n",
            ip->references, ip->pixmap, ip->mask);
 #endif
    return 1;

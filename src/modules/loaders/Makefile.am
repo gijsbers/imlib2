@@ -1,6 +1,6 @@
 MAINTAINERCLEANFILES = Makefile.in
 
-AM_CFLAGS            = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY)
+AM_CFLAGS            = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
 AM_CPPFLAGS          = -I$(top_builddir) -I$(top_srcdir)/src/lib
 
 pkgdir               = $(libdir)/imlib2/loaders
@@ -45,6 +45,7 @@ pnm.la \
 tga.la \
 $(TIFF_L) \
 $(WEBP_L) \
+xbm.la \
 xpm.la \
 $(ZLIB_L)
 
@@ -61,8 +62,9 @@ bmp_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
 bmp_la_LIBTOOLFLAGS = --tag=disable-static
 
 bz2_la_SOURCES       = loader_bz2.c
+bz2_la_CPPFLAGS      = $(BZ2_CFLAGS) $(AM_CPPFLAGS)
 bz2_la_LDFLAGS       = -module -avoid-version
-bz2_la_LIBADD        = @BZ2LIBS@ $(top_builddir)/src/lib/libImlib2.la
+bz2_la_LIBADD        = $(BZ2_LIBS) $(top_builddir)/src/lib/libImlib2.la
 bz2_la_LIBTOOLFLAGS = --tag=disable-static
 
 ff_la_SOURCES        = loader_ff.c
@@ -81,13 +83,15 @@ ico_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
 ico_la_LIBTOOLFLAGS = --tag=disable-static
 
 id3_la_SOURCES       = loader_id3.c
+id3_la_CPPFLAGS      = $(ID3_CFLAGS) $(AM_CPPFLAGS)
 id3_la_LDFLAGS       = -module -avoid-version
-id3_la_LIBADD        = @ID3LIBS@ $(top_builddir)/src/lib/libImlib2.la
+id3_la_LIBADD        = $(ID3_LIBS) $(top_builddir)/src/lib/libImlib2.la
 id3_la_LIBTOOLFLAGS = --tag=disable-static
 
 jpeg_la_SOURCES      = loader_jpeg.c
+jpeg_la_CPPFLAGS     = $(JPEG_CFLAGS) $(AM_CPPFLAGS)
 jpeg_la_LDFLAGS      = -module -avoid-version
-jpeg_la_LIBADD       = @JPEGLIBS@ $(top_builddir)/src/lib/libImlib2.la
+jpeg_la_LIBADD       = $(JPEG_LIBS) $(top_builddir)/src/lib/libImlib2.la
 jpeg_la_LIBTOOLFLAGS = --tag=disable-static
 
 lbm_la_SOURCES       = loader_lbm.c
@@ -96,9 +100,9 @@ lbm_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
 lbm_la_LIBTOOLFLAGS = --tag=disable-static
 
 png_la_SOURCES       = loader_png.c
-png_la_CPPFLAGS      = @PNG_CFLAGS@ $(AM_CPPFLAGS)
+png_la_CPPFLAGS      = $(PNG_CFLAGS) $(AM_CPPFLAGS)
 png_la_LDFLAGS       = -module -avoid-version
-png_la_LIBADD        = @PNG_LIBS@ $(top_builddir)/src/lib/libImlib2.la
+png_la_LIBADD        = $(PNG_LIBS) $(top_builddir)/src/lib/libImlib2.la
 png_la_LIBTOOLFLAGS = --tag=disable-static
 
 pnm_la_SOURCES       = loader_pnm.c
@@ -112,15 +116,21 @@ tga_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
 tga_la_LIBTOOLFLAGS = --tag=disable-static
 
 tiff_la_SOURCES      = loader_tiff.c
+tiff_la_CPPFLAGS     = $(TIFF_CFLAGS) $(AM_CPPFLAGS)
 tiff_la_LDFLAGS      = -module -avoid-version
-tiff_la_LIBADD       = @TIFFLIBS@ $(top_builddir)/src/lib/libImlib2.la
+tiff_la_LIBADD       = $(TIFF_LIBS) $(top_builddir)/src/lib/libImlib2.la
 tiff_la_LIBTOOLFLAGS = --tag=disable-static
 
 webp_la_SOURCES       = loader_webp.c
-webp_la_CPPFLAGS      = @WEBP_CFLAGS@ $(AM_CPPFLAGS)
+webp_la_CPPFLAGS      = $(WEBP_CFLAGS) $(AM_CPPFLAGS)
 webp_la_LDFLAGS       = -module -avoid-version
-webp_la_LIBADD        = @WEBP_LIBS@ $(top_builddir)/src/lib/libImlib2.la
+webp_la_LIBADD        = $(WEBP_LIBS) $(top_builddir)/src/lib/libImlib2.la
 webp_la_LIBTOOLFLAGS = --tag=disable-static
+
+xbm_la_SOURCES       = loader_xbm.c
+xbm_la_LDFLAGS       = -module -avoid-version
+xbm_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
+xbm_la_LIBTOOLFLAGS = --tag=disable-static
 
 xpm_la_SOURCES       = loader_xpm.c
 xpm_la_LDFLAGS       = -module -avoid-version
@@ -128,6 +138,7 @@ xpm_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
 xpm_la_LIBTOOLFLAGS = --tag=disable-static
 
 zlib_la_SOURCES      = loader_zlib.c
+zlib_la_CPPFLAGS     = $(ZLIB_CFLAGS) $(AM_CPPFLAGS)
 zlib_la_LDFLAGS      = -module -avoid-version
-zlib_la_LIBADD       = @ZLIBLIBS@ $(top_builddir)/src/lib/libImlib2.la
+zlib_la_LIBADD       = $(ZLIB_LIBS) $(top_builddir)/src/lib/libImlib2.la
 zlib_la_LIBTOOLFLAGS = --tag=disable-static

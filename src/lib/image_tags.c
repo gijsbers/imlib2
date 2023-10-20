@@ -38,14 +38,11 @@ __imlib_GetTag(const ImlibImage * im, const char *key)
 {
    ImlibImageTag      *t;
 
-   t = im->tags;
-   while (t)
+   for (t = im->tags; t; t = t->next)
      {
         if (!strcmp(t->key, key))
            return t;
-        t = t->next;
      }
-   /* no tag found - return NULL */
    return NULL;
 }
 
@@ -54,24 +51,19 @@ __imlib_GetTag(const ImlibImage * im, const char *key)
 ImlibImageTag      *
 __imlib_RemoveTag(ImlibImage * im, const char *key)
 {
-   ImlibImageTag      *t, *tt;
+   ImlibImageTag      *t, *t_prev;
 
-   tt = NULL;
-   t = im->tags;
-   while (t)
+   for (t = im->tags, t_prev = NULL; t; t_prev = t, t = t->next)
      {
         if (!strcmp(t->key, key))
           {
-             if (tt)
-                tt->next = t->next;
+             if (t_prev)
+                t_prev->next = t->next;
              else
                 im->tags = t->next;
              return t;
           }
-        tt = t;
-        t = t->next;
      }
-   /* no tag found - NULL */
    return NULL;
 }
 
@@ -90,13 +82,11 @@ __imlib_FreeTag(ImlibImage * im, ImlibImageTag * t)
 void
 __imlib_FreeAllTags(ImlibImage * im)
 {
-   ImlibImageTag      *t, *tt;
+   ImlibImageTag      *t, *t_next;
 
-   t = im->tags;
-   while (t)
+   for (t = im->tags; t; t = t_next)
      {
-        tt = t;
-        t = t->next;
-        __imlib_FreeTag(im, tt);
+        t_next = t->next;
+        __imlib_FreeTag(im, t);
      }
 }

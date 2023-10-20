@@ -195,8 +195,6 @@ load2(ImlibImage * im, int load_data)
       if (fread(&bih.header_size + 1, bih.header_size - 4, 1, im->fp) != 1)
          goto quit;
 
-      w = h = 0;
-      bitcount = 0;
       comp = BI_RGB;
       amask = rmask = gmask = bmask = 0;
       ashift1 = rshift1 = gshift1 = bshift1 = 0;
@@ -218,7 +216,7 @@ load2(ImlibImage * im, int load_data)
 //         planes = SWAP_LE_16(bih.bih.planes);
            bitcount = SWAP_LE_16(bih.bih.bpp);
            comp = SWAP_LE_32(bih.bih.compression);
-           imgsize = SWAP_LE_32(bih.bih.size);  /* We don't use this */
+//         imgsize = SWAP_LE_32(bih.bih.size);  /* We don't use this */
 
            if (bih.header_size >= 40 &&
                (comp == BI_BITFIELDS || comp == BI_ALPHABITFIELDS))

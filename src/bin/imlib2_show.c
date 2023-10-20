@@ -925,7 +925,6 @@ main(int argc, char **argv)
         XSync(disp, False);
         im = imlib_create_image(w, h);
         imlib_set_cache_size(4 * 1024 * 1024);
-        i = 0;
         up = imlib_update_append_rect(up, 0, 0, w, h);
         x = -9999;
         y = -9999;

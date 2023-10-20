@@ -1,7 +1,7 @@
 Summary:	Powerful image loading and rendering library
 Name:		@PACKAGE@
 Version:	@VERSION@
-Release:	1.%(date '+%y%m%d')
+Release:	@RPM_RELEASE@
 License:	BSD
 Group:		System Environment/Libraries
 URL:		http://www.enlightenment.org

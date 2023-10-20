@@ -1,6 +1,4 @@
 #include "loader_common.h"
-
-#include <fcntl.h>
 #include <sys/stat.h>
 #include <webp/decode.h>
 #include <webp/encode.h>
@@ -121,16 +119,17 @@ load2(ImlibImage * im, int load_data)
 char
 save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
+   FILE               *f;
    int                 rc;
-   int                 encoded_fd;
    ImlibImageTag      *quality_tag;
    float               quality;
    uint8_t            *encoded_data;
-   ssize_t             encoded_size;
+   size_t              encoded_size;
 
-   encoded_fd = open(im->real_file,
-                     O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-   if (encoded_fd < 0)
+   printf("FOO\n");
+
+   f = fopen(im->real_file, "wb");
+   if (!f)
       return LOAD_FAIL;
 
    rc = LOAD_FAIL;
@@ -161,7 +160,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    encoded_size = WebPEncodeBGRA((uint8_t *) im->data, im->w, im->h,
                                  im->w * 4, quality, &encoded_data);
 
-   if (write(encoded_fd, encoded_data, encoded_size) < encoded_size)
+   if (fwrite(encoded_data, encoded_size, 1, f) != encoded_size)
       goto quit;
 
    rc = LOAD_SUCCESS;
@@ -169,7 +168,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
  quit:
    if (encoded_data)
       WebPFree(encoded_data);
-   close(encoded_fd);
+   fclose(f);
 
    return rc;
 }

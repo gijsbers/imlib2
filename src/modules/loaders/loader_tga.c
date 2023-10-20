@@ -10,11 +10,9 @@
  * header/footer structures courtesy of the GIMP Targa plugin 
  */
 #include "loader_common.h"
-#include <fcntl.h>
 #include <stdint.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include "blend.h"
 
 /* flip an inverted image - see RLE reading below */
 static void         tgaflip(DATA32 * in, int w, int h, int fliph, int flipv);
@@ -188,7 +186,7 @@ load2(ImlibImage * im, int load_data)
    if (fstat(fd, &ss) < 0)
       goto quit;
 
-   if (ss.st_size < (long)(sizeof(tga_header) + sizeof(tga_footer)) ||
+   if (ss.st_size < (long)(sizeof(tga_header)) ||
        (uintmax_t) ss.st_size > SIZE_MAX)
       goto quit;
 
@@ -198,11 +196,21 @@ load2(ImlibImage * im, int load_data)
 
    filedata = seg;
    header = (tga_header *) filedata;
-   footer = (tga_footer *) ((char *)filedata + ss.st_size - sizeof(tga_footer));
 
-   /* check the footer to see if we have a v2.0 TGA file */
-   footer_present =
-      memcmp(footer->signature, TGA_SIGNATURE, sizeof(footer->signature)) == 0;
+   if (ss.st_size > (long)(sizeof(tga_footer)))
+     {
+        footer =
+           (tga_footer *) ((char *)filedata + ss.st_size - sizeof(tga_footer));
+
+        /* check the footer to see if we have a v2.0 TGA file */
+        footer_present =
+           memcmp(footer->signature, TGA_SIGNATURE,
+                  sizeof(footer->signature)) == 0;
+     }
+   else
+     {
+        footer_present = 0;
+     }
 
    if ((size_t)ss.st_size < sizeof(tga_header) + header->idLength +
        (footer_present ? sizeof(tga_footer) : 0))
