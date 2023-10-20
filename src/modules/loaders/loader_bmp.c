@@ -165,7 +165,7 @@ load2(ImlibImage * im, int load_data)
          goto quit;
 
       size = statbuf.st_size;
-      if (size != statbuf.st_size)
+      if ((long)size != statbuf.st_size)
          goto quit;
 
       if (fread(&bfh, sizeof(bfh), 1, im->fp) != 1)

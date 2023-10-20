@@ -1,5 +1,21 @@
 
 ***
+*** Version 1.7.1 ***
+***
+
+Daniel Kolesa (1):
+      Fix big endian build
+
+Kim Woelders (6):
+      rend.c: Fix __imlib_generic_render() when jump != 0
+      grab.c: Support 30bpp display in __imlib_GrabXImageToRGBA()
+      WEBP loader: Add initial signature check
+      XPM loader: Get transparency right when doing header-only loading
+      Silence a couple of sign-compare warnings
+      1.7.1
+
+
+***
 *** Version 1.7.0 ***
 ***
 

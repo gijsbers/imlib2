@@ -234,15 +234,6 @@ load2(ImlibImage * im, int load_data)
                   if (!cmap)
                      goto quit;
 
-                  if (!load_data)
-                    {
-                       rc = LOAD_SUCCESS;
-                       goto quit;
-                    }
-
-                  ptr = __imlib_AllocateData(im);
-                  if (!ptr)
-                     goto quit;
                   pixels = w * h;
 
                   j = 0;
@@ -344,6 +335,21 @@ load2(ImlibImage * im, int load_data)
                        else
                           qsort(cmap, ncolors, sizeof(cmap_t), xpm_cmap_sort);
                        context++;
+
+                       if (transp >= 0)
+                          SET_FLAG(im->flags, F_HAS_ALPHA);
+                       else
+                          UNSET_FLAG(im->flags, F_HAS_ALPHA);
+
+                       if (!load_data)
+                         {
+                            rc = LOAD_SUCCESS;
+                            goto quit;
+                         }
+
+                       ptr = __imlib_AllocateData(im);
+                       if (!ptr)
+                          goto quit;
                     }
                }
              else
@@ -438,11 +444,6 @@ load2(ImlibImage * im, int load_data)
          * (avoid working with uninitialized data in bad xpms) */
         im->data[count] = cmap[0].pixel;
      }
-
-   if (transp >= 0)
-      SET_FLAG(im->flags, F_HAS_ALPHA);
-   else
-      UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
    rc = LOAD_SUCCESS;
 

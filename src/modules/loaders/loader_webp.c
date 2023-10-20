@@ -40,6 +40,7 @@ load2(ImlibImage * im, int load_data)
    int                 encoded_fd;
    WebPBitstreamFeatures features;
    VP8StatusCode       vp8return;
+   unsigned int        size;
 
    encoded_fd = fileno(im->fp);
    if (encoded_fd < 0)
@@ -54,7 +55,20 @@ load2(ImlibImage * im, int load_data)
    if (!encoded_data)
       goto quit;
 
-   if (read(encoded_fd, encoded_data, stats.st_size) < stats.st_size)
+   /* Check signature */
+   size = 12;
+   if (read(encoded_fd, encoded_data, size) != (long)size)
+      goto quit;
+   if (memcmp(encoded_data + 0, "RIFF", 4) != 0 ||
+       memcmp(encoded_data + 8, "WEBP", 4) != 0)
+      goto quit;
+
+   size = stats.st_size;
+   if ((long)size != stats.st_size)
+      goto quit;
+
+   size -= 12;
+   if (read(encoded_fd, encoded_data + 12, size) != (long)size)
       goto quit;
 
    if (WebPGetInfo(encoded_data, stats.st_size, &im->w, &im->h) == 0)

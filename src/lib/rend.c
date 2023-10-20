@@ -227,6 +227,7 @@ __imlib_generic_render(DATA32 * src, int jump, int w, int h, int dx, int dy,
              XPutPixel(xim, x, y, val);
              src++;
           }
+        src += jump;
      }
 }
 
