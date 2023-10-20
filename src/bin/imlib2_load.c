@@ -91,13 +91,13 @@ image_load_mem(const char *file, int *perr)
    else
       ext = file;
 
-   err = stat(file, &st);
-   if (err)
-      goto bail;
-
    im = NULL;
    fd = -1;
    fdata = MAP_FAILED;
+
+   err = stat(file, &st);
+   if (err)
+      goto bail;
 
    fd = open(file, O_RDONLY);
    if (fd < 0)

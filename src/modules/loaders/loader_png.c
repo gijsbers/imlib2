@@ -86,7 +86,7 @@ typedef struct __PACKED__ {
       png_fctl_t          fctl;
       png_fdat_t          fdat;
    };
-   uint32_t            crc;     // Misplaced - just indication
+// uint32_t            crc;     // Misplaced - just indication
 } png_chunk_t;
 
 typedef struct {
@@ -284,7 +284,6 @@ _load(ImlibImage * im, int load_data)
    png_structp         png_ptr = NULL;
    png_infop           info_ptr = NULL;
    ctx_t               ctx = { 0 };
-   int                 ic;
    unsigned char      *fptr;
    const png_chunk_t  *chunk;
    const png_fctl_t   *pfctl;
@@ -339,14 +338,17 @@ _load(ImlibImage * im, int load_data)
    fptr = (unsigned char *)im->fi->fdata;
    fptr += _PNG_SIG_SIZE;
    seen_actl = false;
+#ifdef IMLIB2_DEBUG
+   int                 ic = 0;
+#endif
 
-   for (ic = 0;; ic++, fptr += 8 + len + 4)
+   for (;; fptr += 8 + len + 4)
      {
         chunk = PCAST(const png_chunk_t *, fptr);
 
         len = htonl(chunk->hdr.len);
-        D("Scan %3d: %06lx: %6d: %.4s: ", ic,
-          fptr - (unsigned char *)im->fi->fdata, len, chunk->hdr.name);
+        D("Scan %3d: %06lx: %6d: %.4s: ", ic++,
+          (long)(fptr - (unsigned char *)im->fi->fdata), len, chunk->hdr.name);
         if (!mm_check(fptr + len))
            break;
 
@@ -428,14 +430,17 @@ _load(ImlibImage * im, int load_data)
    png_process_data(png_ptr, info_ptr, fptr, _PNG_SIG_SIZE);
 
    fptr += _PNG_SIG_SIZE;
+#ifdef IMLIB2_DEBUG
+   ic = 0;
+#endif
 
-   for (ic = 0;; ic++, fptr += 8 + len + 4)
+   for (;; fptr += 8 + len + 4)
      {
         chunk = PCAST(const png_chunk_t *, fptr);
 
         len = htonl(chunk->hdr.len);
-        D("Chunk %3d: %06lx: %6d: %.4s: ", ic,
-          fptr - (unsigned char *)im->fi->fdata, len, chunk->hdr.name);
+        D("Chunk %3d: %06lx: %6d: %.4s: ", ic++,
+          (long)(fptr - (unsigned char *)im->fi->fdata), len, chunk->hdr.name);
         if (!mm_check(fptr + len))
            break;
 

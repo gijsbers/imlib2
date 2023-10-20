@@ -22,7 +22,8 @@ _scanline_cb(void *opaque, size_t x, size_t y,
    uint32_t           *imdata;
    size_t              i;
 
-   DL("%s: x,y=%ld,%ld len=%lu\n", __func__, x, y, num_pixels);
+   DL("%s: x,y=%ld,%ld len=%lu\n", __func__,
+      (long)x, (long)y, (long)num_pixels);
 
    imdata = im->data + (im->w * y) + x;
 
@@ -52,7 +53,7 @@ _load(ImlibImage * im, int load_data)
    ImlibImageFrame    *pf;
 
 #if MAX_RUNNERS > 0
-   size_t              n_runners;
+   unsigned int        n_runners;
    JxlParallelRunner  *runner = NULL;
 #endif
 
@@ -80,7 +81,7 @@ _load(ImlibImage * im, int load_data)
    n_runners = JxlThreadParallelRunnerDefaultNumWorkerThreads();
    if (n_runners > MAX_RUNNERS)
       n_runners = MAX_RUNNERS;
-   D("n_runners = %ld\n", n_runners);
+   D("n_runners = %d\n", n_runners);
    runner = JxlThreadParallelRunnerCreate(NULL, n_runners);
    if (!runner)
       goto quit;
@@ -235,7 +236,7 @@ _save(ImlibImage * im)
    size_t              buf_len, i, npix;
 
 #if MAX_RUNNERS > 0
-   size_t              n_runners;
+   unsigned int        n_runners;
    JxlParallelRunner  *runner = NULL;
 #endif
 
@@ -249,7 +250,7 @@ _save(ImlibImage * im)
    n_runners = JxlThreadParallelRunnerDefaultNumWorkerThreads();
    if (n_runners > MAX_RUNNERS)
       n_runners = MAX_RUNNERS;
-   D("n_runners = %ld\n", n_runners);
+   D("n_runners = %d\n", n_runners);
    runner = JxlThreadParallelRunnerCreate(NULL, n_runners);
    if (!runner)
       goto quit;

@@ -1,3 +1,19 @@
+v1.12.1 - 2023-09-21
+--------------------
+Kim Woelders (12):
+      Fix some clang complaints
+      scaling: MMX asm scaling causes segv, disable for now
+      loading: Call module exit function also when not dlclosing module on unload
+      loaders: Fix build with -m32 --enable-debug
+      test_load_2: Add forgotten xeyes.png
+      test_save: Fix for jxl loader on ix86
+      test_scale: MMX scaling is disabled
+      RAW loader: Don't unload loader
+      loaders: Fix CPPFLAGS order
+      imlib2_grab, imlib2_view: Unset context colormap
+      x11_grab: Use correct depth when grabbing
+      v1.12.1
+
 v1.12.0 - 2023-08-17
 --------------------
 Chema Gonzalez (3):

@@ -88,7 +88,7 @@ _load_embedded(ImlibImage * im, int load_data, const char *data,
    return rc;
 }
 
-#define OFFS(p) ((const char*)(p) - (const char*)im->fi->fdata)
+#define OFFS(p) (long)((const char*)(p) - (const char*)im->fi->fdata)
 
 static int
 _riff_parse(ImlibImage * im, riff_ctx_t * ctx, const char *fdata,

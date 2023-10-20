@@ -329,7 +329,8 @@ imlib_create_image_from_ximage(XImage * image, XImage * mask, int x, int y,
    if (!im)
       return NULL;
 
-   __imlib_GrabXImageToRGBA(&ctx->x11, im->data, 0, 0, width, height,
+   __imlib_GrabXImageToRGBA(&ctx->x11, image->depth, im->data,
+                            0, 0, width, height,
                             image, mask, x, y, width, height, need_to_grab_x);
    return im;
 }

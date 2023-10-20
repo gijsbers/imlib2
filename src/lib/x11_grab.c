@@ -24,13 +24,13 @@ Tmp_HandleXError(Display * d, XErrorEvent * ev)
 #define PTR(T, im_, y_) (T*)(void*)(im_->data + (im_->bytes_per_line * y_))
 
 void
-__imlib_GrabXImageToRGBA(const ImlibContextX11 * x11, uint32_t * data,
+__imlib_GrabXImageToRGBA(const ImlibContextX11 * x11, int depth,
+                         uint32_t * data,
                          int x_dst, int y_dst, int w_dst, int h_dst,
                          XImage * xim, XImage * mxim,
                          int x_src, int y_src, int w_src, int h_src, int grab)
 {
    int                 x, y, inx, iny;
-   int                 depth;
    const uint32_t     *src;
    const uint16_t     *s16;
    uint32_t           *ptr;
@@ -58,7 +58,6 @@ __imlib_GrabXImageToRGBA(const ImlibContextX11 * x11, uint32_t * data,
 
    /* go thru the XImage and convert */
 
-   depth = x11->depth;
    if ((depth == 24) && (xim->bits_per_pixel == 32))
       depth = 25;               /* fake depth meaning 24 bit in 32 bpp ximage */
 
@@ -814,7 +813,7 @@ __imlib_GrabDrawableToRGBA(const ImlibContextX11 * x11, uint32_t * data,
         CLEAR(x_dst + w_src, w_dst, y_dst, y_dst + h_src);
      }
 
-   __imlib_GrabXImageToRGBA(x11, data, x_dst, y_dst, w_dst, h_dst,
+   __imlib_GrabXImageToRGBA(x11, xatt.depth, data, x_dst, y_dst, w_dst, h_dst,
                             xim, mxim, x_src, y_src, w_src, h_src, 0);
 
    /* destroy the Ximage */

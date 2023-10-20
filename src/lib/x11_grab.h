@@ -26,7 +26,7 @@ int                 __imlib_GrabDrawableScaledToRGBA(const ImlibContextX11 *
                                                      bool clear);
 
 void                __imlib_GrabXImageToRGBA(const ImlibContextX11 * x11,
-                                             uint32_t * data,
+                                             int depth, uint32_t * data,
                                              int x_dst, int y_dst,
                                              int w_dst, int h_dst,
                                              XImage * xim, XImage * mxim,

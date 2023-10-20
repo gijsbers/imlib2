@@ -75,7 +75,7 @@ __imlib_LoadFilter(char *file)
 }
 
 void
-__imlib_dynamic_filters_init()
+__imlib_dynamic_filters_init(void)
 {
    char              **list;
    int                 num_filters, i = 0;
@@ -116,7 +116,7 @@ __imlib_dynamic_filters_init()
 }
 
 void
-__imlib_dynamic_filters_deinit()
+__imlib_dynamic_filters_deinit(void)
 {
 }
 

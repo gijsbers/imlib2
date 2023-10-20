@@ -9,7 +9,7 @@
 #include "span.h"
 
 ImlibPoly          *
-__imlib_polygon_new()
+__imlib_polygon_new(void)
 {
    ImlibPoly          *poly;
 

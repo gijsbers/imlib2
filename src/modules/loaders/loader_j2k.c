@@ -53,7 +53,7 @@ mm_init(const void *src, unsigned int size)
 static              OPJ_SIZE_T
 mm_read(void *dst, OPJ_SIZE_T len, void *data)
 {
-   DL("%s: len=%ld\n", __func__, len);
+   DL("%s: len=%ld\n", __func__, (long)len);
 
    if (mdata.dptr >= mdata.data + mdata.size)
       return -1;                /* Out of data */
@@ -69,7 +69,7 @@ mm_read(void *dst, OPJ_SIZE_T len, void *data)
 static              OPJ_OFF_T
 mm_seek_cur(OPJ_OFF_T offs, void *data)
 {
-   DL("%s: offs=%ld\n", __func__, offs);
+   DL("%s: offs=%ld\n", __func__, (long)offs);
 
    if (mdata.dptr + offs > mdata.data + mdata.size)
       return 0;                 /* Out of data */
@@ -82,7 +82,7 @@ mm_seek_cur(OPJ_OFF_T offs, void *data)
 static              OPJ_BOOL
 mm_seek_set(OPJ_OFF_T offs, void *data)
 {
-   DL("%s: offs=%ld\n", __func__, offs);
+   DL("%s: offs=%ld\n", __func__, (long)offs);
 
    if (offs > mdata.size)
       return OPJ_FALSE;         /* Out of data */

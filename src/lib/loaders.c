@@ -237,6 +237,9 @@ __imlib_ProduceLoader(const char *file)
 static void
 __imlib_ConsumeLoader(ImlibLoader * l)
 {
+   if (l->module->inex)
+      l->module->inex(0);
+
    if (l->module->ldr_flags & LDR_FLAG_KEEP)
      {
         /* Not un/re-loadable - Move to unloaded loaders list */
@@ -244,9 +247,6 @@ __imlib_ConsumeLoader(ImlibLoader * l)
         loaders_unloaded = l;
         return;
      }
-
-   if (l->module->inex)
-      l->module->inex(0);
 
    if (l->handle)
       dlclose(l->handle);

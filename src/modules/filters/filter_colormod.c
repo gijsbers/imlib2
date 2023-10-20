@@ -245,7 +245,7 @@ init(ImlibFilterInfo * info)
 }
 
 void
-deinit()
+deinit(void)
 {
    return;
 }

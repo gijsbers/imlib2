@@ -191,7 +191,8 @@ _load(ImlibImage * im, int load_data)
                   break;
                }
              DL("l,s,y=%d,%d, %d - x,y=%4ld,%4ld\n", l, y, l + y,
-                (imdata - im->data) % im->w, (imdata - im->data) / im->w);
+                (long)((imdata - im->data) % im->w),
+                (long)((imdata - im->data) / im->w));
 
              switch (jds.out_color_space)
                {

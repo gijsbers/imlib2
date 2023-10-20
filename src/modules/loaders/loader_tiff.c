@@ -25,7 +25,7 @@ mm_init(const void *src, unsigned int size)
 static              tmsize_t
 _tiff_read(thandle_t ctx, void *buf, tmsize_t len)
 {
-   DD("%s: len=%ld\n", __func__, len);
+   DD("%s: len=%ld\n", __func__, (long)len);
 
    if (mdata.dptr + len > mdata.data + mdata.size)
       return 0;                 /* Out of data */
@@ -39,7 +39,7 @@ _tiff_read(thandle_t ctx, void *buf, tmsize_t len)
 static              tmsize_t
 _tiff_write(thandle_t ctx, void *buf, tmsize_t len)
 {
-   DD("%s: len=%ld\n", __func__, len);
+   DD("%s: len=%ld\n", __func__, (long)len);
 
    return 0;
 }
@@ -49,7 +49,7 @@ _tiff_seek(thandle_t ctx, toff_t offs, int whence)
 {
    const unsigned char *dptr;
 
-   DD("%s: offs=%ld, whence=%d\n", __func__, offs, whence);
+   DD("%s: offs=%ld, whence=%d\n", __func__, (long)offs, whence);
 
    switch (whence)
      {

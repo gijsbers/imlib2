@@ -658,6 +658,7 @@ main(int argc, char **argv)
      }
 
    prog_x11_init();
+   imlib_context_set_colormap(None);
 
    win = prog_x11_create_window("imlib2_view", 10, 10);
 

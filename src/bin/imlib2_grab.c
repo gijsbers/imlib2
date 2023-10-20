@@ -92,6 +92,7 @@ main(int argc, char **argv)
    file = argv[0];
 
    prog_x11_init();
+   imlib_context_set_colormap(None);
 
    if (draw == None)
       draw = DefaultRootWindow(disp);

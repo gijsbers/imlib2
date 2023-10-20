@@ -8,6 +8,8 @@
 #include "image.h"
 #include "scale.h"
 
+#undef DO_MMX_ASM               // __imlib_Scale_mmx_AARGBA() is broken
+
 /*\ NB: If you change this, don't forget asm_scale.S \*/
 struct _imlib_scale_info {
    int                *xpoints;
