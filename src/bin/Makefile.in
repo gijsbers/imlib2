@@ -88,7 +88,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = imlib2_conv$(EXEEXT) imlib2_test_load$(EXEEXT) \
+bin_PROGRAMS = imlib2_conv$(EXEEXT) imlib2_load$(EXEEXT) \
 	$(am__EXEEXT_1)
 subdir = src/bin
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -127,6 +127,9 @@ imlib2_conv_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_imlib2_grab_OBJECTS = imlib2_grab.$(OBJEXT)
 imlib2_grab_OBJECTS = $(am_imlib2_grab_OBJECTS)
 imlib2_grab_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+am_imlib2_load_OBJECTS = imlib2_load.$(OBJEXT)
+imlib2_load_OBJECTS = $(am_imlib2_load_OBJECTS)
+imlib2_load_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_imlib2_poly_OBJECTS = imlib2_poly.$(OBJEXT)
 imlib2_poly_OBJECTS = $(am_imlib2_poly_OBJECTS)
 imlib2_poly_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
@@ -136,9 +139,6 @@ imlib2_show_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_imlib2_test_OBJECTS = imlib2_test.$(OBJEXT)
 imlib2_test_OBJECTS = $(am_imlib2_test_OBJECTS)
 imlib2_test_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
-am_imlib2_test_load_OBJECTS = imlib2_test_load.$(OBJEXT)
-imlib2_test_load_OBJECTS = $(am_imlib2_test_load_OBJECTS)
-imlib2_test_load_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_imlib2_view_OBJECTS = imlib2_view.$(OBJEXT)
 imlib2_view_OBJECTS = $(am_imlib2_view_OBJECTS)
 imlib2_view_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
@@ -159,9 +159,9 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/imlib2_bumpmap.Po \
 	./$(DEPDIR)/imlib2_colorspace.Po ./$(DEPDIR)/imlib2_conv.Po \
-	./$(DEPDIR)/imlib2_grab.Po ./$(DEPDIR)/imlib2_poly.Po \
-	./$(DEPDIR)/imlib2_show.Po ./$(DEPDIR)/imlib2_test.Po \
-	./$(DEPDIR)/imlib2_test_load.Po ./$(DEPDIR)/imlib2_view.Po
+	./$(DEPDIR)/imlib2_grab.Po ./$(DEPDIR)/imlib2_load.Po \
+	./$(DEPDIR)/imlib2_poly.Po ./$(DEPDIR)/imlib2_show.Po \
+	./$(DEPDIR)/imlib2_test.Po ./$(DEPDIR)/imlib2_view.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -183,13 +183,13 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(imlib2_bumpmap_SOURCES) $(imlib2_colorspace_SOURCES) \
 	$(imlib2_conv_SOURCES) $(imlib2_grab_SOURCES) \
-	$(imlib2_poly_SOURCES) $(imlib2_show_SOURCES) \
-	$(imlib2_test_SOURCES) $(imlib2_test_load_SOURCES) \
+	$(imlib2_load_SOURCES) $(imlib2_poly_SOURCES) \
+	$(imlib2_show_SOURCES) $(imlib2_test_SOURCES) \
 	$(imlib2_view_SOURCES)
 DIST_SOURCES = $(imlib2_bumpmap_SOURCES) $(imlib2_colorspace_SOURCES) \
 	$(imlib2_conv_SOURCES) $(imlib2_grab_SOURCES) \
-	$(imlib2_poly_SOURCES) $(imlib2_show_SOURCES) \
-	$(imlib2_test_SOURCES) $(imlib2_test_load_SOURCES) \
+	$(imlib2_load_SOURCES) $(imlib2_poly_SOURCES) \
+	$(imlib2_show_SOURCES) $(imlib2_test_SOURCES) \
 	$(imlib2_view_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -372,8 +372,8 @@ $(X_CFLAGS)
 @BUILD_X11_TRUE@X_BASED_PROGS = imlib2_show imlib2_test imlib2_bumpmap imlib2_poly imlib2_colorspace imlib2_view imlib2_grab
 imlib2_conv_SOURCES = imlib2_conv.c
 imlib2_conv_LDADD = $(top_builddir)/src/lib/libImlib2.la
-imlib2_test_load_SOURCES = imlib2_test_load.c
-imlib2_test_load_LDADD = $(top_builddir)/src/lib/libImlib2.la
+imlib2_load_SOURCES = imlib2_load.c
+imlib2_load_LDADD = $(top_builddir)/src/lib/libImlib2.la
 imlib2_show_SOURCES = imlib2_show.c
 imlib2_show_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11 -lm
 imlib2_test_SOURCES = imlib2_test.c
@@ -401,9 +401,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/bin/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/bin/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/bin/Makefile
+	  $(AUTOMAKE) --gnu src/bin/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -487,6 +487,10 @@ imlib2_grab$(EXEEXT): $(imlib2_grab_OBJECTS) $(imlib2_grab_DEPENDENCIES) $(EXTRA
 	@rm -f imlib2_grab$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(imlib2_grab_OBJECTS) $(imlib2_grab_LDADD) $(LIBS)
 
+imlib2_load$(EXEEXT): $(imlib2_load_OBJECTS) $(imlib2_load_DEPENDENCIES) $(EXTRA_imlib2_load_DEPENDENCIES) 
+	@rm -f imlib2_load$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(imlib2_load_OBJECTS) $(imlib2_load_LDADD) $(LIBS)
+
 imlib2_poly$(EXEEXT): $(imlib2_poly_OBJECTS) $(imlib2_poly_DEPENDENCIES) $(EXTRA_imlib2_poly_DEPENDENCIES) 
 	@rm -f imlib2_poly$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(imlib2_poly_OBJECTS) $(imlib2_poly_LDADD) $(LIBS)
@@ -498,10 +502,6 @@ imlib2_show$(EXEEXT): $(imlib2_show_OBJECTS) $(imlib2_show_DEPENDENCIES) $(EXTRA
 imlib2_test$(EXEEXT): $(imlib2_test_OBJECTS) $(imlib2_test_DEPENDENCIES) $(EXTRA_imlib2_test_DEPENDENCIES) 
 	@rm -f imlib2_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(imlib2_test_OBJECTS) $(imlib2_test_LDADD) $(LIBS)
-
-imlib2_test_load$(EXEEXT): $(imlib2_test_load_OBJECTS) $(imlib2_test_load_DEPENDENCIES) $(EXTRA_imlib2_test_load_DEPENDENCIES) 
-	@rm -f imlib2_test_load$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(imlib2_test_load_OBJECTS) $(imlib2_test_load_LDADD) $(LIBS)
 
 imlib2_view$(EXEEXT): $(imlib2_view_OBJECTS) $(imlib2_view_DEPENDENCIES) $(EXTRA_imlib2_view_DEPENDENCIES) 
 	@rm -f imlib2_view$(EXEEXT)
@@ -517,10 +517,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_colorspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_conv.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_grab.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_load.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_poly.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_show.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_test.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_test_load.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_view.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -688,10 +688,10 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/imlib2_colorspace.Po
 	-rm -f ./$(DEPDIR)/imlib2_conv.Po
 	-rm -f ./$(DEPDIR)/imlib2_grab.Po
+	-rm -f ./$(DEPDIR)/imlib2_load.Po
 	-rm -f ./$(DEPDIR)/imlib2_poly.Po
 	-rm -f ./$(DEPDIR)/imlib2_show.Po
 	-rm -f ./$(DEPDIR)/imlib2_test.Po
-	-rm -f ./$(DEPDIR)/imlib2_test_load.Po
 	-rm -f ./$(DEPDIR)/imlib2_view.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -742,10 +742,10 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/imlib2_colorspace.Po
 	-rm -f ./$(DEPDIR)/imlib2_conv.Po
 	-rm -f ./$(DEPDIR)/imlib2_grab.Po
+	-rm -f ./$(DEPDIR)/imlib2_load.Po
 	-rm -f ./$(DEPDIR)/imlib2_poly.Po
 	-rm -f ./$(DEPDIR)/imlib2_show.Po
 	-rm -f ./$(DEPDIR)/imlib2_test.Po
-	-rm -f ./$(DEPDIR)/imlib2_test_load.Po
 	-rm -f ./$(DEPDIR)/imlib2_view.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

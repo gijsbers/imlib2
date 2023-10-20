@@ -526,7 +526,6 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
      }
    if (!full || !ok)
      {
-        im->w = im->h = 0;
         freeilbm(&ilbm);
         return ok;
      }

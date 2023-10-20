@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <X11/Xlib.h>
+#include <X11/keysym.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -15,6 +16,7 @@ main(int argc, char **argv)
    int                 w, h, x, y;
    Imlib_Image         im_bg;
    XEvent              ev;
+   KeySym              keysym;
 
    /**
     * Initialization according to options
@@ -33,7 +35,7 @@ main(int argc, char **argv)
 
    win = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0, 100, 100,
                              0, 0, 0);
-   XSelectInput(disp, win,
+   XSelectInput(disp, win, KeyPressMask |
                 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask |
                 PointerMotionMask | ExposureMask);
 
@@ -69,17 +71,19 @@ main(int argc, char **argv)
              XNextEvent(disp, &ev);
              switch (ev.type)
                {
-               case Expose:
+               case KeyPress:
+                  keysym = XLookupKeysym(&ev.xkey, 0);
+                  if (keysym == XK_q || keysym == XK_Escape)
+                     goto quit;
                   break;
                case ButtonRelease:
-                  exit(0);
-                  break;
+                  goto quit;
                case MotionNotify:
                   x = ev.xmotion.x;
                   y = ev.xmotion.y;
+                  break;
                default:
                   break;
-
                }
           }
         while (XPending(disp));
@@ -107,5 +111,6 @@ main(int argc, char **argv)
         imlib_free_image();
      }
 
+ quit:
    return 0;
 }

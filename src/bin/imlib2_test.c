@@ -1,6 +1,7 @@
 #include "config.h"
 
 #include <X11/Xlib.h>
+#include <X11/keysym.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -16,6 +17,7 @@ main(int argc, char **argv)
 {
    /* events we get from X */
    XEvent              ev;
+   KeySym              keysym;
 
    /* areas to update */
    Imlib_Updates       updates, current_update;
@@ -46,7 +48,7 @@ main(int argc, char **argv)
    win = XCreateSimpleWindow(disp, DefaultRootWindow(disp),
                              0, 0, 640, 480, 0, 0, 0);
    /* tell X what events we are interested in */
-   XSelectInput(disp, win, ButtonPressMask | ButtonReleaseMask |
+   XSelectInput(disp, win, KeyPressMask | ButtonPressMask | ButtonReleaseMask |
                 PointerMotionMask | ExposureMask);
    /* show the window */
    XMapWindow(disp, win);
@@ -93,10 +95,14 @@ main(int argc, char **argv)
                                                      ev.xexpose.width,
                                                      ev.xexpose.height);
                   break;
+               case KeyPress:
+                  keysym = XLookupKeysym(&ev.xkey, 0);
+                  if (keysym == XK_q || keysym == XK_Escape)
+                     goto quit;
+                  break;
                case ButtonPress:
                   /* if we click anywhere in the window, exit */
-                  exit(0);
-                  break;
+                  goto quit;
                case MotionNotify:
                   /* if the mouse moves - note it */
                   /* add a rectangle update for the new mouse position */
@@ -271,5 +277,9 @@ main(int argc, char **argv)
            imlib_updates_free(updates);
         /* loop again waiting for events */
      }
+
+ quit:
+   imlib_updates_free(updates);
+
    return 0;
 }

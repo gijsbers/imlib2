@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -17,7 +17,6 @@ main(int argc, char **argv)
    Imlib_Image         im_bg = NULL;
    XEvent              ev;
    KeySym              keysym;
-   static char         kbuf[20];
    Imlib_Font          font;
    Imlib_Color_Range   range;
 
@@ -68,20 +67,13 @@ main(int argc, char **argv)
              XNextEvent(disp, &ev);
              switch (ev.type)
                {
-               case ButtonRelease:
-                  exit(0);
-                  break;
                case KeyPress:
-                  XLookupString(&ev.xkey, (char *)kbuf, sizeof(kbuf), &keysym,
-                                NULL);
-                  switch (*kbuf)
-                    {
-                    case 'q':
-                       exit(0);
-                    default:
-                       break;
-                    }
+                  keysym = XLookupKeysym(&ev.xkey, 0);
+                  if (keysym == XK_q || keysym == XK_Escape)
+                     goto quit;
                   break;
+               case ButtonRelease:
+                  goto quit;
                default:
                   break;
 
@@ -133,5 +125,7 @@ main(int argc, char **argv)
 
         imlib_render_image_on_drawable(0, 0);
      }
+
+ quit:
    return 0;
 }

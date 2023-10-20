@@ -46,7 +46,6 @@ grad.h \
 image.c \
 image.h \
 line.c \
-loaderpath.h \
 modules.c \
 polygon.c \
 rectangle.c \

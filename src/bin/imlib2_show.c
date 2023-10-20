@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -274,7 +274,7 @@ main(int argc, char **argv)
              win =
                 XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0, 10,
                                     10, 0, 0, 0);
-             XSelectInput(disp, win,
+             XSelectInput(disp, win, KeyPressMask |
                           ButtonPressMask | ButtonReleaseMask | ButtonMotionMask
                           | PointerMotionMask | ExposureMask);
           }
@@ -776,6 +776,7 @@ main(int argc, char **argv)
         Imlib_Updates       up = NULL;
         int                 x, y;
         XEvent              ev;
+        KeySym              keysym;
         Imlib_Font          fn = NULL;
         struct font_hdr {
            int                 type;
@@ -944,14 +945,18 @@ main(int argc, char **argv)
                                                      ev.xexpose.width,
                                                      ev.xexpose.height);
                        break;
+                    case KeyPress:
+                       keysym = XLookupKeysym(&ev.xkey, 0);
+                       if (keysym == XK_q || keysym == XK_Escape)
+                          goto quit;
+                       break;
                     case ButtonRelease:
                        if (fon)
                          {
                             imlib_context_set_font(fn);
                             imlib_free_font();
                          }
-                       exit(0);
-                       break;
+                       goto quit;
                     case MotionNotify:
                        x = ev.xmotion.x;
                        y = ev.xmotion.y;
@@ -1381,5 +1386,16 @@ main(int argc, char **argv)
    printf("%3.3f sec, %3.3f M pixels (%i)\n", sec, (double)pixels / 1000000,
           pixels);
    printf("%3.3f Mpixels / sec\n", (double)(pixels) / (sec * 1000000));
+
+ quit:
+   if (im)
+     {
+        imlib_context_set_image(im);
+        imlib_free_image();
+     }
+   imlib_polygon_free(poly);
+   imlib_polygon_free(poly2);
+   imlib_polygon_free(poly3);
+
    return 0;
 }

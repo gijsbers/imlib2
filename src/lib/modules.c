@@ -4,7 +4,61 @@
 
 #include "file.h"
 #include "image.h"
-#include "loaderpath.h"
+
+static const char  *
+__imlib_PathToModules(void)
+{
+#if 0
+   static const char  *path = NULL;
+
+   if (path)
+      return path;
+
+   path = getenv("IMLIB2_MODULE_PATH");
+   if (path && __imlib_FileIsDir(path))
+      return path;
+#endif
+
+   return PACKAGE_LIB_DIR "/imlib2";
+}
+
+const char         *
+__imlib_PathToFilters(void)
+{
+   static char        *path = NULL;
+   char                buf[1024];
+
+   if (path)
+      return path;
+
+   path = getenv("IMLIB2_FILTER_PATH");
+   if (path && __imlib_FileIsDir(path))
+      return path;
+
+   snprintf(buf, sizeof(buf), "%s/%s", __imlib_PathToModules(), "filters");
+   path = strdup(buf);
+
+   return path;
+}
+
+const char         *
+__imlib_PathToLoaders(void)
+{
+   static char        *path = NULL;
+   char                buf[1024];
+
+   if (path)
+      return path;
+
+   path = getenv("IMLIB2_LOADER_PATH");
+   if (path && __imlib_FileIsDir(path))
+      return path;
+
+   snprintf(buf, sizeof(buf), "%s/%s", __imlib_PathToModules(), "loaders");
+   path = strdup(buf);
+
+   return path;
+}
 
 static char       **
 __imlib_TrimLoaderList(char **list, int *num)
@@ -52,15 +106,14 @@ __imlib_TrimLoaderList(char **list, int *num)
 }
 
 char              **
-__imlib_ListModules(const char *what, int *num_ret)
+__imlib_ListModules(const char *path, int *num_ret)
 {
    char              **list = NULL, **l;
-   char                path[1024];
+   char                file[1024];
    int                 num, i;
 
    *num_ret = 0;
 
-   snprintf(path, sizeof(path), "%s/%s", SYS_LOADERS_PATH, what);
    l = __imlib_FileDir(path, &num);
    if (num <= 0)
       return NULL;
@@ -70,9 +123,8 @@ __imlib_ListModules(const char *what, int *num_ret)
      {
         for (i = 0; i < num; i++)
           {
-             snprintf(path, sizeof(path), "%s/%s/%s",
-                      SYS_LOADERS_PATH, what, l[i]);
-             list[i] = strdup(path);
+             snprintf(file, sizeof(file), "%s/%s", path, l[i]);
+             list[i] = strdup(file);
           }
         *num_ret = num;
      }

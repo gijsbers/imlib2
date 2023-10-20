@@ -482,12 +482,13 @@ load(ImlibImage * im, ImlibProgressFunction progress,
              x = 0;
              y = 0;
 
-             for (i = 0; i < imgsize && buffer_ptr < buffer_end_safe; i++)
+             for (; buffer_ptr < buffer_end_safe;)
                {
                   byte1 = buffer_ptr[0];
                   byte2 = buffer_ptr[1];
                   buffer_ptr += 2;
-                  Dx("%3d %3d: %02x %02x\n", x, y, byte1, byte2);
+                  Dx("%3d %3d: %02x %02x (%d %d)\n",
+                     x, y, byte1, byte2, byte2 >> 4, byte2 & 0xf);
                   if (byte1)
                     {
                        DATA32              t1, t2;
@@ -496,8 +497,6 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                        /* Check for invalid length */
                        if (l + x > w)
                           goto bail_bc4;
-                       Dx("%3d %3d:   n=%d:  %d %d\n", x, y, byte1, byte2 >> 4,
-                          byte2 & 0xf);
 
                        t1 = argbCmap[byte2 >> 4];
                        t2 = argbCmap[byte2 & 0xF];
@@ -635,11 +634,12 @@ load(ImlibImage * im, ImlibProgressFunction progress,
 
              x = 0;
              y = 0;
-             for (i = 0; i < imgsize && buffer_ptr < buffer_end_safe; i++)
+             for (; buffer_ptr < buffer_end_safe;)
                {
                   byte1 = buffer_ptr[0];
                   byte2 = buffer_ptr[1];
                   buffer_ptr += 2;
+                  Dx("%3d %3d: %02x %02x\n", x, y, byte1, byte2);
                   if (byte1)
                     {
                        pixel = argbCmap[byte2];
@@ -685,6 +685,8 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                             for (j = 0; j < l; j++)
                               {
                                  byte = *buffer_ptr++;
+                                 Dx("%3d %3d:   %d/%d: %2d\n",
+                                    x, y, j, l, byte);
                                  *ptr++ = argbCmap[byte];
                               }
                             x += l;
@@ -919,7 +921,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 
    /* write BMP file header */
    WriteleShort(f, 0x4d42);     /* prefix */
-   WriteleLong(f, 54 + 3 * im->w * im->h);      /* filesize */
+   WriteleLong(f, 54 + ((3 * im->w) + pad) * im->h);    /* filesize (padding should be considered) */
    WriteleShort(f, 0x0000);     /* reserved #1 */
    WriteleShort(f, 0x0000);     /* reserved #2 */
    WriteleLong(f, 54);          /* offset to image data */
@@ -931,7 +933,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    WriteleShort(f, 1);          /* one plane      */
    WriteleShort(f, 24);         /* bits per pixel */
    WriteleLong(f, 0);           /* no compression */
-   WriteleLong(f, 3 * im->w * im->h);
+   WriteleLong(f, ((3 * im->w) + pad) * im->h); /* padding should be counted */
    for (i = 0; i < 4; i++)
       WriteleLong(f, 0x0000);   /* pad to end of header */
 

@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -17,7 +17,6 @@ main(int argc, char **argv)
    Imlib_Image         im_bg = NULL;
    XEvent              ev;
    KeySym              keysym;
-   static char         kbuf[20];
    ImlibPolygon        poly, poly1, poly2;
 
    /**
@@ -81,13 +80,9 @@ main(int argc, char **argv)
              XNextEvent(disp, &ev);
              switch (ev.type)
                {
-               case ButtonRelease:
-                  exit(0);
-                  break;
                case KeyPress:
-                  XLookupString(&ev.xkey, (char *)kbuf, sizeof(kbuf), &keysym,
-                                NULL);
-                  switch (*kbuf)
+                  keysym = XLookupKeysym(&ev.xkey, 0);
+                  switch (keysym)
                     {
                     case ' ':
                        imlib_context_set_anti_alias
@@ -95,12 +90,15 @@ main(int argc, char **argv)
                        printf("AA is %s\n",
                               imlib_context_get_anti_alias()? "on" : "off");
                        break;
-                    case 'q':
-                       exit(0);
+                    case XK_q:
+                    case XK_Escape:
+                       goto quit;
                     default:
                        break;
                     }
                   break;
+               case ButtonRelease:
+                  goto quit;
                default:
                   break;
 
@@ -117,5 +115,11 @@ main(int argc, char **argv)
         imlib_image_fill_polygon(poly2);
         imlib_render_image_on_drawable(0, 0);
      }
+
+ quit:
+   imlib_polygon_free(poly);
+   imlib_polygon_free(poly1);
+   imlib_polygon_free(poly2);
+
    return 0;
 }

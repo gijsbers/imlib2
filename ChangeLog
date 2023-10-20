@@ -1,5 +1,26 @@
 
 ***
+*** Version 1.6.1 ***
+***
+
+Kim Woelders (11):
+      gz loader: Use FILE, not fd
+      gz, bz2 loaders: Fix recent breakage when file name has more than two dots
+      Quit on 'q' or 'esc' key press in all imlib2_... test utilities
+      Rename imlib2_test_load to imlib2_load
+      imlib2_load: Optionally write to stderr instead of stdout
+      imlib2_view: Add progress debug options
+      Enable specifying loader/filter paths with environment variables
+      BMP loader: Remove some bogus conditions
+      XPM loader: Minor optimization for cpp > 2
+      LBM loader: Fix header-only loading
+      1.6.1
+
+Luiz Carlos Ramos (1):
+      BMP loader: Fix size calculation when saving files
+
+
+***
 *** Version 1.6.0 ***
 ***
 
@@ -70,7 +91,7 @@ Kim Woelders (64):
       ICO loader: Fix memory leak in error path
       XPM loader: Correct signature check (avoid accessing unset data)
       gz, bz2 loaders: Simplify, eliminate unnecessary strdups, cosmetics
-      Bump minor version (new functions)
+      1.6.0.
 
 Olof-Joachim Frahm (欧雅福) (2):
       Check filename before opening archive file.

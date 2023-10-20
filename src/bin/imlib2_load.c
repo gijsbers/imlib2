@@ -7,9 +7,10 @@
 #endif
 #include <Imlib2.h>
 
-#define PROG_NAME "imlib2_test_load"
+#define PROG_NAME "imlib2_load"
 
 static char         progress_called;
+static FILE        *fout;
 
 static void
 usage(int exit_status)
@@ -38,6 +39,7 @@ main(int argc, char **argv)
    int                 check_progress;
    int                 break_on_error;
 
+   fout = stdout;
    check_progress = 0;
    break_on_error = 0;
 
@@ -58,6 +60,9 @@ main(int argc, char **argv)
           case 'p':
              check_progress = 1;
              break;
+          case 'x':
+             fout = stderr;
+             break;
           }
      }
 
@@ -74,7 +79,7 @@ main(int argc, char **argv)
      {
         progress_called = 0;
 
-        printf("Loading image: '%s'\n", argv[0]);
+        fprintf(fout, "Loading image: '%s'\n", argv[0]);
 
         lerr = 0;
         if (check_progress)
@@ -83,7 +88,7 @@ main(int argc, char **argv)
            im = imlib_load_image(argv[0]);
         if (!im)
           {
-             printf("*** Error %d loading image: %s\n", lerr, argv[0]);
+             fprintf(fout, "*** Error %d loading image: %s\n", lerr, argv[0]);
              if (break_on_error & 2)
                 break;
              continue;
@@ -94,7 +99,7 @@ main(int argc, char **argv)
 
         if (check_progress && !progress_called)
           {
-             printf("*** No progress during image load\n");
+             fprintf(fout, "*** No progress during image load\n");
              if (break_on_error & 1)
                 break;
           }

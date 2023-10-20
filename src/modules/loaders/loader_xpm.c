@@ -354,16 +354,13 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
                        for (i = 0; count < pixels && i < len - (cpp - 1);
                             i += cpp)
                          {
-                            for (j = 0; j < cpp; j++)
-                               col[j] = line[i + j];
-                            col[j] = 0;
                             for (j = 0; j < ncolors; j++)
                               {
-                                 if (!strcmp(col, cmap[j].str))
+                                 if (memcmp(&line[i], cmap[j].str, cpp) == 0)
                                    {
                                       *ptr++ = CMn(j)->pixel;
                                       count++;
-                                      j = ncolors;
+                                      break;
                                    }
                               }
                          }

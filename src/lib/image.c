@@ -15,7 +15,6 @@
 #include "Imlib2.h"
 #include "file.h"
 #include "image.h"
-#include "loaderpath.h"
 
 static void         __imlib_LoadAllLoaders(void);
 
@@ -673,23 +672,27 @@ __imlib_RescanLoaders(void)
    current_time = time(NULL);
    if ((current_time - last_scan_time) < 5)
       return;
+
    /* ok - was the system loaders dir contents modified ? */
    last_scan_time = current_time;
-   if (__imlib_FileIsDir(SYS_LOADERS_PATH "/loaders/"))
+
+   current_time = __imlib_FileModDate(__imlib_PathToLoaders());
+   if (current_time == 0)
+      return;                   /* Loader directory not found */
+   if ((current_time > last_modified_system_time) || (!scanned))
      {
-        current_time = __imlib_FileModDate(SYS_LOADERS_PATH "/loaders/");
-        if ((current_time > last_modified_system_time) || (!scanned))
-          {
-             /* yup - set the "do_reload" flag */
-             do_reload = 1;
-             last_modified_system_time = current_time;
-          }
+        /* yup - set the "do_reload" flag */
+        do_reload = 1;
+        last_modified_system_time = current_time;
      }
+
    /* if we dont ned to reload the loaders - get out now */
    if (!do_reload)
       return;
+
    __imlib_RemoveAllLoaders();
    __imlib_LoadAllLoaders();
+
    scanned = 1;
 }
 
@@ -718,7 +721,7 @@ __imlib_LoadAllLoaders(void)
    char              **list;
 
    /* list all the loaders imlib can find */
-   list = __imlib_ListModules("loaders", &num);
+   list = __imlib_ListModules(__imlib_PathToLoaders(), &num);
    /* no loaders? well don't load anything */
    if (!list)
       return;

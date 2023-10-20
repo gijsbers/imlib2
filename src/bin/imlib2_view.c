@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "Imlib2.h"
 
@@ -17,6 +18,9 @@ int                 window_width = 0, window_height = 0;
 double              scale_x = 1.;
 double              scale_y = 1.;
 Imlib_Image         bg_im = NULL;
+static char         progress_granularity = 10;
+static char         progress_print = 0;
+static int          progress_delay = 0;
 
 static Atom         ATOM_WM_DELETE_WINDOW = None;
 static Atom         ATOM_WM_PROTOCOLS = None;
@@ -26,11 +30,31 @@ static Atom         ATOM_WM_PROTOCOLS = None;
 #define SCALE_X(x) (int)(scale_x * (x) + .5)
 #define SCALE_Y(x) (int)(scale_y * (x) + .5)
 
+#define HELP \
+   "Usage:\n" \
+   "  imlib2_view [OPTIONS] FILE...\n" \
+   "OPTIONS:\n" \
+   "  -g N: Set progress granularity to N%% (default 10(%%))\n" \
+   "  -l N: Introduce N ms delay in progress callback (default 0)\n" \
+   "  -p  : Print info in progress callback (default no)\n" \
+   "  -s S: Set scaling factor to S (default 1.0)\n" \
+   "  -v  : Increase verbosity\n"
+
+static void
+usage(void)
+{
+   printf(HELP);
+}
+
 static int
 progress(Imlib_Image im, char percent, int update_x, int update_y,
          int update_w, int update_h)
 {
    int                 up_wx, up_wy, up_ww, up_wh;
+
+   if (progress_print)
+      printf("%s: %3d%% %4d,%4d %4dx%4d\n",
+             __func__, percent, update_x, update_y, update_w, update_h);
 
    /* first time it's called */
    imlib_context_set_drawable(pm);
@@ -109,48 +133,55 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
                                                up_wx, up_wy, up_ww, up_wh);
    XClearArea(disp, win, up_wx, up_wy, up_ww, up_wh, False);
    XFlush(disp);
+
+   if (progress_delay > 0)
+      usleep(progress_delay);
+
    return 1;
 }
 
 int
 main(int argc, char **argv)
 {
-   char               *s;
-   Imlib_Image        *im = NULL;
-   char               *file = NULL;
+   int                 opt;
+   Imlib_Image        *im;
+   char               *file;
    int                 no, inc;
    int                 verbose;
 
    verbose = 0;
 
-   for (;;)
+   while ((opt = getopt(argc, argv, "g:l:ps:v")) != -1)
      {
-        argv++;
-        argc--;
-        if (argc <= 0)
-           break;
-        s = argv[0];
-        if (*s++ != '-')
-           break;
-        switch (*s)
+        switch (opt)
           {
-          default:
+          case 'g':
+             progress_granularity = atoi(optarg);
+             break;
+          case 'l':
+             progress_delay = 1000 * atoi(optarg);
+             break;
+          case 'p':
+             progress_print = 1;
              break;
           case 's':            /* Scale (window size wrt. image size) */
-             if (argc-- < 2)
-                break;
-             argv++;
-             scale_x = scale_y = atof(argv[0]);
+             scale_x = scale_y = atof(optarg);
              break;
           case 'v':
              verbose += 1;
              break;
+          default:
+             usage();
+             return 1;
           }
      }
 
+   argc -= optind;
+   argv += optind;
+
    if (argc <= 0)
      {
-        fprintf(stderr, "imlib2_view [-s <scale factor>] file...\n");
+        usage();
         return 1;
      }
 
@@ -176,7 +207,7 @@ main(int argc, char **argv)
    imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
    imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
    imlib_context_set_progress_function(progress);
-   imlib_context_set_progress_granularity(10);
+   imlib_context_set_progress_granularity(progress_granularity);
    imlib_context_set_drawable(win);
 
    no = -1;
@@ -218,12 +249,12 @@ main(int argc, char **argv)
           case ClientMessage:
              if (ev.xclient.message_type == ATOM_WM_PROTOCOLS &&
                  (Atom) ev.xclient.data.l[0] == ATOM_WM_DELETE_WINDOW)
-                return 0;
+                goto quit;
              break;
           case KeyPress:
              key = XLookupKeysym(&ev.xkey, 0);
              if (key == XK_q || key == XK_Escape)
-                return 0;
+                goto quit;
              if (key == XK_Right)
                 goto show_next;
              if (key == XK_Left)
@@ -408,5 +439,7 @@ main(int argc, char **argv)
                }
           }
      }
+
+ quit:
    return 0;
 }
