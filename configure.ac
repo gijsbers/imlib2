@@ -1,4 +1,4 @@
-AC_INIT([imlib2],[1.7.2],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.7.3],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -21,7 +21,7 @@ define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
 VERSION_CUR=8
-VERSION_REV=2
+VERSION_REV=3
 VERSION_AGE=7
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
@@ -338,6 +338,15 @@ AC_MSG_RESULT($bz2_loader)
 
 if test "$bz2_loader" != no ; then
   PKG_CHECK_MODULES(BZ2, bzip2, [ bz2_ok="yes" ], [ bz2_ok="no" ])
+  if test "$bz2_ok" = no ; then
+    AC_CHECK_LIB(bz2, BZ2_bzRead, bz2_ok=yes, bz2_ok=no)
+    if test "$bz2_ok" = yes; then
+      AC_CHECK_HEADER([bzlib.h], , bz2_ok=no)
+      if test "$bz2_ok" = yes; then
+        BZ2_LIBS="-lbz2"
+      fi
+    fi
+  fi
   if test "$bz2_ok" = no ; then
     if test "$bz2_loader" = yes ; then
       AC_MSG_ERROR(BZIP2 support was requested but system does not support it)
