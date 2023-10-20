@@ -154,6 +154,12 @@ bz2_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(bz2_la_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(bz2_la_LDFLAGS) $(LDFLAGS) -o $@
 @BUILD_BZ2_LOADER_TRUE@am_bz2_la_rpath = -rpath $(pkgdir)
+ff_la_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+am_ff_la_OBJECTS = ff_la-loader_ff.lo
+ff_la_OBJECTS = $(am_ff_la_OBJECTS)
+ff_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(ff_la_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(ff_la_LDFLAGS) $(LDFLAGS) -o $@
 gif_la_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_gif_la_OBJECTS = gif_la-loader_gif.lo
 gif_la_OBJECTS = $(am_gif_la_OBJECTS)
@@ -255,15 +261,15 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(argb_la_SOURCES) $(bmp_la_SOURCES) $(bz2_la_SOURCES) \
-	$(gif_la_SOURCES) $(id3_la_SOURCES) $(jpeg_la_SOURCES) \
-	$(lbm_la_SOURCES) $(png_la_SOURCES) $(pnm_la_SOURCES) \
-	$(tga_la_SOURCES) $(tiff_la_SOURCES) $(xpm_la_SOURCES) \
-	$(zlib_la_SOURCES)
+	$(ff_la_SOURCES) $(gif_la_SOURCES) $(id3_la_SOURCES) \
+	$(jpeg_la_SOURCES) $(lbm_la_SOURCES) $(png_la_SOURCES) \
+	$(pnm_la_SOURCES) $(tga_la_SOURCES) $(tiff_la_SOURCES) \
+	$(xpm_la_SOURCES) $(zlib_la_SOURCES)
 DIST_SOURCES = $(argb_la_SOURCES) $(bmp_la_SOURCES) $(bz2_la_SOURCES) \
-	$(gif_la_SOURCES) $(id3_la_SOURCES) $(jpeg_la_SOURCES) \
-	$(lbm_la_SOURCES) $(png_la_SOURCES) $(pnm_la_SOURCES) \
-	$(tga_la_SOURCES) $(tiff_la_SOURCES) $(xpm_la_SOURCES) \
-	$(zlib_la_SOURCES)
+	$(ff_la_SOURCES) $(gif_la_SOURCES) $(id3_la_SOURCES) \
+	$(jpeg_la_SOURCES) $(lbm_la_SOURCES) $(png_la_SOURCES) \
+	$(pnm_la_SOURCES) $(tga_la_SOURCES) $(tiff_la_SOURCES) \
+	$(xpm_la_SOURCES) $(zlib_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -446,6 +452,7 @@ pkg_LTLIBRARIES = \
 $(JPEG_L) \
 $(PNG_L) \
 $(TIFF_L) \
+$(FF_L) \
 $(GIF_L) \
 $(ZLIB_L) \
 $(BZ2_L) \
@@ -453,6 +460,7 @@ $(ID3_L) \
 pnm.la \
 argb.la \
 bmp.la \
+ff.la \
 xpm.la \
 tga.la \
 lbm.la
@@ -471,6 +479,10 @@ tiff_la_SOURCES = loader_tiff.c
 tiff_la_LDFLAGS = -module -avoid-version
 tiff_la_LIBADD = @TIFFLIBS@ $(top_builddir)/src/lib/libImlib2.la
 tiff_la_LIBTOOLFLAGS = --tag=disable-static
+ff_la_SOURCES = loader_ff.c
+ff_la_LDFLAGS = -module -avoid-version
+ff_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
+ff_la_LIBTOOLFLAGS = --tag=disable-static
 gif_la_SOURCES = loader_gif.c
 gif_la_LDFLAGS = -module -avoid-version
 gif_la_LIBADD = @GIFLIBS@ $(top_builddir)/src/lib/libImlib2.la
@@ -524,9 +536,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/modules/loaders/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/modules/loaders/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/modules/loaders/Makefile
+	  $(AUTOMAKE) --gnu src/modules/loaders/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -589,6 +601,9 @@ bmp.la: $(bmp_la_OBJECTS) $(bmp_la_DEPENDENCIES) $(EXTRA_bmp_la_DEPENDENCIES)
 bz2.la: $(bz2_la_OBJECTS) $(bz2_la_DEPENDENCIES) $(EXTRA_bz2_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(bz2_la_LINK) $(am_bz2_la_rpath) $(bz2_la_OBJECTS) $(bz2_la_LIBADD) $(LIBS)
 
+ff.la: $(ff_la_OBJECTS) $(ff_la_DEPENDENCIES) $(EXTRA_ff_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(ff_la_LINK) -rpath $(pkgdir) $(ff_la_OBJECTS) $(ff_la_LIBADD) $(LIBS)
+
 gif.la: $(gif_la_OBJECTS) $(gif_la_DEPENDENCIES) $(EXTRA_gif_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(gif_la_LINK) $(am_gif_la_rpath) $(gif_la_OBJECTS) $(gif_la_LIBADD) $(LIBS)
 
@@ -628,6 +643,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/argb_la-loader_argb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bmp_la-loader_bmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bz2_la-loader_bz2.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ff_la-loader_ff.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gif_la-loader_gif.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/id3_la-loader_id3.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jpeg_la-loader_jpeg.Plo@am__quote@
@@ -680,6 +696,13 @@ bz2_la-loader_bz2.lo: loader_bz2.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_bz2.c' object='bz2_la-loader_bz2.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(bz2_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o bz2_la-loader_bz2.lo `test -f 'loader_bz2.c' || echo '$(srcdir)/'`loader_bz2.c
+
+ff_la-loader_ff.lo: loader_ff.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(ff_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ff_la-loader_ff.lo -MD -MP -MF $(DEPDIR)/ff_la-loader_ff.Tpo -c -o ff_la-loader_ff.lo `test -f 'loader_ff.c' || echo '$(srcdir)/'`loader_ff.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ff_la-loader_ff.Tpo $(DEPDIR)/ff_la-loader_ff.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_ff.c' object='ff_la-loader_ff.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(ff_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ff_la-loader_ff.lo `test -f 'loader_ff.c' || echo '$(srcdir)/'`loader_ff.c
 
 gif_la-loader_gif.lo: loader_gif.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(gif_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gif_la-loader_gif.lo -MD -MP -MF $(DEPDIR)/gif_la-loader_gif.Tpo -c -o gif_la-loader_gif.lo `test -f 'loader_gif.c' || echo '$(srcdir)/'`loader_gif.c

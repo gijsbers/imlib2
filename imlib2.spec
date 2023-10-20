@@ -1,6 +1,6 @@
 Summary: Powerful image loading and rendering library
 Name: imlib2
-Version: 1.4.7
+Version: 1.4.8
 Release: 0.%(date '+%Y%m%d')
 License: BSD
 Group: System Environment/Libraries
@@ -71,6 +71,12 @@ Summary: Imlib2 BMP loader
 Group: System Environment/Libraries
 %description loader_bmp
 BMP image loader/saver for Imlib2
+
+%package loader_ff
+Summary: Imlib2 Farbfeld loader
+Group: System Environment/Libraries
+%description loader_ff
+Farbfeld image loader/saver for Imlib2
 
 %package loader_gif
 Summary: Imlib2 GIF loader
@@ -186,6 +192,9 @@ test "x$RPM_BUILD_ROOT" != "x/" && rm -rf $RPM_BUILD_ROOT
 
 %files loader_bmp
 %attr(755,root,root) %{_libdir}/imlib2/loaders/bmp.so
+
+%files loader_ff
+%attr(755,root,root) %{_libdir}/imlib2/loaders/ff.so
 
 %files loader_gif
 %attr(755,root,root) %{_libdir}/imlib2/loaders/gif.so
