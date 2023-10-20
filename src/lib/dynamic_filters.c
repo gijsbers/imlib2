@@ -97,7 +97,7 @@ __imlib_dynamic_filters_init()
 #ifdef FDEBUG
         printf("DEBUG: Loading Filters\n");
 #endif
-        list = __imlib_ListModules(__imlib_PathToFilters(), &num_filters);
+        list = __imlib_ModulesList(__imlib_PathToFilters(), &num_filters);
         for (i = num_filters - 1; i >= 0; i--)
           {
              tptr = NULL;

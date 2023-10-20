@@ -19,10 +19,10 @@
 ImlibRange         *
 __imlib_CreateRange(void)
 {
-   ImlibRange         *rg = NULL;
+   ImlibRange         *rg;
 
-   rg = malloc(sizeof(ImlibRange));
-   rg->color = NULL;
+   rg = calloc(1, sizeof(ImlibRange));
+
    return rg;
 }
 

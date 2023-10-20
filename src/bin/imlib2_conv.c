@@ -8,91 +8,145 @@
 #endif
 #include <Imlib2.h>
 
-#include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
-#define PROG_NAME "imlib2_conv"
+#define DEBUG 0
+#if DEBUG
+#define Dprintf(fmt...)  printf(fmt)
+#else
+#define Dprintf(fmt...)
+#endif
 
-static void         usage(int exit_status);
+#define HELP \
+   "Usage:\n" \
+   "  imlib2_conv [OPTIONS] [ input-file output-file[.fmt] ]\n" \
+   "    <fmt> defaults to jpg if not provided.\n" \
+   "\n" \
+   "OPTIONS:\n" \
+   "  -h            : Show this help\n" \
+   "  -i key=value  : Attach tag with integer value for saver\n" \
+   "  -j key=string : Attach tag with string value for saver\n"
+
+static void
+usage(void)
+{
+   printf(HELP);
+}
+
+static void
+data_free_cb(void *im, void *data)
+{
+   Dprintf("%s: im=%p data=%p\n", __func__, im, data);
+   free(data);
+}
+
+/*
+ * Attach tag = key/value pair to current image
+ */
+static void
+data_attach(int type, char *arg)
+{
+   char               *p;
+
+   p = strchr(arg, '=');
+   if (!p)
+      return;                   /* No value - just ignore */
+
+   *p++ = '\0';
+
+   switch (type)
+     {
+     default:
+        break;                  /* Should not be possible - ignore */
+     case 'i':                 /* Integer parameter */
+        Dprintf("%s: Set '%s' = %d\n", __func__, arg, atoi(p));
+        imlib_image_attach_data_value(arg, NULL, atoi(p), NULL);
+        break;
+     case 'j':                 /* String parameter */
+        p = strdup(p);
+        Dprintf("%s: Set '%s' = '%s' (%p)\n", __func__, arg, p, p);
+        imlib_image_attach_data_value(arg, p, 0, data_free_cb);
+        break;
+     }
+}
 
 int
 main(int argc, char **argv)
 {
-   char               *dot, *colon, *n, *oldn;
+   int                 opt, err;
+   const char         *fin, *fout;
+   char               *dot;
    Imlib_Image         im;
-   int                 err;
 
-   /* I'm just plain being lazy here.. get our basename. */
-   for (oldn = n = argv[0]; n; oldn = n)
-      n = strchr(++oldn, '/');
-   if (argc < 3 || !strcmp(argv[1], "-h"))
-      usage(-1);
+   while ((opt = getopt(argc, argv, "hi:j:")) != -1)
+     {
+        switch (opt)
+          {
+          default:
+          case 'h':
+             usage();
+             exit(0);
+          case 'i':
+          case 'j':
+             break;             /* Ignore this time around */
+          }
+     }
 
-   im = imlib_load_image_with_errno_return(argv[1], &err);
+   if (argc - optind < 2)
+     {
+        usage();
+        exit(1);
+     }
+
+   fin = argv[optind];
+   fout = argv[optind + 1];
+
+   im = imlib_load_image_with_errno_return(fin, &err);
    if (!im)
      {
-        fprintf(stderr, PROG_NAME ": Error %d:'%s' loading image: '%s'\n",
-                err, imlib_strerror(err), argv[1]);
+        fprintf(stderr, "*** Error %d:'%s' loading image: '%s'\n",
+                err, imlib_strerror(err), fin);
         return 1;
      }
 
-   /* we only care what format the export format is. */
+   Dprintf("%s: im=%p\n", __func__, im);
    imlib_context_set_image(im);
-   /* hopefully the last one will be the one we want.. */
-   dot = strrchr(argv[2], '.');
-   /* if there's a format, snarf it and set the format. */
-   if (dot && *(dot + 1))
-     {
-        colon = strrchr(++dot, ':');
-        /* if a db file with a key, export it to a db. */
-        if (colon && *(colon + 1))
-          {
-             *colon = 0;
-             /* beats having to look for strcasecmp() */
-             if (!strncmp(dot, "db", 2) || !strncmp(dot, "dB", 2) ||
-                 !strncmp(dot, "DB", 2) || !strncmp(dot, "Db", 2))
-               {
-                  imlib_image_set_format("db");
-               }
-             *colon = ':';
-          }
-        else
-          {
-             char               *p, *q;
 
-             /* max length of 8 for format name. seems reasonable. */
-             p = strndup(dot, 8);
-             /* Imlib2 only recognizes lowercase formats. convert it. */
-             for (q = p; *q; q++)
-                *q = tolower(*q);
-             imlib_image_set_format(p);
-             free(p);
+   /* Re-parse options to attach parameters to be used by savers */
+   optind = 1;
+   while ((opt = getopt(argc, argv, "hi:j:")) != -1)
+     {
+        switch (opt)
+          {
+          default:
+             break;
+          case 'i':            /* Attach integer parameter */
+          case 'j':            /* Attach string parameter */
+             data_attach(opt, optarg);
+             break;
           }
      }
+
+   /* hopefully the last one will be the one we want.. */
+   dot = strrchr(fout, '.');
+
+   /* if there's a format, snarf it and set the format. */
+   if (dot && *(dot + 1))
+      imlib_image_set_format(dot + 1);
    else
       imlib_image_set_format("jpg");
 
-   imlib_save_image_with_errno_return(argv[2], &err);
+   imlib_save_image_with_errno_return(fout, &err);
    if (err)
-      fprintf(stderr, PROG_NAME ": Error %d:'%s' saving image: '%s'\n",
-              err, imlib_strerror(err), argv[2]);
+      fprintf(stderr, "*** Error %d:'%s' saving image: '%s'\n",
+              err, imlib_strerror(err), fout);
+
+#if DEBUG
+   imlib_free_image_and_decache();
+#endif
 
    return err;
-}
-
-static void
-usage(int exit_status)
-{
-   fprintf(exit_status ? stderr : stdout,
-           PROG_NAME ": Convert images between formats (part of the "
-           "Imlib2 package)\n\n"
-           "Usage: " PROG_NAME " [ -h | <image1> <image2[.fmt]> ]\n"
-           "  <fmt> defaults to jpg if not provided; images in "
-           "edb files are supported via\n"
-           "        the file.db:/key/name convention.\n"
-           "  -h shows this help.\n\n");
-
-   exit(exit_status);
 }

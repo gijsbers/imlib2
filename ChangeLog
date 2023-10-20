@@ -1,3 +1,26 @@
+v1.9.1 - 2022-07-06
+--------------------
+Kim Woelders (14):
+      x11_color: Simplify and fix error paths
+      JPEG loader: Use mmap'ed file access
+      modules: Eliminate __imlib_TrimLoaderList()
+      Introduce strsplit()
+      modules: Cosmetics, mostly
+      modules: Enable setting multiple loader/filter paths
+      test: Add test_misc
+      modules: Fix signdness warning
+      TIFF loader: Change default save compression type
+      imlib2_load: Remove unused macro
+      imlib2_conv: Cosmetic changes
+      imlib2_conv: Drop obsolete .db stuff, simplify
+      imlib2_conv: Enable passing attached data to saver
+      v1.9.1
+
+NRK (3):
+      check for some alloc failures
+      check for alloc failures some more
+      modules: check for filepath truncation
+
 v1.9.0 - 2022-04-21
 --------------------
 Kim Woelders (53):

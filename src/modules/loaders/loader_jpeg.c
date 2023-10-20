@@ -65,6 +65,7 @@ int
 load2(ImlibImage * im, int load_data)
 {
    int                 w, h, rc;
+   void               *fdata;
    struct jpeg_decompress_struct jds;
    ImLib_JPEG_data     jdata;
    uint8_t            *ptr, *line[16];
@@ -72,15 +73,19 @@ load2(ImlibImage * im, int load_data)
    int                 x, y, l, scans, inc;
    ExifInfo            ei = { 0 };
 
+   rc = LOAD_FAIL;
+
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return rc;
+
    /* set up error handling */
    jds.err = _jdata_init(&jdata);
    if (sigsetjmp(jdata.setjmp_buffer, 1))
       QUIT_WITH_RC(LOAD_FAIL);
 
-   rc = LOAD_FAIL;
-
    jpeg_create_decompress(&jds);
-   jpeg_stdio_src(&jds, im->fp);
+   jpeg_mem_src(&jds, fdata, im->fsize);
    jpeg_save_markers(&jds, JPEG_APP0 + 1, 256);
    jpeg_read_header(&jds, TRUE);
 
@@ -243,6 +248,7 @@ load2(ImlibImage * im, int load_data)
  quit:
    jpeg_destroy_decompress(&jds);
    free(jdata.data);
+   munmap(fdata, im->fsize);
 
    return rc;
 }

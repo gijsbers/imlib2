@@ -36,6 +36,8 @@ __imlib_CalcYPoints(uint32_t * src, int sw, int sh, int dh, int b1, int b2)
      }
 
    p = malloc((dh + 1) * sizeof(uint32_t *));
+   if (!p)
+      return NULL;
 
    val = MIN(sh, dh);
    inc = b1 + b2;
@@ -94,6 +96,8 @@ __imlib_CalcXPoints(int sw, int dw, int b1, int b2)
      }
 
    p = malloc((dw + 1) * sizeof(int));
+   if (!p)
+      return NULL;
 
    val = MIN(sw, dw);
    inc = b1 + b2;
@@ -152,6 +156,8 @@ __imlib_CalcApoints(int s, int d, int b1, int b2, int up)
      }
 
    p = malloc(d * sizeof(int));
+   if (!p)
+      return NULL;
 
    val = MIN(s, d);
    inc = b1 + b2;

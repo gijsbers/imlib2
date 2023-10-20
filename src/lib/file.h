@@ -44,8 +44,9 @@ void                __imlib_FileDel(const char *s);
 char               *__imlib_FileHomeDir(int uid);
 int                 __imlib_ItemInList(char **list, int size, char *item);
 
-const char         *__imlib_PathToFilters(void);
-const char         *__imlib_PathToLoaders(void);
-char              **__imlib_ListModules(const char *path, int *num_ret);
+char              **__imlib_PathToFilters(void);
+char              **__imlib_PathToLoaders(void);
+char              **__imlib_ModulesList(char **path, int *num_ret);
+char               *__imlib_ModuleFind(char **path, const char *name);
 
 #endif

@@ -233,7 +233,7 @@ __imlib_LoadAllLoaders(void)
    DP("%s\n", __func__);
 
    /* list all the loaders imlib can find */
-   list = __imlib_ListModules(__imlib_PathToLoaders(), &num);
+   list = __imlib_ModulesList(__imlib_PathToLoaders(), &num);
    /* no loaders? well don't load anything */
    if (!list)
       return;
@@ -266,7 +266,7 @@ __imlib_LookupKnownLoader(const char *format)
    ImlibLoader        *l;
    unsigned int        i;
    const char         *const *exts;
-   char                nbuf[4096];
+   char               *dso;
 
    kl = NULL;
    for (i = 0; i < ARRAY_SIZE(loaders_known); i++)
@@ -284,9 +284,9 @@ __imlib_LookupKnownLoader(const char *format)
    l = NULL;
    if (kl)
      {
-        snprintf(nbuf, sizeof(nbuf), "%s/%s.so", __imlib_PathToLoaders(),
-                 kl->dso);
-        l = __imlib_ProduceLoader(nbuf);
+        dso = __imlib_ModuleFind(__imlib_PathToLoaders(), kl->dso);
+        l = __imlib_ProduceLoader(dso);
+        free(dso);
      }
    DP("%s: '%s' -> '%s': %p\n", __func__, format, kl ? kl->dso : "-", l);
    return l;

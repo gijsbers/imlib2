@@ -39,6 +39,8 @@ __imlib_MergeUpdate(ImlibUpdate * u, int w, int h, int hgapmax)
    if (h & TM)
       th++;
    t = calloc(tw * th, sizeof(struct _tile));
+   if (!t)
+      return NULL;
    /* fill in all tiles */
    for (uu = u; uu; uu = uu->next)
      {
@@ -51,6 +53,11 @@ __imlib_MergeUpdate(ImlibUpdate * u, int w, int h, int hgapmax)
      }
    /* scan each line - if > hgapmax gaps between tiles, then fill smallest */
    gaps = malloc(tw * sizeof(int));
+   if (!gaps)
+     {
+        free(t);
+        return NULL;
+     }
    for (y = 0; y < th; y++)
      {
         int                 hgaps = 0, start = -1, min;

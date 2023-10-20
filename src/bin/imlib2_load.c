@@ -16,8 +16,6 @@
 #include <sys/time.h>
 #endif
 
-#define PROG_NAME "imlib2_load"
-
 static char         progress_called;
 static FILE        *fout;
 

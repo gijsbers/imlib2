@@ -1,6 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H 1
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef struct _ImlibLoader ImlibLoader;

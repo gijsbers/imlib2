@@ -466,12 +466,9 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    int                 x, y;
    uint8_t             r, g, b, a = 0;
    int                 has_alpha = IM_FLAG_ISSET(im, F_HAS_ALPHA);
+   int                 compression_type;
    int                 i;
-
-   /* By default uses patent-free use COMPRESSION_DEFLATE,
-    * another lossless compression technique */
    ImlibImageTag      *tag;
-   int                 compression_type = COMPRESSION_DEFLATE;
 
    tif = TIFFOpen(im->real_file, "w");
    if (!tif)
@@ -494,12 +491,14 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    /* saver modules */
 
    /* compression */
+   compression_type = COMPRESSION_ADOBE_DEFLATE;
    tag = __imlib_GetTag(im, "compression_type");
    if (tag)
      {
-        compression_type = tag->val;
-        switch (compression_type)
+        switch (tag->val)
           {
+          default:
+             break;
           case COMPRESSION_NONE:
           case COMPRESSION_CCITTRLE:
           case COMPRESSION_CCITTFAX3:
@@ -523,11 +522,9 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
           case COMPRESSION_JBIG:
           case COMPRESSION_SGILOG:
           case COMPRESSION_SGILOG24:
+             compression_type = tag->val;
              break;
-          default:
-             compression_type = COMPRESSION_DEFLATE;
           }
-
      }
    TIFFSetField(tif, TIFFTAG_COMPRESSION, compression_type);
 

@@ -16,6 +16,8 @@ __imlib_CreateCmod(void)
    int                 i;
 
    cm = malloc(sizeof(ImlibColorModifier));
+   if (!cm)
+      return NULL;
    cm->modification_count = mod_count;
    for (i = 0; i < 256; i++)
      {

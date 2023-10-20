@@ -227,7 +227,8 @@ imlib_context_new(void)
 {
    ImlibContext       *context = malloc(sizeof(ImlibContext));
 
-   *context = ctx_default;
+   if (context)
+      *context = ctx_default;
 
    return context;
 }
@@ -1328,8 +1329,11 @@ imlib_create_image_from_drawable(Pixmap mask, int x, int y, int width,
            mask = None;
      }
    im = __imlib_CreateImage(width, height, NULL);
+   if (!im)
+      return NULL;
    im->data = malloc(width * height * sizeof(uint32_t));
-   if (__imlib_GrabDrawableToRGBA(im->data, 0, 0, width, height, ctx->display,
+   if (im->data &&
+       __imlib_GrabDrawableToRGBA(im->data, 0, 0, width, height, ctx->display,
                                   ctx->drawable, mask, ctx->visual,
                                   ctx->colormap, ctx->depth, x, y, width,
                                   height, &domask, need_to_grab_x))
@@ -1354,7 +1358,14 @@ imlib_create_image_from_ximage(XImage * image, XImage * mask, int x, int y,
    if (!IMAGE_DIMENSIONS_OK(width, height))
       return NULL;
    im = __imlib_CreateImage(width, height, NULL);
+   if (!im)
+      return NULL;
    im->data = malloc(width * height * sizeof(uint32_t));
+   if (!im->data)
+     {
+        __imlib_FreeImage(im);
+        return NULL;
+     }
    __imlib_GrabXImageToRGBA(im->data, 0, 0, width, height,
                             ctx->display, image, mask, ctx->visual,
                             ctx->depth, x, y, width, height, need_to_grab_x);
@@ -1381,7 +1392,14 @@ imlib_create_scaled_image_from_drawable(Pixmap mask, int source_x,
    domask = mask != 0 || get_mask_from_shape;
 
    im = __imlib_CreateImage(destination_width, destination_height, NULL);
+   if (!im)
+      return NULL;
    im->data = malloc(destination_width * destination_height * sizeof(uint32_t));
+   if (!im->data)
+     {
+        __imlib_FreeImage(im);
+        return NULL;
+     }
 
    __imlib_GrabDrawableScaledToRGBA(im->data, 0, 0,
                                     destination_width, destination_height,
