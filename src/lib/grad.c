@@ -42,8 +42,8 @@ __imlib_FreeRange(ImlibRange * rg)
 }
 
 void
-__imlib_AddRangeColor(ImlibRange * rg, DATA8 r, DATA8 g, DATA8 b, DATA8 a,
-                      int dist)
+__imlib_AddRangeColor(ImlibRange * rg, uint8_t r, uint8_t g, uint8_t b,
+                      uint8_t a, int dist)
 {
    ImlibRangeColor    *p, *rc;
 
@@ -79,11 +79,11 @@ __imlib_AddRangeColor(ImlibRange * rg, DATA8 r, DATA8 g, DATA8 b, DATA8 a,
       rg->color = rc;
 }
 
-static DATA32      *
+static uint32_t    *
 __imlib_MapRange(ImlibRange * rg, int len)
 {
    ImlibRangeColor    *p;
-   DATA32             *map, *pmap, v, vv;
+   uint32_t           *map, *pmap, v, vv;
    int                 r, g, b, a, rr, gg, bb, aa, i, l, ll, v1, v2, inc, j;
 
    if (!rg->color)
@@ -93,8 +93,8 @@ __imlib_MapRange(ImlibRange * rg, int len)
    ll = 1;
    for (p = rg->color; p; p = p->next)
       ll += p->distance;
-   map = malloc(len * sizeof(DATA32));
-   pmap = calloc(ll, sizeof(DATA32));
+   map = malloc(len * sizeof(uint32_t));
+   pmap = calloc(ll, sizeof(uint32_t));
    i = 0;
    for (p = rg->color; p; p = p->next)
      {
@@ -150,11 +150,11 @@ __imlib_MapRange(ImlibRange * rg, int len)
    return map;
 }
 
-static DATA32      *
+static uint32_t    *
 __imlib_MapHsvaRange(ImlibRange * rg, int len)
 {
    ImlibRangeColor    *p;
-   DATA32             *map, *pmap, k, kk;
+   uint32_t           *map, *pmap, k, kk;
    int                 r, g, b, a, rr, gg, bb, aa, i, l, ll, inc, j;
    float               h1, s1, v1, h2, s2, v2, h, s, v, k1, k2;
 
@@ -165,8 +165,8 @@ __imlib_MapHsvaRange(ImlibRange * rg, int len)
    ll = 1;
    for (p = rg->color; p; p = p->next)
       ll += p->distance;
-   map = malloc(len * sizeof(DATA32));
-   pmap = calloc(ll, sizeof(DATA32));
+   map = malloc(len * sizeof(uint32_t));
+   pmap = calloc(ll, sizeof(uint32_t));
    i = 0;
    for (p = rg->color; p; p = p->next)
      {
@@ -235,18 +235,18 @@ __imlib_MapHsvaRange(ImlibRange * rg, int len)
    return map;
 }
 
-typedef DATA32     *(ImlibRangeMapFunc) (ImlibRange * rg, int len);
+typedef uint32_t   *(ImlibRangeMapFunc) (ImlibRange * rg, int len);
 
 static void
 _DrawGradient(ImlibImage * im, int x, int y, int w, int h,
               ImlibRange * rg, double angle, ImlibOp op,
               int clx, int cly, int clw, int clh, ImlibRangeMapFunc * rmf)
 {
-   DATA32             *map, *p;
+   uint32_t           *map, *p;
    int                *hlut, *vlut, len;
    int                 xx, yy, xoff, yoff, ww, hh, jump;
    int                 tmp, i, divw, divh;
-   DATA8               r, g, b, a;
+   uint8_t             r, g, b, a;
 
    xoff = yoff = 0;
    ww = w;

@@ -64,14 +64,14 @@ __imlib_font_cache_glyph_get(ImlibFont * fn, FT_UInt index)
 
 void
 __imlib_render_str(ImlibImage * im, ImlibFont * fn, int drx, int dry,
-                   const char *text, DATA32 pixel, int dir, double angle,
+                   const char *text, uint32_t pixel, int dir, double angle,
                    int *retw, int *reth, int blur,
                    int *nextx, int *nexty, ImlibOp op, int clx, int cly,
                    int clw, int clh)
 {
    int                 w, h, ascent;
    ImlibImage         *im2;
-   DATA32             *data;
+   uint32_t           *data;
    int                 nx, ny;
 
    __imlib_font_query_advance(fn, text, &w, NULL);
@@ -79,7 +79,7 @@ __imlib_render_str(ImlibImage * im, ImlibFont * fn, int drx, int dry,
 
    if (!IMAGE_DIMENSIONS_OK(w, h))
       return;
-   data = calloc(w * h, sizeof(DATA32));
+   data = calloc(w * h, sizeof(uint32_t));
    if (!data)
       return;
    /* TODO check if this is the right way of rendering. Esp for huge sizes */
@@ -243,14 +243,14 @@ __imlib_render_str(ImlibImage * im, ImlibFont * fn, int drx, int dry,
 }
 
 void
-__imlib_font_draw(ImlibImage * dst, DATA32 col, ImlibFont * fn, int x, int y,
+__imlib_font_draw(ImlibImage * dst, uint32_t col, ImlibFont * fn, int x, int y,
                   const char *text, int *nextx, int *nexty, int clx, int cly,
                   int clw, int clh)
 {
    int                 pen_x, pen_y;
    int                 chr;
    int                 ext_x, ext_y, ext_w, ext_h;
-   DATA32             *im;
+   uint32_t           *im;
    int                 im_w, im_h;
    int                 lut[256];
    int                 ii;
@@ -317,7 +317,7 @@ __imlib_font_draw(ImlibImage * dst, DATA32 col, ImlibFont * fn, int x, int y,
 
         if (chr_x < (ext_x + ext_w))
           {
-             DATA8              *data;
+             uint8_t            *data;
              int                 i, j, w, h;
 
              data = fg->glyph_out->bitmap.buffer;
@@ -353,9 +353,9 @@ __imlib_font_draw(ImlibImage * dst, DATA32 col, ImlibFont * fn, int x, int y,
                                    }
                                  if (in_w < w)
                                    {
-                                      DATA8              *src_ptr;
-                                      DATA32             *dst_ptr;
-                                      DATA32             *dst_end_ptr;
+                                      uint8_t            *src_ptr;
+                                      uint32_t           *dst_ptr;
+                                      uint32_t           *dst_end_ptr;
 
                                       src_ptr = data + (i * j) + in_x;
                                       dst_ptr = im + (dy * im_w) + dx;

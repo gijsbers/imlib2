@@ -21,7 +21,7 @@ do {                                     \
 } while (0)
 
 ImlibUpdate        *
-__imlib_Point_DrawToImage(int x, int y, DATA32 color,
+__imlib_Point_DrawToImage(int x, int y, uint32_t color,
                           ImlibImage * im, int clx, int cly, int clw, int clh,
                           ImlibOp op, char blend, char make_updates)
 {
@@ -56,16 +56,16 @@ __imlib_Point_DrawToImage(int x, int y, DATA32 color,
 }
 
 static int
-__imlib_SimpleLine_DrawToData(int x0, int y0, int x1, int y1, DATA32 color,
-                              DATA32 * dst, int dstw, int clx, int cly, int clw,
-                              int clh, int *cl_x0, int *cl_y0, int *cl_x1,
-                              int *cl_y1, ImlibOp op, char dst_alpha,
-                              char blend)
+__imlib_SimpleLine_DrawToData(int x0, int y0, int x1, int y1, uint32_t color,
+                              uint32_t * dst, int dstw, int clx, int cly,
+                              int clw, int clh, int *cl_x0, int *cl_y0,
+                              int *cl_x1, int *cl_y1, ImlibOp op,
+                              char dst_alpha, char blend)
 {
    ImlibPointDrawFunction pfunc;
    ImlibSpanDrawFunction sfunc;
    int                 dx, dy, len, lx, ty, rx, by;
-   DATA32             *p;
+   uint32_t           *p;
 
    if (A_VAL(&color) == 0xff)
       blend = 0;
@@ -393,8 +393,8 @@ do { \
 } while (0)
 
 static int
-__imlib_Line_DrawToData(int x0, int y0, int x1, int y1, DATA32 color,
-                        DATA32 * dst, int dstw, int clx, int cly, int clw,
+__imlib_Line_DrawToData(int x0, int y0, int x1, int y1, uint32_t color,
+                        uint32_t * dst, int dstw, int clx, int cly, int clw,
                         int clh, int *cl_x0, int *cl_y0, int *cl_x1, int *cl_y1,
                         ImlibOp op, char dst_alpha, char blend)
 {
@@ -402,7 +402,7 @@ __imlib_Line_DrawToData(int x0, int y0, int x1, int y1, DATA32 color,
    int                 px, py, x, y, prev_x, prev_y;
    int                 dx, dy, rx, by, p0_in, p1_in, dh, a_a = 0;
    int                 delx, dely, xx, yy, dxx, dyy;
-   DATA32             *p;
+   uint32_t           *p;
 
    dx = x1 - x0;
    dy = y1 - y0;
@@ -508,8 +508,8 @@ __imlib_Line_DrawToData(int x0, int y0, int x1, int y1, DATA32 color,
 }
 
 static int
-__imlib_Line_DrawToData_AA(int x0, int y0, int x1, int y1, DATA32 color,
-                           DATA32 * dst, int dstw, int clx, int cly, int clw,
+__imlib_Line_DrawToData_AA(int x0, int y0, int x1, int y1, uint32_t color,
+                           uint32_t * dst, int dstw, int clx, int cly, int clw,
                            int clh, int *cl_x0, int *cl_y0, int *cl_x1,
                            int *cl_y1, ImlibOp op, char dst_alpha, char blend)
 {
@@ -517,8 +517,8 @@ __imlib_Line_DrawToData_AA(int x0, int y0, int x1, int y1, DATA32 color,
    int                 px, py, x, y, prev_x, prev_y;
    int                 dx, dy, rx, by, p0_in, p1_in, dh, a_a = 1;
    int                 delx, dely, xx, yy, dxx, dyy;
-   DATA32             *p;
-   DATA8               ca = A_VAL(&color);
+   uint32_t           *p;
+   uint8_t             ca = A_VAL(&color);
 
    dx = x1 - x0;
    dy = y1 - y0;
@@ -549,8 +549,8 @@ __imlib_Line_DrawToData_AA(int x0, int y0, int x1, int y1, DATA32 color,
 
         while (px < rx)
           {
-             DATA32              tmp;
-             DATA8               aa;
+             uint32_t            tmp;
+             uint8_t             aa;
 
              y = (yy >> 16);
              if (prev_y != y)
@@ -608,8 +608,8 @@ __imlib_Line_DrawToData_AA(int x0, int y0, int x1, int y1, DATA32 color,
 
    while (py < by)
      {
-        DATA32              tmp;
-        DATA8               aa;
+        uint32_t            tmp;
+        uint8_t             aa;
 
         x = (xx >> 16);
         if (prev_x != x)
@@ -659,7 +659,7 @@ __imlib_Line_DrawToData_AA(int x0, int y0, int x1, int y1, DATA32 color,
 }
 
 ImlibUpdate        *
-__imlib_Line_DrawToImage(int x0, int y0, int x1, int y1, DATA32 color,
+__imlib_Line_DrawToImage(int x0, int y0, int x1, int y1, uint32_t color,
                          ImlibImage * im, int clx, int cly, int clw, int clh,
                          ImlibOp op, char blend, char anti_alias,
                          char make_updates)

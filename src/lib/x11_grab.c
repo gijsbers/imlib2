@@ -11,7 +11,7 @@
 #include "x11_ximage.h"
 
 static char         _x_err = 0;
-static DATA8        rtab[256], gtab[256], btab[256];
+static uint8_t      rtab[256], gtab[256], btab[256];
 
 static int
 Tmp_HandleXError(Display * d, XErrorEvent * ev)
@@ -21,18 +21,18 @@ Tmp_HandleXError(Display * d, XErrorEvent * ev)
 }
 
 void
-__imlib_GrabXImageToRGBA(DATA32 * data,
+__imlib_GrabXImageToRGBA(uint32_t * data,
                          int x_dst, int y_dst, int w_dst, int h_dst,
                          Display * d, XImage * xim, XImage * mxim, Visual * v,
                          int depth,
                          int x_src, int y_src, int w_src, int h_src, int grab)
 {
    int                 x, y, inx, iny;
-   const DATA32       *src;
-   const DATA16       *s16;
-   DATA32             *ptr;
+   const uint32_t     *src;
+   const uint16_t     *s16;
+   uint32_t           *ptr;
    int                 pixel;
-   DATA16              p16;
+   uint16_t            p16;
    int                 bgr = 0;
 
    if (!data)
@@ -179,7 +179,7 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
           {
              for (y = 0; y < h_src; y++)
                {
-                  s16 = (DATA16 *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = (uint16_t *) (xim->data + (xim->bytes_per_line * y));
                   ptr = data + ((y + iny) * w_dst) + inx;
                   for (x = 0; x < w_src; x++)
                     {
@@ -193,7 +193,7 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
           {
              for (y = 0; y < h_src; y++)
                {
-                  s16 = (DATA16 *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = (uint16_t *) (xim->data + (xim->bytes_per_line * y));
                   ptr = data + ((y + iny) * w_dst) + inx;
                   for (x = 0; x < w_src; x++)
                     {
@@ -226,7 +226,7 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
           {
              for (y = 0; y < h_src; y++)
                {
-                  s16 = (DATA16 *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = (uint16_t *) (xim->data + (xim->bytes_per_line * y));
                   ptr = data + ((y + iny) * w_dst) + inx;
                   for (x = 0; x < w_src; x++)
                     {
@@ -240,7 +240,7 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
           {
              for (y = 0; y < h_src; y++)
                {
-                  s16 = (DATA16 *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = (uint16_t *) (xim->data + (xim->bytes_per_line * y));
                   ptr = data + ((y + iny) * w_dst) + inx;
                   for (x = 0; x < w_src; x++)
                     {
@@ -324,7 +324,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -341,7 +342,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -359,7 +361,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -375,7 +378,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -393,7 +397,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -411,7 +416,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -430,7 +436,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -448,7 +455,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -469,7 +477,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -485,7 +494,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -501,7 +511,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -516,7 +527,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                       src =
+                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -578,7 +590,7 @@ _WindowGetShapeMask(Display * d, Window p,
 }
 
 int
-__imlib_GrabDrawableToRGBA(DATA32 * data, int x_dst, int y_dst, int w_dst,
+__imlib_GrabDrawableToRGBA(uint32_t * data, int x_dst, int y_dst, int w_dst,
                            int h_dst, Display * d, Drawable p, Pixmap m_,
                            Visual * v, Colormap cm, int depth, int x_src,
                            int y_src, int w_src, int h_src, char *pdomask,
@@ -808,7 +820,7 @@ __imlib_GrabDrawableToRGBA(DATA32 * data, int x_dst, int y_dst, int w_dst,
 }
 
 int
-__imlib_GrabDrawableScaledToRGBA(DATA32 * data, int nu_x_dst, int nu_y_dst,
+__imlib_GrabDrawableScaledToRGBA(uint32_t * data, int nu_x_dst, int nu_y_dst,
                                  int w_dst, int h_dst,
                                  Display * d, Drawable p, Pixmap m_,
                                  Visual * v, Colormap cm, int depth,

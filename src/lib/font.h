@@ -86,11 +86,11 @@ Imlib_Font_Glyph   *__imlib_font_get_next_glyph(ImlibFont * fn,
 Imlib_Font_Glyph   *__imlib_font_cache_glyph_get(ImlibFont * fn, FT_UInt index);
 void                __imlib_render_str(ImlibImage * im, ImlibFont * f,
                                        int drx, int dry, const char *text,
-                                       DATA32 pixel, int dir, double angle,
+                                       uint32_t pixel, int dir, double angle,
                                        int *retw, int *reth, int blur,
                                        int *nextx, int *nexty, ImlibOp op,
                                        int clx, int cly, int clw, int clh);
-void                __imlib_font_draw(ImlibImage * dst, DATA32 col,
+void                __imlib_font_draw(ImlibImage * dst, uint32_t col,
                                       ImlibFont * fn, int x, int y,
                                       const char *text, int *nextx, int *nexty,
                                       int clx, int cly, int clw, int clh);

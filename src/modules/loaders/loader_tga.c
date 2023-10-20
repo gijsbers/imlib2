@@ -11,12 +11,10 @@
  */
 #include "loader_common.h"
 
-#include <stdint.h>
-
 #define DBG_PFX "LDR-tga"
 
 /* flip an inverted image - see RLE reading below */
-static void         tgaflip(DATA32 * in, int w, int h, int fliph, int flipv);
+static void         tgaflip(uint32_t * in, int w, int h, int fliph, int flipv);
 
 /* TGA pixel formats */
 #define TGA_TYPE_MAPPED      1
@@ -78,7 +76,7 @@ load2(ImlibImage * im, int load_data)
    int                 rle, bpp, hasa, hasc, fliph, flipv;
    unsigned long       datasize;
    const unsigned char *bufptr, *bufend, *palette;
-   DATA32             *dataptr;
+   uint32_t           *dataptr;
    int                 palcnt = 0, palbpp = 0;
    unsigned char       a, r, g, b;
    unsigned int        pix16;
@@ -314,7 +312,7 @@ load2(ImlibImage * im, int load_data)
    else
      {
         /* decode RLE compressed data */
-        DATA32             *final_pixel = dataptr + im->w * im->h;
+        uint32_t           *final_pixel = dataptr + im->w * im->h;
 
         /* loop until we've got all the pixels or run out of input */
         while ((dataptr < final_pixel))
@@ -464,18 +462,16 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   if (rc <= 0)
-      __imlib_FreeData(im);
    munmap(fdata, im->fsize);
 
    return rc;
 }
 
-/* flip a DATA32 image block in place */
+/* flip a uint32_t image block in place */
 static void
-tgaflip(DATA32 * in, int w, int h, int fliph, int flipv)
+tgaflip(uint32_t * in, int w, int h, int fliph, int flipv)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
    int                 x, y, x2, y2, dx, dy, nx, ny;
 
    dx = fliph ? -1 : 1;
@@ -506,7 +502,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
    int                 rc;
    FILE               *f;
-   DATA32             *dataptr;
+   uint32_t           *dataptr;
    unsigned char      *buf, *bufptr;
    int                 y;
    tga_header          header;
@@ -560,7 +556,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
         /* for each pixel in the row */
         for (x = 0; x < im->w; x++)
           {
-             DATA32              pixel = *dataptr++;
+             uint32_t            pixel = *dataptr++;
 
              *bufptr++ = PIXEL_B(pixel);
              *bufptr++ = PIXEL_G(pixel);

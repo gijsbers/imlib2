@@ -1,11 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H 1
 
-#define DATABIG unsigned long long
-#define DATA64  unsigned long long
-#define DATA32  unsigned int
-#define DATA16  unsigned short
-#define DATA8   unsigned char
+#include <stdint.h>
 
 typedef struct _ImlibLoader ImlibLoader;
 

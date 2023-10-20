@@ -416,10 +416,10 @@ do { \
    ysort = (IndexedValue *)malloc(nvertices * sizeof(IndexedValue));	\
    if (!ysort) { free(edge); return; }					\
 									\
-   s0 = (DATA8 *)malloc(clw * sizeof(DATA8));				\
+   s0 = (uint8_t *)malloc(clw * sizeof(uint8_t));				\
    if (!s0) { free(edge); free(ysort); return; }			\
 									\
-   s1 = (DATA8 *)malloc(clw * sizeof(DATA8));				\
+   s1 = (uint8_t *)malloc(clw * sizeof(uint8_t));				\
    if (!s1) { free(edge); free(ysort); free(s0); return; }		\
 									\
    memset(s0,0,clw);							\
@@ -472,8 +472,8 @@ do { \
 /* draws the poly-line defined by the sequence of vertices */
 
 static void
-__imlib_Polygon_DrawToData(ImlibPoly * poly, char close, DATA32 color,
-                           DATA32 * dst, int dstw,
+__imlib_Polygon_DrawToData(ImlibPoly * poly, char close, uint32_t color,
+                           uint32_t * dst, int dstw,
                            int clx, int cly, int clw, int clh,
                            ImlibOp op, char dst_alpha, char blend)
 {
@@ -484,8 +484,8 @@ __imlib_Polygon_DrawToData(ImlibPoly * poly, char close, DATA32 color,
    int                 nactive_edges, nactive_horz_edges, nvertices;
    int                 clrx, clby, ty, by, y;
    int                 x0, x1, nx0, nx1;
-   DATA32             *p;
-   DATA8              *s0, *s1, *ps;
+   uint32_t           *p;
+   uint8_t            *s0, *s1, *ps;
 
    INIT_POLY();
 
@@ -711,8 +711,8 @@ __imlib_Polygon_DrawToData(ImlibPoly * poly, char close, DATA32 color,
 /* anti-aliased drawing */
 
 static void
-__imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
-                              DATA32 * dst, int dstw,
+__imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, uint32_t color,
+                              uint32_t * dst, int dstw,
                               int clx, int cly, int clw, int clh,
                               ImlibOp op, char dst_alpha, char blend)
 {
@@ -723,8 +723,8 @@ __imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
    int                 nactive_edges, nactive_horz_edges, nvertices;
    int                 clrx, clby, ty, by, y, yy, prev_y, prev_yy;
    int                 x0, x1, nx0, nx1;
-   DATA32             *p;
-   DATA8              *s0, *s1, *ps;
+   uint32_t           *p;
+   uint8_t            *s0, *s1, *ps;
 
    INIT_POLY();
 
@@ -800,8 +800,8 @@ __imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
                {
                case STEEP_EDGE:
                   {
-                     DATA32              tmp;
-                     DATA8               aa;
+                     uint32_t            tmp;
+                     uint8_t             aa;
 
                      aa = (e->xx - (e_lx << 16)) >> 8;
                      rx = e_lx + 1;
@@ -862,8 +862,8 @@ __imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
                              x0 = x;
                           while (ey < y)
                             {
-                               DATA32              tmp;
-                               DATA8               aa;
+                               uint32_t            tmp;
+                               uint8_t             aa;
 
                                if ((ey == prev_y) && IN_SEGMENT(x, clx, clw))
                                  {
@@ -878,8 +878,8 @@ __imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
                           lx = x;
                           while (ey == y)
                             {
-                               DATA32              tmp;
-                               DATA8               aa;
+                               uint32_t            tmp;
+                               uint8_t             aa;
 
                                if (IN_SEGMENT(x, clx, clw))
                                  {
@@ -906,8 +906,8 @@ __imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
                                ey = eyy >> 16;
                                while ((ey == y) && (x <= rx))
                                  {
-                                    DATA32              tmp;
-                                    DATA8               aa;
+                                    uint32_t            tmp;
+                                    uint8_t             aa;
 
                                     if (IN_SEGMENT(x, clx, clw))
                                       {
@@ -929,8 +929,8 @@ __imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
                         x1 = x;
                      while (ey < y)
                        {
-                          DATA32              tmp;
-                          DATA8               aa;
+                          uint32_t            tmp;
+                          uint8_t             aa;
 
                           if ((ey == prev_y) && IN_SEGMENT(x, clx, clw))
                             {
@@ -945,8 +945,8 @@ __imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
                      rx = x;
                      while (ey == y)
                        {
-                          DATA32              tmp;
-                          DATA8               aa;
+                          uint32_t            tmp;
+                          uint8_t             aa;
 
                           if (IN_SEGMENT(x, clx, clw))
                             {
@@ -972,8 +972,8 @@ __imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
                           ey = eyy >> 16;
                           while ((ey == y) && (x >= lx))
                             {
-                               DATA32              tmp;
-                               DATA8               aa;
+                               uint32_t            tmp;
+                               uint8_t             aa;
 
                                if (IN_SEGMENT(x, clx, clw))
                                  {
@@ -1040,7 +1040,7 @@ __imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
 }
 
 void
-__imlib_Polygon_DrawToImage(ImlibPoly * poly, char close, DATA32 color,
+__imlib_Polygon_DrawToImage(ImlibPoly * poly, char close, uint32_t color,
                             ImlibImage * im, int clx, int cly, int clw, int clh,
                             ImlibOp op, char blend, char anti_alias)
 {
@@ -1097,8 +1097,8 @@ __imlib_Polygon_DrawToImage(ImlibPoly * poly, char close, DATA32 color,
 /* aliased filling */
 
 static void
-__imlib_Polygon_FillToData(ImlibPoly * poly, DATA32 color,
-                           DATA32 * dst, int dstw,
+__imlib_Polygon_FillToData(ImlibPoly * poly, uint32_t color,
+                           uint32_t * dst, int dstw,
                            int clx, int cly, int clw, int clh,
                            ImlibOp op, char dst_alpha, char blend)
 {
@@ -1109,8 +1109,8 @@ __imlib_Polygon_FillToData(ImlibPoly * poly, DATA32 color,
    int                 nactive_edges, nactive_horz_edges, nvertices;
    int                 clrx, clby, ty, by, y;
    int                 x0, x1, nx0, nx1;
-   DATA32             *p;
-   DATA8              *s0, *s1, *ps;
+   uint32_t           *p;
+   uint8_t            *s0, *s1, *ps;
 
    INIT_POLY();
 
@@ -1414,8 +1414,8 @@ __imlib_Polygon_FillToData(ImlibPoly * poly, DATA32 color,
 /* anti-aliased filling */
 
 static void
-__imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
-                              DATA32 * dst, int dstw,
+__imlib_Polygon_FillToData_AA(ImlibPoly * poly, uint32_t color,
+                              uint32_t * dst, int dstw,
                               int clx, int cly, int clw, int clh,
                               ImlibOp op, char dst_alpha, char blend)
 {
@@ -1426,8 +1426,8 @@ __imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
    int                 nactive_edges, nactive_horz_edges, nvertices;
    int                 clrx, clby, ty, by, y, yy, prev_y, prev_yy;
    int                 x0, x1, nx0, nx1;
-   DATA32             *p;
-   DATA8              *s0, *s1, *ps;
+   uint32_t           *p;
+   uint8_t            *s0, *s1, *ps;
 
    INIT_POLY();
 
@@ -1513,8 +1513,8 @@ __imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
                {
                case STEEP_EDGE:
                   {
-                     DATA32              tmp;
-                     DATA8               aa;
+                     uint32_t            tmp;
+                     uint8_t             aa;
 
                      if (le_lx < x0)
                         x0 = le_lx;
@@ -1556,8 +1556,8 @@ __imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
                        {
                           while (ey < y)
                             {
-                               DATA32              tmp;
-                               DATA8               aa;
+                               uint32_t            tmp;
+                               uint8_t             aa;
 
                                if ((ey == prev_y) && IN_SEGMENT(x, clx, clw))
                                  {
@@ -1578,8 +1578,8 @@ __imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
                                rx = le->v1->x;
                                while ((ey == y) && (x <= rx))
                                  {
-                                    DATA32              tmp;
-                                    DATA8               aa;
+                                    uint32_t            tmp;
+                                    uint8_t             aa;
 
                                     if (IN_SEGMENT(x, clx, clw))
                                       {
@@ -1597,8 +1597,8 @@ __imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
 
                      while (ey >= y)
                        {
-                          DATA32              tmp;
-                          DATA8               aa;
+                          uint32_t            tmp;
+                          uint8_t             aa;
 
                           if ((ey == y) && IN_SEGMENT(x, clx, clw))
                             {
@@ -1637,8 +1637,8 @@ __imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
                {
                case STEEP_EDGE:
                   {
-                     DATA32              tmp;
-                     DATA8               aa;
+                     uint32_t            tmp;
+                     uint8_t             aa;
 
                      rx = re_lx + 1;
                      if (rx > x1)
@@ -1680,8 +1680,8 @@ __imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
                        {
                           while (ey >= y)
                             {
-                               DATA32              tmp;
-                               DATA8               aa;
+                               uint32_t            tmp;
+                               uint8_t             aa;
 
                                if ((ey == y) && IN_SEGMENT(x, clx, clw))
                                  {
@@ -1699,8 +1699,8 @@ __imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
 
                      while (ey < y)
                        {
-                          DATA32              tmp;
-                          DATA8               aa;
+                          uint32_t            tmp;
+                          uint8_t             aa;
 
                           if ((ey == prev_y) && IN_SEGMENT(x, clx, clw))
                             {
@@ -1721,8 +1721,8 @@ __imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
                           lx = re->v1->x;
                           while ((ey == y) && (x >= lx))
                             {
-                               DATA32              tmp;
-                               DATA8               aa;
+                               uint32_t            tmp;
+                               uint8_t             aa;
 
                                if (IN_SEGMENT(x, clx, clw))
                                  {
@@ -1796,7 +1796,7 @@ __imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
 }
 
 void
-__imlib_Polygon_FillToImage(ImlibPoly * poly, DATA32 color,
+__imlib_Polygon_FillToImage(ImlibPoly * poly, uint32_t color,
                             ImlibImage * im, int clx, int cly, int clw, int clh,
                             ImlibOp op, char blend, char anti_alias)
 {

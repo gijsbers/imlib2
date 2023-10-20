@@ -2,11 +2,13 @@ AUTOMAKE_OPTIONS = foreign
 
 ACLOCAL_AMFLAGS = -I m4
 
-if BUILD_TEST
-SUBDIRS_TEST = test
+SUBDIRS = src data
+if BUILD_DOC
+SUBDIRS += doc
 endif
-
-SUBDIRS = src data doc $(SUBDIRS_TEST)
+if BUILD_TEST
+SUBDIRS += test
+endif
 DIST_SUBDIRS = src data doc
 
 CLEANFILES = $(PACKAGE).spec
@@ -17,8 +19,7 @@ MAINTAINERCLEANFILES = aclocal.m4 compile \
 		       Makefile.in */Makefile.in */*/Makefile.in */*/*/Makefile.in \
 		       imlib2_docs.tar.gz
 
-EXTRA_DIST = AUTHORS COPYING COPYING-PLAIN gendoc \
-             Doxyfile \
+EXTRA_DIST = AUTHORS COPYING COPYING-PLAIN \
 	     README.in README \
 	     $(PACKAGE).pc.in \
 	     $(PACKAGE).spec.in
@@ -37,5 +38,10 @@ dist-hook: $(top_builddir)/$(PACKAGE).spec
 $(top_builddir)/$(PACKAGE).spec: FORCE
 	sed "s/\@PACKAGE\@/@PACKAGE@/;s/\@VERSION\@/@VERSION@/;s/\@RPM_RELEASE\@/$(RPM_RELEASE)/" \
 		$(top_srcdir)/$(PACKAGE).spec.in > $@
+
+.PHONY: doc src test
+doc src test:
+	$(MAKE) -C $@
+test: src
 
 FORCE:

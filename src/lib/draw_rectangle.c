@@ -6,14 +6,15 @@
 #include "span.h"
 
 static void
-__imlib_Rectangle_DrawToData(int x, int y, int rw, int rh, DATA32 color,
-                             DATA32 * dst, int dstw, int clx, int cly, int clw,
-                             int clh, ImlibOp op, char dst_alpha, char blend)
+__imlib_Rectangle_DrawToData(int x, int y, int rw, int rh, uint32_t color,
+                             uint32_t * dst, int dstw, int clx, int cly,
+                             int clw, int clh, ImlibOp op, char dst_alpha,
+                             char blend)
 {
    ImlibPointDrawFunction pfunc;
    ImlibSpanDrawFunction sfunc;
    int                 x0, y0, x1, y1, len;
-   DATA32             *p;
+   uint32_t           *p;
 
    if (A_VAL(&color) == 0xff)
       blend = 0;
@@ -83,12 +84,13 @@ __imlib_Rectangle_DrawToData(int x, int y, int rw, int rh, DATA32 color,
 }
 
 static void
-__imlib_Rectangle_FillToData(int x, int y, int rw, int rh, DATA32 color,
-                             DATA32 * dst, int dstw, int clx, int cly, int clw,
-                             int clh, ImlibOp op, char dst_alpha, char blend)
+__imlib_Rectangle_FillToData(int x, int y, int rw, int rh, uint32_t color,
+                             uint32_t * dst, int dstw, int clx, int cly,
+                             int clw, int clh, ImlibOp op, char dst_alpha,
+                             char blend)
 {
    ImlibSpanDrawFunction sfunc;
-   DATA32             *p;
+   uint32_t           *p;
 
    if (A_VAL(&color) == 0xff)
       blend = 0;
@@ -113,7 +115,7 @@ __imlib_Rectangle_FillToData(int x, int y, int rw, int rh, DATA32 color,
 }
 
 void
-__imlib_Rectangle_DrawToImage(int x, int y, int w, int h, DATA32 color,
+__imlib_Rectangle_DrawToImage(int x, int y, int w, int h, uint32_t color,
                               ImlibImage * im, int clx, int cly, int clw,
                               int clh, ImlibOp op, char blend)
 {
@@ -152,7 +154,7 @@ __imlib_Rectangle_DrawToImage(int x, int y, int w, int h, DATA32 color,
 }
 
 void
-__imlib_Rectangle_FillToImage(int x, int y, int w, int h, DATA32 color,
+__imlib_Rectangle_FillToImage(int x, int y, int w, int h, uint32_t color,
                               ImlibImage * im, int clx, int cly, int clw,
                               int clh, ImlibOp op, char blend)
 {

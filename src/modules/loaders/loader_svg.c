@@ -1,11 +1,35 @@
+#define _GNU_SOURCE             /* memmem() */
 #include "loader_common.h"
 
 #include <math.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcomment"
 #include <librsvg/rsvg.h>
+#pragma GCC diagnostic pop
 
 #define DBG_PFX "LDR-svg"
 
 #define DPI 96
+
+#define MATCHSTR(ptr, len, str) (len >= sizeof(str) && memcmp(ptr, str, sizeof(str) - 1) == 0)
+#define FINDSTR(ptr, len, str) (memmem(ptr, len, str, sizeof(str) - 1) != 0)
+
+static int
+_sig_check(const unsigned char *buf, unsigned int len)
+{
+   /* May also be compressed? - forget for now */
+
+   if (len > 4096)
+      len = 4096;
+   if (MATCHSTR(buf, len, "<svg"))
+      return 0;
+   if (!MATCHSTR(buf, len, "<?xml version=") &&
+       !MATCHSTR(buf, len, "<!--") && !MATCHSTR(buf, len, "<!DOCTYPE svg"))
+      return 1;
+   return FINDSTR(buf, len, "<svg") ? 0 : 1;
+}
+
+#if LIBRSVG_CHECK_VERSION(2, 46, 0)
 
 static double
 u2pix(double x, int unit)
@@ -14,6 +38,7 @@ u2pix(double x, int unit)
      {
      default:
      case RSVG_UNIT_PERCENT:   /* 0  percentage values where 1.0 means 100% */
+        return 0;               /* Size should be determined otherwise */
      case RSVG_UNIT_PX:        /* 1  pixels */
      case RSVG_UNIT_EM:        /* 2  em, or the current font size */
      case RSVG_UNIT_EX:        /* 3  x-height of the current font */
@@ -30,6 +55,8 @@ u2pix(double x, int unit)
         return x * DPI / 6;
      }
 }
+
+#endif /* LIBRSVG need 2.46 */
 
 static void
 _handle_error(GError * error)
@@ -48,7 +75,6 @@ load2(ImlibImage * im, int load_data)
    gboolean            ok;
    cairo_surface_t    *surface;
    cairo_t            *cr;
-   RsvgRectangle       cvb;
 
    rc = LOAD_FAIL;
 
@@ -56,16 +82,22 @@ load2(ImlibImage * im, int load_data)
    if (fdata == MAP_FAILED)
       return LOAD_BADFILE;
 
+   error = NULL;
+   rsvg = NULL;
    surface = NULL;
    cr = NULL;
 
-   error = NULL;
+   /* Signature check */
+   if (_sig_check(fdata, im->fsize))
+      goto quit;
+
    rsvg = rsvg_handle_new_from_data(fdata, im->fsize, &error);
    if (!rsvg)
       goto quit;
 
    rc = LOAD_BADIMAGE;          /* Format accepted */
 
+#if LIBRSVG_CHECK_VERSION(2, 46, 0)
    {
       gboolean            out_has_width, out_has_height, out_has_viewbox;
       RsvgLength          out_width = { }, out_height = { };
@@ -90,20 +122,23 @@ load2(ImlibImage * im, int load_data)
            im->h = lrint(u2pix(out_height.length, out_height.unit));
            D("Choose rsvg_handle_get_intrinsic_dimensions width/height\n");
 #if !IMLIB2_DEBUG
-           goto got_size;
+           if (im->w > 0 && im->h > 0)
+              goto got_size;
 #endif
         }
 
-      if (out_has_viewbox && (im->w <= 0 || im->w <= 0))
+      if (out_has_viewbox && (im->w <= 0 || im->h <= 0))
         {
-           im->w = ceil(out_viewbox.width);
-           im->h = ceil(out_viewbox.height);
+           im->w = lrint(out_viewbox.width);
+           im->h = lrint(out_viewbox.height);
            D("Choose rsvg_handle_get_intrinsic_dimensions viewbox\n");
 #if !IMLIB2_DEBUG
-           goto got_size;
+           if (im->w > 0 && im->h > 0)
+              goto got_size;
 #endif
         }
    }
+#endif /* LIBRSVG need 2.46 */
 
 #if 0
 #if LIBRSVG_CHECK_VERSION(2, 52, 0)
@@ -114,17 +149,19 @@ load2(ImlibImage * im, int load_data)
       D("ok=%d WxH=%.1fx%.1f\n", ok, dw, dh);
       if (ok && (im->w <= 0 || im->w <= 0))
         {
-           im->w = ceil(dw);
-           im->h = ceil(dh);
+           im->w = lrint(dw);
+           im->h = lrint(dh);
            D("Choose rsvg_handle_get_intrinsic_size_in_pixels width/height\n");
 #if !IMLIB2_DEBUG
-           goto got_size;
+           if (im->w > 0 && im->h > 0)
+              goto got_size;
 #endif
         }
    }
 #endif
-#endif
+#endif /* LIBRSVG need 2.52 */
 
+#if LIBRSVG_CHECK_VERSION(2, 46, 0)
    {
       RsvgRectangle       out_ink_rect = { }, out_logical_rect = { };
 
@@ -137,14 +174,16 @@ load2(ImlibImage * im, int load_data)
         out_logical_rect.height);
       if (ok && (im->w <= 0 || im->w <= 0))
         {
-           im->w = ceil(out_ink_rect.width);
-           im->h = ceil(out_ink_rect.height);
+           im->w = lrint(out_ink_rect.width);
+           im->h = lrint(out_ink_rect.height);
            D("Choose rsvg_handle_get_geometry_for_element ink rect width/height\n");
 #if !IMLIB2_DEBUG
-           goto got_size;
+           if (im->w > 0 && im->h > 0)
+              goto got_size;
 #endif
         }
    }
+#endif /* LIBRSVG need 2.46 */
 
 #if !IMLIB2_DEBUG
  got_size:
@@ -162,11 +201,11 @@ load2(ImlibImage * im, int load_data)
    if (!__imlib_AllocateData(im))
       QUIT_WITH_RC(LOAD_OOM);
 
-   memset(im->data, 0, im->w * im->h * sizeof(DATA32));
+   memset(im->data, 0, im->w * im->h * sizeof(uint32_t));
    surface =
       cairo_image_surface_create_for_data((void *)im->data, CAIRO_FORMAT_ARGB32,
                                           im->w, im->h,
-                                          im->w * sizeof(DATA32));;
+                                          im->w * sizeof(uint32_t));;
    if (!surface)
       QUIT_WITH_RC(LOAD_OOM);
 
@@ -174,10 +213,16 @@ load2(ImlibImage * im, int load_data)
    if (!cr)
       QUIT_WITH_RC(LOAD_OOM);
 
-   cvb.x = cvb.y = 0;
-   cvb.width = im->w;
-   cvb.height = im->h;
-   rsvg_handle_render_document(rsvg, cr, &cvb, &error);
+#if LIBRSVG_CHECK_VERSION(2, 46, 0)
+   {
+      RsvgRectangle       cvb;
+
+      cvb.x = cvb.y = 0;
+      cvb.width = im->w;
+      cvb.height = im->h;
+      rsvg_handle_render_document(rsvg, cr, &cvb, &error);
+   }
+#endif /* LIBRSVG need 2.46 */
 
    if (im->lc)
       __imlib_LoadProgress(im, im->frame_x, im->frame_y, im->w, im->h);
@@ -191,8 +236,6 @@ load2(ImlibImage * im, int load_data)
       cairo_surface_destroy(surface);
    if (cr)
       cairo_destroy(cr);
-   if (rc <= 0)
-      __imlib_FreeData(im);
    if (rsvg)
       g_object_unref(rsvg);
    munmap(fdata, im->fsize);

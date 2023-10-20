@@ -161,7 +161,7 @@ main(int argc, char **argv)
           }
         else if (!strcmp(argv[i], "-colormod"))
           {
-             DATA8               rt[256], gt[256], bt[256], at[256];
+             uint8_t             rt[256], gt[256], bt[256], at[256];
              double              rm, gm, bm, am;
 
              /*\ Setup color mod tables \ */

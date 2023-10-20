@@ -11,10 +11,10 @@
 /*\ NB: If you change this, don't forget asm_scale.S \*/
 struct _imlib_scale_info {
    int                *xpoints;
-   DATA32            **ypoints;
+   uint32_t          **ypoints;
    int                *xapoints, *yapoints;
    int                 xup_yup;
-   DATA32             *pix_assert;
+   uint32_t           *pix_assert;
 };
 
 #define INV_XAP                   (256 - xapoints[x])
@@ -22,10 +22,10 @@ struct _imlib_scale_info {
 #define INV_YAP                   (256 - yapoints[dyy + y])
 #define YAP                       (yapoints[dyy + y])
 
-static DATA32     **
-__imlib_CalcYPoints(DATA32 * src, int sw, int sh, int dh, int b1, int b2)
+static uint32_t   **
+__imlib_CalcYPoints(uint32_t * src, int sw, int sh, int dh, int b1, int b2)
 {
-   DATA32            **p;
+   uint32_t          **p;
    int                 i, j = 0;
    int                 val, inc, rv = 0;
 
@@ -35,7 +35,7 @@ __imlib_CalcYPoints(DATA32 * src, int sw, int sh, int dh, int b1, int b2)
         rv = 1;
      }
 
-   p = malloc((dh + 1) * sizeof(DATA32 *));
+   p = malloc((dh + 1) * sizeof(uint32_t *));
 
    val = MIN(sh, dh);
    inc = b1 + b2;
@@ -73,7 +73,7 @@ __imlib_CalcYPoints(DATA32 * src, int sw, int sh, int dh, int b1, int b2)
    if (rv)
       for (i = dh / 2; --i >= 0;)
         {
-           DATA32             *tmp = p[i];
+           uint32_t           *tmp = p[i];
 
            p[i] = p[dh - i - 1];
            p[dh - i - 1] = tmp;
@@ -281,12 +281,12 @@ __imlib_CalcScaleInfo(ImlibImage * im, int sw, int sh, int dw, int dh, char aa)
 
 /* scale by pixel sampling only */
 void
-__imlib_ScaleSampleRGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
+__imlib_ScaleSampleRGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                         int dx, int dy, int dw, int dh, int dow)
 {
-   DATA32             *sptr, *dptr;
+   uint32_t           *sptr, *dptr;
    int                 x, y, end;
-   DATA32            **ypoints = isi->ypoints;
+   uint32_t          **ypoints = isi->ypoints;
    int                *xpoints = isi->xpoints;
 
    /* whats the last pixel on the line so we stop there */
@@ -308,12 +308,12 @@ __imlib_ScaleSampleRGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
 
 /* scale by area sampling */
 void
-__imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
+__imlib_ScaleAARGBA(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                     int dx, int dy, int dw, int dh, int dow, int sow)
 {
-   DATA32             *sptr, *dptr;
+   uint32_t           *sptr, *dptr;
    int                 x, y, end;
-   DATA32            **ypoints;
+   uint32_t          **ypoints;
    int                *xpoints;
    int                *xapoints;
    int                *yapoints;
@@ -347,7 +347,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                     {
                        int                 r, g, b, a;
                        int                 rr, gg, bb, aa;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        if (XAP > 0)
                          {
@@ -402,7 +402,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                   for (x = dxx; x < end; x++)
                     {
                        int                 r, g, b, a;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        if (XAP > 0)
                          {
@@ -434,7 +434,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
      {
         /*\ 'Correct' version, with math units prepared for MMXification \ */
         int                 Cy, j;
-        DATA32             *pix;
+        uint32_t           *pix;
         int                 r, g, b, a, rr, gg, bb, aa;
         int                 yap;
 
@@ -532,7 +532,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                     {
                        int                 r = 0, g = 0, b = 0, a = 0;
                        int                 rr = 0, gg = 0, bb = 0, aa = 0;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        if (XAP > 0)
                          {
@@ -584,7 +584,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                     {
                        int                 r = 0, g = 0, b = 0, a = 0;
                        int                 count;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        if (XAP > 0)
                          {
@@ -617,7 +617,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
      {
         /*\ 'Correct' version, with math units prepared for MMXification \ */
         int                 Cx, j;
-        DATA32             *pix;
+        uint32_t           *pix;
         int                 r, g, b, a, rr, gg, bb, aa;
         int                 xap;
 
@@ -712,7 +712,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                        int                 r = 0, g = 0, b = 0, a = 0;
                        int                 rr = 0, gg = 0, bb = 0, aa = 0;
                        int                 xap;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        xap = xpoints[x + 1] - xpoints[x];
                        if (xap > 1)
@@ -769,7 +769,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                     {
                        int                 r = 0, g = 0, b = 0, a = 0;
                        int                 xap;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        xap = xpoints[x + 1] - xpoints[x];
                        if (xap > 1)
@@ -805,7 +805,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
          * |*|  psllw (16 - d), %mmb; pmulh %mmc, %mmb
          * \ */
         int                 Cx, Cy, i, j;
-        DATA32             *pix;
+        uint32_t           *pix;
         int                 a, r, g, b, ax, rx, gx, bx;
         int                 xap, yap;
 
@@ -920,7 +920,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
 #else
      {
         int                 count;
-        DATA32             *pix;
+        uint32_t           *pix;
         int                 a, r, g, b;
 
         /* go through every scanline in the output buffer */
@@ -969,12 +969,12 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
 
 /* scale by area sampling - IGNORE the ALPHA byte*/
 void
-__imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
+__imlib_ScaleAARGB(ImlibScaleInfo * isi, uint32_t * dest, int dxx, int dyy,
                    int dx, int dy, int dw, int dh, int dow, int sow)
 {
-   DATA32             *sptr, *dptr;
+   uint32_t           *sptr, *dptr;
    int                 x, y, end;
-   DATA32            **ypoints;
+   uint32_t          **ypoints;
    int                *xpoints;
    int                *xapoints;
    int                *yapoints;
@@ -1008,7 +1008,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                     {
                        int                 r = 0, g = 0, b = 0;
                        int                 rr = 0, gg = 0, bb = 0;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        if (XAP > 0)
                          {
@@ -1055,7 +1055,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                   for (x = dxx; x < end; x++)
                     {
                        int                 r = 0, g = 0, b = 0;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        if (XAP > 0)
                          {
@@ -1084,7 +1084,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
      {
         /*\ 'Correct' version, with math units prepared for MMXification \ */
         int                 Cy, j;
-        DATA32             *pix;
+        uint32_t           *pix;
         int                 r, g, b, rr, gg, bb;
         int                 yap;
 
@@ -1171,7 +1171,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                     {
                        int                 r = 0, g = 0, b = 0;
                        int                 rr = 0, gg = 0, bb = 0;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        if (XAP > 0)
                          {
@@ -1216,7 +1216,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                   for (x = dxx; x < end; x++)
                     {
                        int                 r = 0, g = 0, b = 0;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        if (XAP > 0)
                          {
@@ -1246,7 +1246,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
      {
         /*\ 'Correct' version, with math units prepared for MMXification \ */
         int                 Cx, j;
-        DATA32             *pix;
+        uint32_t           *pix;
         int                 r, g, b, rr, gg, bb;
         int                 xap;
 
@@ -1330,7 +1330,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                        int                 r = 0, g = 0, b = 0;
                        int                 rr = 0, gg = 0, bb = 0;
                        int                 xap;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        xap = xpoints[x + 1] - xpoints[x];
                        if (xap > 1)
@@ -1380,7 +1380,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                     {
                        int                 r = 0, g = 0, b = 0;
                        int                 xap;
-                       DATA32             *pix;
+                       uint32_t           *pix;
 
                        xap = xpoints[x + 1] - xpoints[x];
                        if (xap > 1)
@@ -1411,7 +1411,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
      {
         /*\ 'Correct' version, with math units prepared for MMXification \ */
         int                 Cx, Cy, i, j;
-        DATA32             *pix;
+        uint32_t           *pix;
         int                 r, g, b, rx, gx, bx;
         int                 xap, yap;
 
@@ -1513,7 +1513,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
 #else
      {
         int                 count;
-        DATA32             *pix;
+        uint32_t           *pix;
         int                 r, g, b;
 
         /* go through every scanline in the output buffer */

@@ -17,7 +17,7 @@ static struct {
 } mdata;
 
 static void
-mm_init(void *src, unsigned int size)
+mm_init(const void *src, unsigned int size)
 {
    mdata.data = mdata.dptr = src;
    mdata.size = size;
@@ -43,36 +43,36 @@ mm_read(void *dst, unsigned int len)
 
 /* The ICONDIR */
 typedef struct {
-   DATA16              rsvd;
-   DATA16              type;
-   DATA16              icons;
+   uint16_t            rsvd;
+   uint16_t            type;
+   uint16_t            icons;
 } idir_t;
 
 /* The ICONDIRENTRY */
 typedef struct {
-   DATA8               width;
-   DATA8               height;
-   DATA8               colors;
-   DATA8               rsvd;
-   DATA16              planes;
-   DATA16              bpp;
-   DATA32              size;
-   DATA32              offs;
+   uint8_t             width;
+   uint8_t             height;
+   uint8_t             colors;
+   uint8_t             rsvd;
+   uint16_t            planes;
+   uint16_t            bpp;
+   uint32_t            size;
+   uint32_t            offs;
 } ide_t;
 
 /* The BITMAPINFOHEADER */
 typedef struct {
-   DATA32              header_size;
-   DATA32              width;
-   DATA32              height;
-   DATA16              planes;
-   DATA16              bpp;
-   DATA32              compression;
-   DATA32              size;
-   DATA32              res_hor;
-   DATA32              res_ver;
-   DATA32              colors;
-   DATA32              colors_important;
+   uint32_t            header_size;
+   uint32_t            width;
+   uint32_t            height;
+   uint16_t            planes;
+   uint16_t            bpp;
+   uint32_t            compression;
+   uint32_t            size;
+   uint32_t            res_hor;
+   uint32_t            res_ver;
+   uint32_t            colors;
+   uint32_t            colors_important;
 } bih_t;
 
 typedef struct {
@@ -82,9 +82,9 @@ typedef struct {
    unsigned short      w;
    unsigned short      h;
 
-   DATA32             *cmap;    /* Colormap (bpp <= 8) */
-   DATA8              *pxls;    /* Pixel data */
-   DATA8              *mask;    /* Bitmask    */
+   uint32_t           *cmap;    /* Colormap (bpp <= 8) */
+   uint8_t            *pxls;    /* Pixel data */
+   uint8_t            *mask;    /* Bitmask    */
 } ie_t;
 
 typedef struct {
@@ -188,9 +188,9 @@ ico_read_icon(ico_t * ico, int ino)
      case 4:
      case 8:
         DL("Allocating a %d slot colormap\n", ie->bih.colors);
-        if (UINT_MAX / sizeof(DATA32) < ie->bih.colors)
+        if (UINT_MAX / sizeof(uint32_t) < ie->bih.colors)
            goto bail;
-        size = ie->bih.colors * sizeof(DATA32);
+        size = ie->bih.colors * sizeof(uint32_t);
         ie->cmap = malloc(size);
         if (ie->cmap == NULL)
            goto bail;
@@ -232,7 +232,7 @@ ico_read_icon(ico_t * ico, int ino)
 }
 
 static int
-ico_data_get_bit(DATA8 * data, int w, int x, int y)
+ico_data_get_bit(uint8_t * data, int w, int x, int y)
 {
    int                 w32, res;
 
@@ -245,7 +245,7 @@ ico_data_get_bit(DATA8 * data, int w, int x, int y)
 }
 
 static int
-ico_data_get_nibble(DATA8 * data, int w, int x, int y)
+ico_data_get_nibble(uint8_t * data, int w, int x, int y)
 {
    int                 w32, res;
 
@@ -261,11 +261,11 @@ static int
 ico_load(ico_t * ico, ImlibImage * im, int load_data)
 {
    int                 ic, x, y, w, h, d, frame;
-   DATA32             *cmap;
-   DATA8              *pxls, *mask, *psrc;
+   uint32_t           *cmap;
+   uint8_t            *pxls, *mask, *psrc;
    ie_t               *ie;
-   DATA32             *pdst;
-   DATA32              pixel;
+   uint32_t           *pdst;
+   uint32_t            pixel;
 
    frame = 0;                   /* Select default */
    if (im->frame_num > 0)
@@ -440,8 +440,6 @@ load2(ImlibImage * im, int load_data)
 
  quit:
    ico_delete(&ico);
-   if (rc <= 0)
-      __imlib_FreeData(im);
    munmap(fdata, im->fsize);
    return rc;
 }

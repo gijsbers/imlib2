@@ -16,13 +16,22 @@
 #undef BUILD_ID3_LOADER
 
 /* Build NMUP loader */
+#undef BUILD_J2K_LOADER
+
+/* Build NMUP loader */
 #undef BUILD_JPEG_LOADER
+
+/* Build NMUP loader */
+#undef BUILD_JXL_LOADER
 
 /* Build NMUP loader */
 #undef BUILD_LZMA_LOADER
 
 /* Build NMUP loader */
 #undef BUILD_PNG_LOADER
+
+/* Build NMUP loader */
+#undef BUILD_PS_LOADER
 
 /* Build NMUP loader */
 #undef BUILD_SVG_LOADER
@@ -54,11 +63,11 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
-
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdio.h> header file. */
+#undef HAVE_STDIO_H
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
@@ -112,7 +121,9 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
-/* Define to 1 if you have the ANSI C header files. */
+/* Define to 1 if all of the C90 standard headers exist (not just the ones
+   required in a freestanding environment). This macro is provided for
+   backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
 
 /* Use monotonic clock from clock_gettime() */

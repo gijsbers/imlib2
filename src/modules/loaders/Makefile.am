@@ -23,8 +23,17 @@ endif
 if BUILD_JPEG_LOADER
 pkg_LTLIBRARIES += jpeg.la
 endif
+if BUILD_J2K_LOADER
+pkg_LTLIBRARIES += j2k.la
+endif
+if BUILD_JXL_LOADER
+pkg_LTLIBRARIES += jxl.la
+endif
 if BUILD_PNG_LOADER
 pkg_LTLIBRARIES += png.la
+endif
+if BUILD_PS_LOADER
+pkg_LTLIBRARIES += ps.la
 endif
 if BUILD_SVG_LOADER
 pkg_LTLIBRARIES += svg.la
@@ -89,6 +98,18 @@ jpeg_la_LDFLAGS      = -module -avoid-version
 jpeg_la_LIBADD       = $(JPEG_LIBS) $(top_builddir)/src/lib/libImlib2.la
 jpeg_la_LIBTOOLFLAGS = --tag=disable-static
 
+j2k_la_SOURCES       = loader_j2k.c
+j2k_la_CPPFLAGS      = $(J2K_CFLAGS) $(AM_CPPFLAGS)
+j2k_la_LDFLAGS       = -module -avoid-version
+j2k_la_LIBADD        = $(J2K_LIBS) $(top_builddir)/src/lib/libImlib2.la
+j2k_la_LIBTOOLFLAGS  = --tag=disable-static
+
+jxl_la_SOURCES       = loader_jxl.c
+jxl_la_CPPFLAGS      = $(JXL_CFLAGS) $(AM_CPPFLAGS)
+jxl_la_LDFLAGS       = -module -avoid-version
+jxl_la_LIBADD        = $(JXL_LIBS) $(top_builddir)/src/lib/libImlib2.la
+jxl_la_LIBTOOLFLAGS  = --tag=disable-static
+
 lbm_la_SOURCES       = loader_lbm.c
 lbm_la_LDFLAGS       = -module -avoid-version
 lbm_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
@@ -104,6 +125,12 @@ pnm_la_SOURCES       = loader_pnm.c
 pnm_la_LDFLAGS       = -module -avoid-version
 pnm_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
 pnm_la_LIBTOOLFLAGS  = --tag=disable-static
+
+ps_la_SOURCES       = loader_ps.c
+ps_la_CPPFLAGS      = $(PS_CFLAGS) $(AM_CPPFLAGS)
+ps_la_LDFLAGS       = -module -avoid-version
+ps_la_LIBADD        = $(PS_LIBS) $(top_builddir)/src/lib/libImlib2.la
+ps_la_LIBTOOLFLAGS  = --tag=disable-static
 
 svg_la_SOURCES       = loader_svg.c
 svg_la_CPPFLAGS      = $(SVG_CFLAGS) $(AM_CPPFLAGS)

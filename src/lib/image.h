@@ -43,7 +43,7 @@ typedef struct _ImlibImageTag {
 struct _ImlibImage {
    char               *file;
    int                 w, h;
-   DATA32             *data;
+   uint32_t           *data;
    ImlibImageFlags     flags;
    time_t              moddate;
    ImlibBorder         border;
@@ -85,7 +85,7 @@ void                __imlib_LoaderSetFormats(ImlibLoader * l,
                                              const char *const *fmt,
                                              unsigned int num);
 
-ImlibImage         *__imlib_CreateImage(int w, int h, DATA32 * data);
+ImlibImage         *__imlib_CreateImage(int w, int h, uint32_t * data);
 ImlibImage         *__imlib_LoadImage(const char *file, ImlibLoadArgs * ila);
 int                 __imlib_LoadEmbedded(ImlibLoader * l, ImlibImage * im,
                                          const char *file, int load_data);
@@ -93,12 +93,11 @@ int                 __imlib_LoadImageData(ImlibImage * im);
 void                __imlib_DirtyImage(ImlibImage * im);
 void                __imlib_FreeImage(ImlibImage * im);
 void                __imlib_SaveImage(ImlibImage * im, const char *file,
-                                      ImlibProgressFunction progress,
-                                      char progress_granularity, int *er);
+                                      ImlibLoadArgs * ila);
 
-DATA32             *__imlib_AllocateData(ImlibImage * im);
+uint32_t           *__imlib_AllocateData(ImlibImage * im);
 void                __imlib_FreeData(ImlibImage * im);
-void                __imlib_ReplaceData(ImlibImage * im, DATA32 * new_data);
+void                __imlib_ReplaceData(ImlibImage * im, uint32_t * new_data);
 
 void                __imlib_LoadProgressSetPass(ImlibImage * im,
                                                 int pass, int n_pass);
@@ -136,7 +135,7 @@ int                 __imlib_CurrentCacheSize(void);
 #define LOAD_BADFRAME   -4      /* Requested frame not found           */
 
 /* 32767 is the maximum pixmap dimension and ensures that
- * (w * h * sizeof(DATA32)) won't exceed ULONG_MAX */
+ * (w * h * sizeof(uint32_t)) won't exceed ULONG_MAX */
 #define X_MAX_DIM 32767
 /* NB! The image dimensions are sometimes used in (dim << 16) like expressions
  * so great care must be taken if ever it is attempted to change this

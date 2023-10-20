@@ -146,12 +146,12 @@ __imlib_FilterCalcDiv(ImlibFilterColor * fil)
 }
 
 static int
-__imlib_FilterGet(ImlibFilterColor * fil, DATA32 * data,
+__imlib_FilterGet(ImlibFilterColor * fil, uint32_t * data,
                   int w, int h, int x, int y)
 {
    int                 i, off, ret;
    ImlibFilterPixel   *pix;
-   DATA32             *p;
+   uint32_t           *p;
 
    ret = fil->cons;
    pix = fil->pixels;
@@ -186,9 +186,9 @@ void
 __imlib_FilterImage(ImlibImage * im, ImlibFilter * fil)
 {
    int                 x, y, a, r, g, b, ad, rd, gd, bd;
-   DATA32             *data, *p1, *p2;
+   uint32_t           *data, *p1, *p2;
 
-   data = malloc(im->w * im->h * sizeof(DATA32));
+   data = malloc(im->w * im->h * sizeof(uint32_t));
    if (!data)
       return;
 

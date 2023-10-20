@@ -12,7 +12,7 @@ static struct {
 } mdata;
 
 static void
-mm_init(void *src, unsigned int size)
+mm_init(const void *src, unsigned int size)
 {
    mdata.data = mdata.dptr = src;
    mdata.size = size;
@@ -44,18 +44,18 @@ mm_gets(char *dst, unsigned int len)
    return dst;
 }
 
-static const DATA32 _bitmap_colors[2] = { 0xffffffff, 0xff000000 };
+static const uint32_t _bitmap_colors[2] = { 0xffffffff, 0xff000000 };
 
-static              DATA32
+static              uint32_t
 _bitmap_color(int bit)
 {
    return _bitmap_colors[!!bit];
 }
 
 static int
-_bitmap_dither(int x, int y, DATA32 pixel)
+_bitmap_dither(int x, int y, uint32_t pixel)
 {
-   static const DATA8  _dither_44[4][4] = {
+   static const uint8_t _dither_44[4][4] = {
    /**INDENT-OFF**/
       { 0, 32,  8, 40},
       {48, 16, 56, 24},
@@ -84,7 +84,7 @@ load2(ImlibImage * im, int load_data)
    int                 rc;
    void               *fdata;
    char                buf[4096], tok1[1024], tok2[1024];
-   DATA32             *ptr, pixel;
+   uint32_t           *ptr, pixel;
    int                 i, x, y, bit, nl;
    const char         *s;
    int                 header, val, nlen;
@@ -208,8 +208,6 @@ load2(ImlibImage * im, int load_data)
       rc = LOAD_SUCCESS;
 
  quit:
-   if (rc <= 0)
-      __imlib_FreeData(im);
    munmap(fdata, im->fsize);
 
    return rc;
@@ -223,7 +221,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    const char         *s, *name;
    char               *bname;
    int                 i, k, x, y, bits, nval, val;
-   DATA32             *ptr;
+   uint32_t           *ptr;
 
    f = fopen(im->real_file, "wb");
    if (!f)

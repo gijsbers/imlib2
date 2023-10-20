@@ -31,7 +31,7 @@ main(int argc, char **argv)
    unsigned int        wo, ho;
    unsigned int        depth;
    Window              rr;
-   Imlib_Load_Error    err;
+   int                 err;
 
    verbose = 0;
    get_alpha = 1;
@@ -132,9 +132,10 @@ main(int argc, char **argv)
      }
 
    imlib_context_set_image(im);
-   imlib_save_image_with_error_return(file, &err);
-   if (err != IMLIB_LOAD_ERROR_NONE)
-      fprintf(stderr, "Failed to save image to '%s' (error %d)\n", file, err);
+   imlib_save_image_with_errno_return(file, &err);
+   if (err)
+      fprintf(stderr, "Failed to save image to '%s' (error %d:'%s')\n",
+              file, err, imlib_strerror(err));
 
    return 0;
 }

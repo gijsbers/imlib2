@@ -4,11 +4,11 @@
 #include "types.h"
 
 struct _ImlibColorModifier {
-   DATA8               red_mapping[256];
-   DATA8               green_mapping[256];
-   DATA8               blue_mapping[256];
-   DATA8               alpha_mapping[256];
-   DATABIG             modification_count;
+   uint8_t             red_mapping[256];
+   uint8_t             green_mapping[256];
+   uint8_t             blue_mapping[256];
+   uint8_t             alpha_mapping[256];
+   uint64_t            modification_count;
 };
 
 #define CMOD_APPLY_RGB(cm, r, g, b) \
@@ -43,15 +43,17 @@ struct _ImlibColorModifier {
 ImlibColorModifier *__imlib_CreateCmod(void);
 void                __imlib_FreeCmod(ImlibColorModifier * cm);
 void                __imlib_CmodChanged(ImlibColorModifier * cm);
-void                __imlib_CmodSetTables(ImlibColorModifier * cm, DATA8 * r,
-                                          DATA8 * g, DATA8 * b, DATA8 * a);
+void                __imlib_CmodSetTables(ImlibColorModifier * cm, uint8_t * r,
+                                          uint8_t * g, uint8_t * b,
+                                          uint8_t * a);
 void                __imlib_CmodReset(ImlibColorModifier * cm);
-void                __imlib_DataCmodApply(DATA32 * data, int w, int h,
+void                __imlib_DataCmodApply(uint32_t * data, int w, int h,
                                           int jump, ImlibImageFlags * fl,
                                           ImlibColorModifier * cm);
 
-void                __imlib_CmodGetTables(ImlibColorModifier * cm, DATA8 * r,
-                                          DATA8 * g, DATA8 * b, DATA8 * a);
+void                __imlib_CmodGetTables(ImlibColorModifier * cm, uint8_t * r,
+                                          uint8_t * g, uint8_t * b,
+                                          uint8_t * a);
 void                __imlib_CmodModBrightness(ImlibColorModifier * cm,
                                               double v);
 void                __imlib_CmodModContrast(ImlibColorModifier * cm, double v);

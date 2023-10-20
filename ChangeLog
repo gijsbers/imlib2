@@ -1,3 +1,60 @@
+v1.9.0 - 2022-04-21
+--------------------
+Kim Woelders (53):
+      Remove some deprecation comments
+      Move API documentation to header file
+      WEBP saver: Fix return code on success
+      api.c: Cosmetics
+      Refactor some image loading functions
+      Refactor some image saving functions
+      Image load: Change error code on zero file size
+      Tweak __imlib_LoadImageData()
+      Error code rework: Use errnos/new imlib2 error codes internally
+      Add imlib_load/save_image_with_errno_return() and imlib_strerror()
+      Switch to imlib_load/save_image_with_errno_return()
+      Deprecate imlib_load/save_image_with_error_return()
+      imlib2_load: Tweak verbose output
+      Rename files with line etc. drawing functions
+      Use stdint types instead of DATA32 etc.
+      test_load: Check deferred loading too
+      imlib2_load: Show load time per load too
+      image.c: Correct loader probe loop
+      image.c: Cosmetics (move function)
+      GZ loader: Fix uncompressor exit code
+      GIF loader: Use mmap'ed file access
+      image.c: Loading tweaks
+      imlib2_view: Verbose and debug message tweaks
+      Loaders: Some trivial cosmetics
+      Loaders: Remove unnecessary calls to __imlib_FreeData()
+      debug: Enable using hex values in IMLIB2_DEBUG
+      SVG loader: Requires librsvg-2.46
+      TIFF loader: Use mmap'ed file access
+      Add jxl loader
+      test: Add basic jxl test
+      test_save: Updates
+      loaders: Ensure that found loader is ok for load/save
+      image: Fix undesired change of format
+      Drop deprecation noise from using the old DATA types
+      Drop deprecation noise from using imlib_load/save_image_with_error_return()
+      API doc corrections and tweaks for doxygen
+      Revert a couple of unintended changes
+      API doc updates
+      doc: Drop most old doc stuff
+      doc: New documentation build setup (doxygen)
+      doc: Assorted documentation intro updates
+      loaders: Fix typo, fix order
+      SVG loader: Faster signature check
+      build: Tweaks
+      Add J2K (JPEG 2000) loader using openjpeg2 library
+      test: Add some of JPEG 2000 tests
+      Add PS/EPS loader using libspectre
+      debug: Export __imlib_time_us()
+      JXL loader: Multiframe support
+      SVG loader: Avoid some warnings in rsvg.h
+      SVG loader: Fix size when unit is percent
+      SVG loader: Fix size when unit is percent some more
+      v1.9.0
+
 v1.8.1 - 2022-03-15
 --------------------
 Kim Woelders (32):

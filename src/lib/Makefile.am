@@ -19,8 +19,11 @@ color_helpers.c	color_helpers.h \
 colormod.c	colormod.h	\
 common.h \
 debug.c		debug.h		\
+draw_ellipse.c \
+draw_line.c \
+draw_polygon.c \
+draw_rectangle.c \
 dynamic_filters.c	dynamic_filters.h \
-ellipse.c \
 file.c		file.h		\
 filter.c	filter.h	\
 font.h \
@@ -31,12 +34,9 @@ font_query.c \
 grad.c		grad.h		\
 image.c		image.h		\
 image_tags.c \
-line.c \
 loaders.c	loaders.h	\
 modules.c \
 object.c	object.h	\
-polygon.c \
-rectangle.c \
 rgbadraw.c	rgbadraw.h	\
 rotate.c	rotate.h	\
 scale.c		scale.h		\

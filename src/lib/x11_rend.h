@@ -3,9 +3,9 @@
 
 #include "types.h"
 
-DATA32              __imlib_RenderGetPixel(Display * d, Drawable w, Visual * v,
-                                           Colormap cm, int depth, DATA8 r,
-                                           DATA8 g, DATA8 b);
+uint32_t            __imlib_RenderGetPixel(Display * d, Drawable w, Visual * v,
+                                           Colormap cm, int depth, uint8_t r,
+                                           uint8_t g, uint8_t b);
 
 void                __imlib_RenderDisconnect(Display * d);
 

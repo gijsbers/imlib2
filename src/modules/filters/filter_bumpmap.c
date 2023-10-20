@@ -20,8 +20,8 @@ bump_map(Imlib_Image im, IFunctionParam * par)
    double              ambient = 0;
 
    int                 free_map = 0;
-   DATA32             *src;
-   DATA32             *mp, *mpy, *mpp;
+   uint32_t           *src;
+   uint32_t           *mp, *mpy, *mpp;
    double              z, x2, y2;
    int                 w, h, i, j, w2, h2, wh2, mx, my;
 
@@ -138,8 +138,8 @@ bump_map_point(Imlib_Image im, IFunctionParam * par)
    double              ambient = 0;
 
    int                 free_map = 0;
-   DATA32             *src;
-   DATA32             *mp, *mpy, *mpp;
+   uint32_t           *src;
+   uint32_t           *mp, *mpy, *mpp;
    double              z_2, x2, y2;
    int                 w, h, i, j, w2, h2, wh2, mx, my;
 

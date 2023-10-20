@@ -11,7 +11,7 @@ static struct {
 } mdata;
 
 static void
-mm_init(void *src, unsigned int size)
+mm_init(const void *src, unsigned int size)
 {
    mdata.data = mdata.dptr = src;
    mdata.size = size;
@@ -118,10 +118,10 @@ load2(ImlibImage * im, int load_data)
    void               *fdata;
    int                 c, p;
    int                 w, h, v, numbers, count;
-   DATA8              *data = NULL;     /* for the binary versions */
-   DATA8              *ptr = NULL;
+   uint8_t            *data = NULL;     /* for the binary versions */
+   uint8_t            *ptr = NULL;
    int                *idata = NULL;    /* for the ASCII versions */
-   DATA32             *ptr2, rval, gval, bval;
+   uint32_t           *ptr2, rval, gval, bval;
    int                 i, j, x, y;
 
    rc = LOAD_FAIL;
@@ -272,7 +272,7 @@ load2(ImlibImage * im, int load_data)
           }
         break;
      case '4':                 /* binary 1bit monochrome */
-        data = malloc((w + 7) / 8 * sizeof(DATA8));
+        data = malloc((w + 7) / 8 * sizeof(uint8_t));
         if (!data)
            QUIT_WITH_RC(LOAD_OOM);
 
@@ -302,7 +302,7 @@ load2(ImlibImage * im, int load_data)
           }
         break;
      case '5':                 /* binary 8bit grayscale GGGGGGGG */
-        data = malloc(1 * sizeof(DATA8) * w);
+        data = malloc(1 * sizeof(uint8_t) * w);
         if (!data)
            QUIT_WITH_RC(LOAD_OOM);
 
@@ -341,7 +341,7 @@ load2(ImlibImage * im, int load_data)
           }
         break;
      case '6':                 /* 24bit binary RGBRGBRGB */
-        data = malloc(3 * sizeof(DATA8) * w);
+        data = malloc(3 * sizeof(uint8_t) * w);
         if (!data)
            QUIT_WITH_RC(LOAD_OOM);
 
@@ -380,7 +380,7 @@ load2(ImlibImage * im, int load_data)
           }
         break;
      case '7':                 /* XV's 8bit 332 format */
-        data = malloc(1 * sizeof(DATA8) * w);
+        data = malloc(1 * sizeof(uint8_t) * w);
         if (!data)
            QUIT_WITH_RC(LOAD_OOM);
 
@@ -412,7 +412,7 @@ load2(ImlibImage * im, int load_data)
           }
         break;
      case '8':                 /* 24bit binary RGBARGBARGBA */
-        data = malloc(4 * sizeof(DATA8) * w);
+        data = malloc(4 * sizeof(uint8_t) * w);
         if (!data)
            QUIT_WITH_RC(LOAD_OOM);
 
@@ -463,9 +463,6 @@ load2(ImlibImage * im, int load_data)
    free(data);
    munmap(fdata, im->fsize);
 
-   if (rc == 0)
-      __imlib_FreeData(im);
-
    return rc;
 }
 
@@ -474,8 +471,8 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
    int                 rc;
    FILE               *f;
-   DATA8              *buf, *bptr;
-   DATA32             *ptr;
+   uint8_t            *buf, *bptr;
+   uint32_t           *ptr;
    int                 x, y;
 
    f = fopen(im->real_file, "wb");
@@ -485,7 +482,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    rc = LOAD_FAIL;
 
    /* allocate a small buffer to convert image data */
-   buf = malloc(im->w * 4 * sizeof(DATA8));
+   buf = malloc(im->w * 4 * sizeof(uint8_t));
    if (!buf)
       goto quit;
 
@@ -501,7 +498,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
              bptr = buf;
              for (x = 0; x < im->w; x++)
                {
-                  DATA32              pixel = *ptr++;
+                  uint32_t            pixel = *ptr++;
 
                   bptr[0] = PIXEL_R(pixel);
                   bptr[1] = PIXEL_G(pixel);
@@ -524,7 +521,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
              bptr = buf;
              for (x = 0; x < im->w; x++)
                {
-                  DATA32              pixel = *ptr++;
+                  uint32_t            pixel = *ptr++;
 
                   bptr[0] = PIXEL_R(pixel);
                   bptr[1] = PIXEL_G(pixel);

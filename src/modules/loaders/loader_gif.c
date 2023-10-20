@@ -4,12 +4,36 @@
 
 #define DBG_PFX "LDR-gif"
 
+static struct {
+   const unsigned char *data, *dptr;
+   unsigned int        size;
+} mdata;
+
 static void
-make_colormap(DATA32 * cmi, ColorMapObject * cmg, int bg, int tr)
+mm_init(const void *src, unsigned int size)
+{
+   mdata.data = mdata.dptr = src;
+   mdata.size = size;
+}
+
+static int
+mm_read(GifFileType * gif, GifByteType * dst, int len)
+{
+   if (mdata.dptr + len > mdata.data + mdata.size)
+      return -1;                /* Out of data */
+
+   memcpy(dst, mdata.dptr, len);
+   mdata.dptr += len;
+
+   return len;
+}
+
+static void
+make_colormap(uint32_t * cmi, ColorMapObject * cmg, int bg, int tr)
 {
    int                 i, r, g, b;
 
-   memset(cmi, 0, 256 * sizeof(DATA32));
+   memset(cmi, 0, 256 * sizeof(uint32_t));
    if (!cmg)
       return;
 
@@ -29,31 +53,37 @@ make_colormap(DATA32 * cmi, ColorMapObject * cmg, int bg, int tr)
 int
 load2(ImlibImage * im, int load_data)
 {
-   int                 rc;
-   DATA32             *ptr;
+   int                 rc, err;
+   void               *fdata;
+   uint32_t           *ptr;
    GifFileType        *gif;
    GifRowType         *rows;
    GifRecordType       rec;
    ColorMapObject     *cmap;
    int                 i, j, bg, bits;
    int                 transp;
-   int                 fd;
-   DATA32              colormap[256];
+   uint32_t            colormap[256];
    int                 fcount, frame, multiframe;
 
-   fd = dup(fileno(im->fp));
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return LOAD_BADFILE;
+
+   rc = LOAD_FAIL;
+   rows = NULL;
+
+   mm_init(fdata, im->fsize);
 
 #if GIFLIB_MAJOR >= 5
-   gif = DGifOpenFileHandle(fd, NULL);
+   gif = DGifOpen(NULL, mm_read, &err);
 #else
-   gif = DGifOpenFileHandle(fd);
+   gif = DGifOpen(NULL, mm_read);
 #endif
    if (!gif)
-      return LOAD_FAIL;
+      goto quit;
 
    rc = LOAD_BADIMAGE;          /* Format accepted */
 
-   rows = NULL;
    transp = -1;
    fcount = 0;
    frame = 1;
@@ -268,8 +298,7 @@ load2(ImlibImage * im, int load_data)
    DGifCloseFile(gif);
 #endif
 
-   if (rc <= 0)
-      __imlib_FreeData(im);
+   munmap(fdata, im->fsize);
 
    return rc;
 }

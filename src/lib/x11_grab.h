@@ -4,7 +4,7 @@
 #include <X11/Xlib.h>
 #include "types.h"
 
-int                 __imlib_GrabDrawableToRGBA(DATA32 * data, int x_dst,
+int                 __imlib_GrabDrawableToRGBA(uint32_t * data, int x_dst,
                                                int y_dst, int w_dst, int h_dst,
                                                Display * d, Drawable p,
                                                Pixmap m, Visual * v,
@@ -13,7 +13,7 @@ int                 __imlib_GrabDrawableToRGBA(DATA32 * data, int x_dst,
                                                int h_src, char *domask,
                                                int grab);
 
-int                 __imlib_GrabDrawableScaledToRGBA(DATA32 * data, int x_dst,
+int                 __imlib_GrabDrawableScaledToRGBA(uint32_t * data, int x_dst,
                                                      int y_dst, int w_dst,
                                                      int h_dst, Display * d,
                                                      Drawable p, Pixmap m,
@@ -23,7 +23,7 @@ int                 __imlib_GrabDrawableScaledToRGBA(DATA32 * data, int x_dst,
                                                      int h_src, char *pdomask,
                                                      int grab);
 
-void                __imlib_GrabXImageToRGBA(DATA32 * data, int x_dst,
+void                __imlib_GrabXImageToRGBA(uint32_t * data, int x_dst,
                                              int y_dst, int w_dst, int h_dst,
                                              Display * d, XImage * xim,
                                              XImage * mxim, Visual * v,

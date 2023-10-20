@@ -32,37 +32,37 @@ do { \
    na = (tmp + (tmp >> 8)) >> 8; \
 } while (0)
 
-extern DATA8        pow_lut[256][256];
+extern uint8_t      pow_lut[256][256];
 
 /*   point drawing functions  */
 
 /* COPY OPS */
 
 static void
-__imlib_CopyToRGBA(DATA32 color, DATA32 * dst)
+__imlib_CopyToRGBA(uint32_t color, uint32_t * dst)
 {
    *dst = color;
 }
 
 static void
-__imlib_CopyToRGB(DATA32 color, DATA32 * dst)
+__imlib_CopyToRGB(uint32_t color, uint32_t * dst)
 {
    *dst = (*dst & 0xff000000) | (color & 0x00ffffff);
 }
 
 static void
-__imlib_BlendToRGB(DATA32 color, DATA32 * dst)
+__imlib_BlendToRGB(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
 
    BLEND(R_VAL(&color), G_VAL(&color), B_VAL(&color), A_VAL(&color), dst);
 }
 
 static void
-__imlib_BlendToRGBA(DATA32 color, DATA32 * dst)
+__imlib_BlendToRGBA(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
-   DATA8               a;
+   uint32_t            tmp;
+   uint8_t             a;
 
    a = pow_lut[A_VAL(&color)][A_VAL(dst)];
    BLEND_COLOR(A_VAL(&color), A_VAL(dst), 255, A_VAL(dst));
@@ -72,35 +72,35 @@ __imlib_BlendToRGBA(DATA32 color, DATA32 * dst)
 /* ADD OPS */
 
 static void
-__imlib_AddCopyToRGBA(DATA32 color, DATA32 * dst)
+__imlib_AddCopyToRGBA(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
 
    A_VAL(dst) = A_VAL(&color);
    ADD_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
 }
 
 static void
-__imlib_AddCopyToRGB(DATA32 color, DATA32 * dst)
+__imlib_AddCopyToRGB(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
 
    ADD_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
 }
 
 static void
-__imlib_AddBlendToRGB(DATA32 color, DATA32 * dst)
+__imlib_AddBlendToRGB(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
 
    BLEND_ADD(R_VAL(&color), G_VAL(&color), B_VAL(&color), A_VAL(&color), dst);
 }
 
 static void
-__imlib_AddBlendToRGBA(DATA32 color, DATA32 * dst)
+__imlib_AddBlendToRGBA(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
-   DATA8               a;
+   uint32_t            tmp;
+   uint8_t             a;
 
    a = pow_lut[A_VAL(&color)][A_VAL(dst)];
    BLEND_COLOR(A_VAL(&color), A_VAL(dst), 255, A_VAL(dst));
@@ -110,35 +110,35 @@ __imlib_AddBlendToRGBA(DATA32 color, DATA32 * dst)
 /* SUBTRACT OPS */
 
 static void
-__imlib_SubCopyToRGBA(DATA32 color, DATA32 * dst)
+__imlib_SubCopyToRGBA(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
 
    A_VAL(dst) = A_VAL(&color);
    SUB_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
 }
 
 static void
-__imlib_SubCopyToRGB(DATA32 color, DATA32 * dst)
+__imlib_SubCopyToRGB(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
 
    SUB_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
 }
 
 static void
-__imlib_SubBlendToRGB(DATA32 color, DATA32 * dst)
+__imlib_SubBlendToRGB(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
 
    BLEND_SUB(R_VAL(&color), G_VAL(&color), B_VAL(&color), A_VAL(&color), dst);
 }
 
 static void
-__imlib_SubBlendToRGBA(DATA32 color, DATA32 * dst)
+__imlib_SubBlendToRGBA(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
-   DATA8               a;
+   uint32_t            tmp;
+   uint8_t             a;
 
    a = pow_lut[A_VAL(&color)][A_VAL(dst)];
    BLEND_COLOR(A_VAL(&color), A_VAL(dst), 255, A_VAL(dst));
@@ -148,35 +148,35 @@ __imlib_SubBlendToRGBA(DATA32 color, DATA32 * dst)
 /* RESHADE OPS */
 
 static void
-__imlib_ReCopyToRGBA(DATA32 color, DATA32 * dst)
+__imlib_ReCopyToRGBA(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
 
    A_VAL(dst) = A_VAL(&color);
    RE_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
 }
 
 static void
-__imlib_ReCopyToRGB(DATA32 color, DATA32 * dst)
+__imlib_ReCopyToRGB(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
 
    RE_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
 }
 
 static void
-__imlib_ReBlendToRGB(DATA32 color, DATA32 * dst)
+__imlib_ReBlendToRGB(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
+   uint32_t            tmp;
 
    BLEND_RE(R_VAL(&color), G_VAL(&color), B_VAL(&color), A_VAL(&color), dst);
 }
 
 static void
-__imlib_ReBlendToRGBA(DATA32 color, DATA32 * dst)
+__imlib_ReBlendToRGBA(uint32_t color, uint32_t * dst)
 {
-   DATA32              tmp;
-   DATA8               a;
+   uint32_t            tmp;
+   uint8_t             a;
 
    a = pow_lut[A_VAL(&color)][A_VAL(dst)];
    BLEND_COLOR(A_VAL(&color), A_VAL(dst), 255, A_VAL(dst));
@@ -188,7 +188,7 @@ __imlib_ReBlendToRGBA(DATA32 color, DATA32 * dst)
 /* COPY OPS */
 
 static void
-__imlib_CopySpanToRGBA(DATA32 color, DATA32 * dst, int len)
+__imlib_CopySpanToRGBA(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
@@ -198,7 +198,7 @@ __imlib_CopySpanToRGBA(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_CopySpanToRGB(DATA32 color, DATA32 * dst, int len)
+__imlib_CopySpanToRGB(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
@@ -208,11 +208,11 @@ __imlib_CopySpanToRGB(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_BlendSpanToRGB(DATA32 color, DATA32 * dst, int len)
+__imlib_BlendSpanToRGB(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         BLEND(R_VAL(&color), G_VAL(&color), B_VAL(&color), A_VAL(&color), dst);
         dst++;
@@ -220,12 +220,12 @@ __imlib_BlendSpanToRGB(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_BlendSpanToRGBA(DATA32 color, DATA32 * dst, int len)
+__imlib_BlendSpanToRGBA(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
-        DATA8               a;
+        uint32_t            tmp;
+        uint8_t             a;
 
         a = pow_lut[A_VAL(&color)][A_VAL(dst)];
         BLEND_COLOR(A_VAL(&color), A_VAL(dst), 255, A_VAL(dst));
@@ -237,11 +237,11 @@ __imlib_BlendSpanToRGBA(DATA32 color, DATA32 * dst, int len)
 /* ADD OPS */
 
 static void
-__imlib_AddCopySpanToRGBA(DATA32 color, DATA32 * dst, int len)
+__imlib_AddCopySpanToRGBA(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         A_VAL(dst) = A_VAL(&color);
         ADD_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
@@ -250,11 +250,11 @@ __imlib_AddCopySpanToRGBA(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_AddCopySpanToRGB(DATA32 color, DATA32 * dst, int len)
+__imlib_AddCopySpanToRGB(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         ADD_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
         dst++;
@@ -262,11 +262,11 @@ __imlib_AddCopySpanToRGB(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_AddBlendSpanToRGB(DATA32 color, DATA32 * dst, int len)
+__imlib_AddBlendSpanToRGB(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         BLEND_ADD(R_VAL(&color), G_VAL(&color), B_VAL(&color), A_VAL(&color),
                   dst);
@@ -275,12 +275,12 @@ __imlib_AddBlendSpanToRGB(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_AddBlendSpanToRGBA(DATA32 color, DATA32 * dst, int len)
+__imlib_AddBlendSpanToRGBA(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
-        DATA8               a;
+        uint32_t            tmp;
+        uint8_t             a;
 
         a = pow_lut[A_VAL(&color)][A_VAL(dst)];
         BLEND_COLOR(A_VAL(&color), A_VAL(dst), 255, A_VAL(dst));
@@ -292,11 +292,11 @@ __imlib_AddBlendSpanToRGBA(DATA32 color, DATA32 * dst, int len)
 /* SUBTRACT OPS */
 
 static void
-__imlib_SubCopySpanToRGBA(DATA32 color, DATA32 * dst, int len)
+__imlib_SubCopySpanToRGBA(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         A_VAL(dst) = A_VAL(&color);
         SUB_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
@@ -305,11 +305,11 @@ __imlib_SubCopySpanToRGBA(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_SubCopySpanToRGB(DATA32 color, DATA32 * dst, int len)
+__imlib_SubCopySpanToRGB(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         SUB_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
         dst++;
@@ -317,11 +317,11 @@ __imlib_SubCopySpanToRGB(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_SubBlendSpanToRGB(DATA32 color, DATA32 * dst, int len)
+__imlib_SubBlendSpanToRGB(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         BLEND_SUB(R_VAL(&color), G_VAL(&color), B_VAL(&color), A_VAL(&color),
                   dst);
@@ -330,12 +330,12 @@ __imlib_SubBlendSpanToRGB(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_SubBlendSpanToRGBA(DATA32 color, DATA32 * dst, int len)
+__imlib_SubBlendSpanToRGBA(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
-        DATA8               a;
+        uint32_t            tmp;
+        uint8_t             a;
 
         a = pow_lut[A_VAL(&color)][A_VAL(dst)];
         BLEND_COLOR(A_VAL(&color), A_VAL(dst), 255, A_VAL(dst));
@@ -347,11 +347,11 @@ __imlib_SubBlendSpanToRGBA(DATA32 color, DATA32 * dst, int len)
 /* RESHADE OPS */
 
 static void
-__imlib_ReCopySpanToRGBA(DATA32 color, DATA32 * dst, int len)
+__imlib_ReCopySpanToRGBA(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         A_VAL(dst) = A_VAL(&color);
         RE_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
@@ -360,11 +360,11 @@ __imlib_ReCopySpanToRGBA(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_ReCopySpanToRGB(DATA32 color, DATA32 * dst, int len)
+__imlib_ReCopySpanToRGB(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         RE_COPY(R_VAL(&color), G_VAL(&color), B_VAL(&color), dst);
         dst++;
@@ -372,11 +372,11 @@ __imlib_ReCopySpanToRGB(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_ReBlendSpanToRGB(DATA32 color, DATA32 * dst, int len)
+__imlib_ReBlendSpanToRGB(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         BLEND_RE(R_VAL(&color), G_VAL(&color), B_VAL(&color), A_VAL(&color),
                  dst);
@@ -385,12 +385,12 @@ __imlib_ReBlendSpanToRGB(DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_ReBlendSpanToRGBA(DATA32 color, DATA32 * dst, int len)
+__imlib_ReBlendSpanToRGBA(uint32_t color, uint32_t * dst, int len)
 {
    while (len--)
      {
-        DATA32              tmp;
-        DATA8               a;
+        uint32_t            tmp;
+        uint8_t             a;
 
         a = pow_lut[A_VAL(&color)][A_VAL(dst)];
         BLEND_COLOR(A_VAL(&color), A_VAL(dst), 255, A_VAL(dst));
@@ -404,15 +404,16 @@ __imlib_ReBlendSpanToRGBA(DATA32 color, DATA32 * dst, int len)
 /* COPY OPS */
 
 static void
-__imlib_CopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst, int len)
+__imlib_CopyShapedSpanToRGBA(uint8_t * src, uint32_t color, uint32_t * dst,
+                             int len)
 {
-   DATA32              col = color;
+   uint32_t            col = color;
 
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              switch (*src)
                {
@@ -460,7 +461,8 @@ __imlib_CopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_CopyShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
+__imlib_CopyShapedSpanToRGB(uint8_t * src, uint32_t color, uint32_t * dst,
+                            int len)
 {
    while (len--)
      {
@@ -473,14 +475,15 @@ __imlib_CopyShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_BlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
+__imlib_BlendShapedSpanToRGB(uint8_t * src, uint32_t color, uint32_t * dst,
+                             int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              switch (*src)
                {
@@ -507,7 +510,7 @@ __imlib_BlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         switch (*src)
           {
@@ -530,14 +533,15 @@ __imlib_BlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_BlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst, int len)
+__imlib_BlendShapedSpanToRGBA(uint8_t * src, uint32_t color, uint32_t * dst,
+                              int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              switch (*src)
                {
@@ -567,8 +571,8 @@ __imlib_BlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 
    while (len--)
      {
-        DATA32              tmp;
-        DATA8               a;
+        uint32_t            tmp;
+        uint8_t             a;
 
         switch (*src)
           {
@@ -595,14 +599,14 @@ __imlib_BlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 /* ADD OPS */
 
 static void
-__imlib_AddCopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
+__imlib_AddCopyShapedSpanToRGBA(uint8_t * src, uint32_t color, uint32_t * dst,
                                 int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              switch (*src)
                {
@@ -629,7 +633,7 @@ __imlib_AddCopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
 
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         if (*src)
           {
@@ -642,11 +646,12 @@ __imlib_AddCopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
 }
 
 static void
-__imlib_AddCopyShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
+__imlib_AddCopyShapedSpanToRGB(uint8_t * src, uint32_t color, uint32_t * dst,
+                               int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         if (*src)
           {
@@ -659,15 +664,15 @@ __imlib_AddCopyShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_AddBlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst,
+__imlib_AddBlendShapedSpanToRGB(uint8_t * src, uint32_t color, uint32_t * dst,
                                 int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              switch (*src)
                {
@@ -695,7 +700,7 @@ __imlib_AddBlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst,
 
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         switch (*src)
           {
@@ -719,15 +724,15 @@ __imlib_AddBlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst,
 }
 
 static void
-__imlib_AddBlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
+__imlib_AddBlendShapedSpanToRGBA(uint8_t * src, uint32_t color, uint32_t * dst,
                                  int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              switch (*src)
                {
@@ -759,8 +764,8 @@ __imlib_AddBlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
 
    while (len--)
      {
-        DATA32              tmp;
-        DATA8               a;
+        uint32_t            tmp;
+        uint8_t             a;
 
         switch (*src)
           {
@@ -788,14 +793,14 @@ __imlib_AddBlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
 /* SUBTRACT OPS */
 
 static void
-__imlib_SubCopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
+__imlib_SubCopyShapedSpanToRGBA(uint8_t * src, uint32_t color, uint32_t * dst,
                                 int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              switch (*src)
                {
@@ -822,7 +827,7 @@ __imlib_SubCopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
 
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         if (*src)
           {
@@ -835,11 +840,12 @@ __imlib_SubCopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
 }
 
 static void
-__imlib_SubCopyShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
+__imlib_SubCopyShapedSpanToRGB(uint8_t * src, uint32_t color, uint32_t * dst,
+                               int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         if (*src)
           {
@@ -852,15 +858,15 @@ __imlib_SubCopyShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_SubBlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst,
+__imlib_SubBlendShapedSpanToRGB(uint8_t * src, uint32_t color, uint32_t * dst,
                                 int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              switch (*src)
                {
@@ -888,7 +894,7 @@ __imlib_SubBlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst,
 
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         switch (*src)
           {
@@ -912,15 +918,15 @@ __imlib_SubBlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst,
 }
 
 static void
-__imlib_SubBlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
+__imlib_SubBlendShapedSpanToRGBA(uint8_t * src, uint32_t color, uint32_t * dst,
                                  int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              switch (*src)
                {
@@ -952,8 +958,8 @@ __imlib_SubBlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
 
    while (len--)
      {
-        DATA32              tmp;
-        DATA8               a;
+        uint32_t            tmp;
+        uint8_t             a;
 
         switch (*src)
           {
@@ -981,13 +987,14 @@ __imlib_SubBlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
 /* RESHADE OPS */
 
 static void
-__imlib_ReCopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst, int len)
+__imlib_ReCopyShapedSpanToRGBA(uint8_t * src, uint32_t color, uint32_t * dst,
+                               int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              switch (*src)
                {
@@ -1014,7 +1021,7 @@ __imlib_ReCopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         if (*src)
           {
@@ -1027,11 +1034,12 @@ __imlib_ReCopyShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_ReCopyShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
+__imlib_ReCopyShapedSpanToRGB(uint8_t * src, uint32_t color, uint32_t * dst,
+                              int len)
 {
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         if (*src)
           {
@@ -1044,14 +1052,15 @@ __imlib_ReCopyShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_ReBlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
+__imlib_ReBlendShapedSpanToRGB(uint8_t * src, uint32_t color, uint32_t * dst,
+                               int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              switch (*src)
                {
@@ -1079,7 +1088,7 @@ __imlib_ReBlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 
    while (len--)
      {
-        DATA32              tmp;
+        uint32_t            tmp;
 
         switch (*src)
           {
@@ -1103,15 +1112,15 @@ __imlib_ReBlendShapedSpanToRGB(DATA8 * src, DATA32 color, DATA32 * dst, int len)
 }
 
 static void
-__imlib_ReBlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
+__imlib_ReBlendShapedSpanToRGBA(uint8_t * src, uint32_t color, uint32_t * dst,
                                 int len)
 {
    if (A_VAL(&color) < 255)
      {
         while (len--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              switch (*src)
                {
@@ -1143,8 +1152,8 @@ __imlib_ReBlendShapedSpanToRGBA(DATA8 * src, DATA32 color, DATA32 * dst,
 
    while (len--)
      {
-        DATA32              tmp;
-        DATA8               a;
+        uint32_t            tmp;
+        uint8_t             a;
 
         switch (*src)
           {

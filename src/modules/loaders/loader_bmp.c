@@ -18,7 +18,7 @@ static struct {
 } mdata;
 
 static void
-mm_init(void *src, unsigned int size)
+mm_init(const void *src, unsigned int size)
 {
    mdata.data = mdata.dptr = src;
    mdata.size = size;
@@ -38,42 +38,42 @@ mm_read(void *dst, unsigned int len)
 
 /* The BITMAPFILEHEADER (size 14) */
 typedef struct {
-   DATA8               header[2];
-   DATA8               size[4];
-   DATA8               rsvd1[2];
-   DATA8               rsvd2[2];
-   DATA8               offs[4];
+   uint8_t             header[2];
+   uint8_t             size[4];
+   uint8_t             rsvd1[2];
+   uint8_t             rsvd2[2];
+   uint8_t             offs[4];
 } bfh_t;
 
 /* The BITMAPINFOHEADER */
 typedef union {
-   DATA32              header_size;
+   uint32_t            header_size;
    struct {
       /* BITMAPCOREHEADER (size 12) */
-      DATA32              header_size;
-      DATA16              width;
-      DATA16              height;
-      DATA16              planes;
-      DATA16              bpp;
+      uint32_t            header_size;
+      uint16_t            width;
+      uint16_t            height;
+      uint16_t            planes;
+      uint16_t            bpp;
    } bch;
    struct {
       /* BITMAPINFOHEADER (size 40) */
-      DATA32              header_size;
-      DATA32              width;
-      DATA32              height;
-      DATA16              planes;
-      DATA16              bpp;
-      DATA32              compression;
-      DATA32              size;
-      DATA32              res_hor;
-      DATA32              res_ver;
-      DATA32              colors;
-      DATA32              colors_important;
+      uint32_t            header_size;
+      uint32_t            width;
+      uint32_t            height;
+      uint16_t            planes;
+      uint16_t            bpp;
+      uint32_t            compression;
+      uint32_t            size;
+      uint32_t            res_hor;
+      uint32_t            res_ver;
+      uint32_t            colors;
+      uint32_t            colors_important;
       /* BITMAPV3INFOHEADER (size 56) */
-      DATA32              mask_r;
-      DATA32              mask_g;
-      DATA32              mask_b;
-      DATA32              mask_a;
+      uint32_t            mask_r;
+      uint32_t            mask_g;
+      uint32_t            mask_b;
+      uint32_t            mask_a;
    } bih;
    char                bytes[124];
 } bih_t;
@@ -165,10 +165,10 @@ load2(ImlibImage * im, int load_data)
    unsigned char       byte = 0, byte1, byte2;
    unsigned int        i, k;
    int                 w, h, x, y, j, l;
-   DATA32             *ptr, pixel;
+   uint32_t           *ptr, pixel;
    const unsigned char *buffer_ptr, *buffer_end, *buffer_end_safe;
    RGBQUAD             rgbQuads[256];
-   DATA32              argbCmap[256];
+   uint32_t            argbCmap[256];
    unsigned int        amask, rmask, gmask, bmask;
    int                 ashift1, rshift1, gshift1, bshift1;
    int                 ashift2, rshift2, gshift2, bshift2;
@@ -465,7 +465,7 @@ load2(ImlibImage * im, int load_data)
                      x, y, byte1, byte2, byte2 >> 4, byte2 & 0xf);
                   if (byte1)
                     {
-                       DATA32              t1, t2;
+                       uint32_t            t1, t2;
 
                        l = byte1;
                        /* Check for invalid length */
@@ -756,8 +756,6 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   if (rc <= 0)
-      __imlib_FreeData(im);
    munmap(fdata, im->fsize);
 
    return rc;
@@ -769,7 +767,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    int                 rc;
    FILE               *f;
    int                 i, j, pad;
-   DATA32              pixel;
+   uint32_t            pixel;
 
    f = fopen(im->real_file, "wb");
    if (!f)

@@ -70,18 +70,18 @@ __imlib_BestVisual(Display * d, int screen, int *depth_return)
    return v;
 }
 
-static DATA8       *
+static uint8_t     *
 __imlib_AllocColors332(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
-   DATA8              *color_lut;
+   uint8_t            *color_lut;
    int                 sig_mask = 0;
 
    for (i = 0; i < v->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
    sig_mask <<= (16 - v->bits_per_rgb);
    i = 0;
-   color_lut = malloc(256 * sizeof(DATA8));
+   color_lut = malloc(256 * sizeof(uint8_t));
    for (r = 0; r < 8; r++)
      {
         for (g = 0; g < 8; g++)
@@ -126,18 +126,18 @@ __imlib_AllocColors332(Display * d, Colormap cmap, Visual * v)
    return color_lut;
 }
 
-static DATA8       *
+static uint8_t     *
 __imlib_AllocColors666(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
-   DATA8              *color_lut;
+   uint8_t            *color_lut;
    int                 sig_mask = 0;
 
    for (i = 0; i < v->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
    sig_mask <<= (16 - v->bits_per_rgb);
    i = 0;
-   color_lut = malloc(256 * sizeof(DATA8));
+   color_lut = malloc(256 * sizeof(uint8_t));
    for (r = 0; r < 6; r++)
      {
         for (g = 0; g < 6; g++)
@@ -182,18 +182,18 @@ __imlib_AllocColors666(Display * d, Colormap cmap, Visual * v)
    return color_lut;
 }
 
-static DATA8       *
+static uint8_t     *
 __imlib_AllocColors232(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
-   DATA8              *color_lut;
+   uint8_t            *color_lut;
    int                 sig_mask = 0;
 
    for (i = 0; i < v->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
    sig_mask <<= (16 - v->bits_per_rgb);
    i = 0;
-   color_lut = malloc(128 * sizeof(DATA8));
+   color_lut = malloc(128 * sizeof(uint8_t));
    for (r = 0; r < 4; r++)
      {
         for (g = 0; g < 8; g++)
@@ -238,18 +238,18 @@ __imlib_AllocColors232(Display * d, Colormap cmap, Visual * v)
    return color_lut;
 }
 
-static DATA8       *
+static uint8_t     *
 __imlib_AllocColors222(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
-   DATA8              *color_lut;
+   uint8_t            *color_lut;
    int                 sig_mask = 0;
 
    for (i = 0; i < v->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
    sig_mask <<= (16 - v->bits_per_rgb);
    i = 0;
-   color_lut = malloc(64 * sizeof(DATA8));
+   color_lut = malloc(64 * sizeof(uint8_t));
    for (r = 0; r < 4; r++)
      {
         for (g = 0; g < 4; g++)
@@ -294,18 +294,18 @@ __imlib_AllocColors222(Display * d, Colormap cmap, Visual * v)
    return color_lut;
 }
 
-static DATA8       *
+static uint8_t     *
 __imlib_AllocColors221(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
-   DATA8              *color_lut;
+   uint8_t            *color_lut;
    int                 sig_mask = 0;
 
    for (i = 0; i < v->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
    sig_mask <<= (16 - v->bits_per_rgb);
    i = 0;
-   color_lut = malloc(32 * sizeof(DATA8));
+   color_lut = malloc(32 * sizeof(uint8_t));
    for (r = 0; r < 4; r++)
      {
         for (g = 0; g < 4; g++)
@@ -351,18 +351,18 @@ __imlib_AllocColors221(Display * d, Colormap cmap, Visual * v)
    return color_lut;
 }
 
-static DATA8       *
+static uint8_t     *
 __imlib_AllocColors121(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
-   DATA8              *color_lut;
+   uint8_t            *color_lut;
    int                 sig_mask = 0;
 
    for (i = 0; i < v->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
    sig_mask <<= (16 - v->bits_per_rgb);
    i = 0;
-   color_lut = malloc(16 * sizeof(DATA8));
+   color_lut = malloc(16 * sizeof(uint8_t));
    for (r = 0; r < 2; r++)
      {
         for (g = 0; g < 4; g++)
@@ -409,18 +409,18 @@ __imlib_AllocColors121(Display * d, Colormap cmap, Visual * v)
    return color_lut;
 }
 
-static DATA8       *
+static uint8_t     *
 __imlib_AllocColors111(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
-   DATA8              *color_lut;
+   uint8_t            *color_lut;
    int                 sig_mask = 0;
 
    for (i = 0; i < v->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
    sig_mask <<= (16 - v->bits_per_rgb);
    i = 0;
-   color_lut = malloc(8 * sizeof(DATA8));
+   color_lut = malloc(8 * sizeof(uint8_t));
    for (r = 0; r < 2; r++)
      {
         for (g = 0; g < 2; g++)
@@ -468,13 +468,13 @@ __imlib_AllocColors111(Display * d, Colormap cmap, Visual * v)
    return color_lut;
 }
 
-static DATA8       *
+static uint8_t     *
 __imlib_AllocColors1(Display * d, Colormap cmap, Visual * v)
 {
    XColor              xcl;
-   DATA8              *color_lut;
+   uint8_t            *color_lut;
 
-   color_lut = malloc(2 * sizeof(DATA8));
+   color_lut = malloc(2 * sizeof(uint8_t));
    xcl.red = (unsigned short)(0x0000);
    xcl.green = (unsigned short)(0x0000);
    xcl.blue = (unsigned short)(0x0000);
@@ -488,11 +488,11 @@ __imlib_AllocColors1(Display * d, Colormap cmap, Visual * v)
    return color_lut;
 }
 
-DATA8              *
+uint8_t            *
 __imlib_AllocColorTable(Display * d, Colormap cmap,
                         unsigned char *type_return, Visual * v)
 {
-   DATA8              *color_lut = NULL;
+   uint8_t            *color_lut = NULL;
 
    if (v->bits_per_rgb > 1)
      {

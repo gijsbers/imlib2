@@ -1,7 +1,6 @@
 #include "loader_common.h"
 
 #include <png.h>
-#include <stdint.h>
 #include <arpa/inet.h>
 
 #define DBG_PFX "LDR-png"
@@ -217,8 +216,8 @@ row_callback(png_struct * png_ptr, png_byte * new_row,
 {
    ctx_t              *ctx = png_get_progressive_ptr(png_ptr);
    ImlibImage         *im = ctx->im;
-   DATA32             *dptr;
-   const DATA32       *sptr;
+   uint32_t           *dptr;
+   const uint32_t     *sptr;
    int                 x, y, x0, dx, y0, dy;
    int                 done;
 
@@ -240,7 +239,7 @@ row_callback(png_struct * png_ptr, png_byte * new_row,
            PNG_PASS_COLS(im->w, pass), PNG_PASS_ROWS(im->h, pass));
         y = y0 + dy * row_num;
 
-        sptr = (const DATA32 *)new_row; /* Assuming aligned */
+        sptr = (const uint32_t *)new_row;       /* Assuming aligned */
         dptr = im->data + y * im->w;
         for (x = x0; x < im->w; x += dx)
           {
@@ -263,7 +262,7 @@ row_callback(png_struct * png_ptr, png_byte * new_row,
         y = row_num;
 
         dptr = im->data + y * im->w;
-        memcpy(dptr, new_row, sizeof(DATA32) * im->w);
+        memcpy(dptr, new_row, sizeof(uint32_t) * im->w);
 
         done = (int)row_num >= im->h - 1;
 
@@ -564,8 +563,6 @@ load2(ImlibImage * im, int load_data)
 
  quit:
    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-   if (rc <= 0)
-      __imlib_FreeData(im);
    munmap(fdata, im->fsize);
 
    return rc;
@@ -578,7 +575,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    FILE               *f;
    png_structp         png_ptr;
    png_infop           info_ptr;
-   DATA32             *ptr;
+   uint32_t           *ptr;
    int                 x, y, j, interlace;
    png_bytep           row_ptr, data;
    png_color_8         sig_bit;
@@ -702,7 +699,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
                {
                   for (j = 0, x = 0; x < im->w; x++)
                     {
-                       DATA32              pixel = ptr[x];
+                       uint32_t            pixel = ptr[x];
 
                        data[j++] = PIXEL_R(pixel);
                        data[j++] = PIXEL_G(pixel);

@@ -55,7 +55,7 @@
 
 /*\ Rotate by pixel sampling only, target inside source \*/
 static void
-__imlib_RotateSampleInside(DATA32 * src, DATA32 * dest, int sow, int dow,
+__imlib_RotateSampleInside(uint32_t * src, uint32_t * dest, int sow, int dow,
                            int dw, int dh, int x, int y,
                            int dxh, int dyh, int dxv, int dyv)
 {
@@ -87,7 +87,7 @@ __imlib_RotateSampleInside(DATA32 * src, DATA32 * dest, int sow, int dow,
 
 /*\ Same as last function, but with antialiasing \*/
 static void
-__imlib_RotateAAInside(DATA32 * src, DATA32 * dest, int sow, int dow,
+__imlib_RotateAAInside(uint32_t * src, uint32_t * dest, int sow, int dow,
                        int dw, int dh, int x, int y,
                        int dxh, int dyh, int dxv, int dyv)
 {
@@ -101,7 +101,7 @@ __imlib_RotateAAInside(DATA32 * src, DATA32 * dest, int sow, int dow,
         i = dw - 1;
         do
           {
-             DATA32             *src_x_y = (src + (x >> _ROTATE_PREC) +
+             uint32_t           *src_x_y = (src + (x >> _ROTATE_PREC) +
                                             ((y >> _ROTATE_PREC) * sow));
              INTERP_ARGB(dest, src_x_y, sow, x, y);
              /*\ RIGHT; \ */
@@ -153,7 +153,7 @@ __check_inside_coords(int x, int y, int dxh, int dyh, int dxv, int dyv,
 
 /*\ These ones don't need the target to be inside the source \*/
 void
-__imlib_RotateSample(DATA32 * src, DATA32 * dest, int sow, int sw, int sh,
+__imlib_RotateSample(uint32_t * src, uint32_t * dest, int sow, int sw, int sh,
                      int dow, int dw, int dh, int x, int y,
                      int dxh, int dyh, int dxv, int dyv)
 {
@@ -205,7 +205,7 @@ __imlib_RotateSample(DATA32 * src, DATA32 * dest, int sow, int sw, int sh,
 |*|     the bounding box.
 \*/
 void
-__imlib_RotateAA(DATA32 * src, DATA32 * dest, int sow, int sw, int sh,
+__imlib_RotateAA(uint32_t * src, uint32_t * dest, int sow, int sw, int sh,
                  int dow, int dw, int dh, int x, int y,
                  int dxh, int dyh, int dxv, int dyv)
 {
@@ -240,7 +240,7 @@ __imlib_RotateAA(DATA32 * src, DATA32 * dest, int sow, int sw, int sh,
         i = dw - 1;
         do
           {
-             DATA32             *src_x_y = (src + (x >> _ROTATE_PREC) +
+             uint32_t           *src_x_y = (src + (x >> _ROTATE_PREC) +
                                             ((y >> _ROTATE_PREC) * sow));
              if ((unsigned)x < (unsigned)sw)
                {
@@ -355,7 +355,7 @@ __imlib_BlendImageToImageSkewed(ImlibImage * im_src, ImlibImage * im_dst,
 {
    int                 x, y, dxh, dyh, dxv, dyv, i;
    double              xy2;
-   DATA32             *data, *src;
+   uint32_t           *data, *src;
 
    if ((ssw < 0) || (ssh < 0))
       return;
@@ -411,7 +411,7 @@ __imlib_BlendImageToImageSkewed(ImlibImage * im_src, ImlibImage * im_dst,
       ssh = im_src->h - ssy;
 
    src = im_src->data + ssx + ssy * im_src->w;
-   data = malloc(im_dst->w * LINESIZE * sizeof(DATA32));
+   data = malloc(im_dst->w * LINESIZE * sizeof(uint32_t));
    if (!data)
       return;
 

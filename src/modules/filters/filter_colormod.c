@@ -59,7 +59,7 @@ static              Imlib_Image
 colormod(Imlib_Image im, IFunctionParam * par)
 {
    double              a_d[256], r_d[256], g_d[256], b_d[256];
-   DATA8               a_b[256], r_b[256], g_b[256], b_b[256];
+   uint8_t             a_b[256], r_b[256], g_b[256], b_b[256];
    IFunctionParam     *ptr;
    int                 x = 0, y = 0, h, w, i;
    double              v = 0.0;

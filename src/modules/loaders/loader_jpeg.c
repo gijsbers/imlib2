@@ -9,7 +9,7 @@
 typedef struct {
    struct jpeg_error_mgr jem;
    sigjmp_buf          setjmp_buffer;
-   DATA8              *data;
+   uint8_t            *data;
 } ImLib_JPEG_data;
 
 static void
@@ -67,8 +67,8 @@ load2(ImlibImage * im, int load_data)
    int                 w, h, rc;
    struct jpeg_decompress_struct jds;
    ImLib_JPEG_data     jdata;
-   DATA8              *ptr, *line[16];
-   DATA32             *ptr2;
+   uint8_t            *ptr, *line[16];
+   uint32_t           *ptr2;
    int                 x, y, l, scans, inc;
    ExifInfo            ei = { 0 };
 
@@ -243,8 +243,6 @@ load2(ImlibImage * im, int load_data)
  quit:
    jpeg_destroy_decompress(&jds);
    free(jdata.data);
-   if (rc <= 0)
-      __imlib_FreeData(im);
 
    return rc;
 }
@@ -256,15 +254,15 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    struct jpeg_compress_struct jcs;
    ImLib_JPEG_data     jdata;
    FILE               *f;
-   DATA8              *buf;
-   DATA32             *ptr;
+   uint8_t            *buf;
+   uint32_t           *ptr;
    JSAMPROW           *jbuf;
    int                 y, quality, compression;
    ImlibImageTag      *tag;
    int                 i, j;
 
    /* allocate a small buffer to convert image data */
-   buf = malloc(im->w * 3 * sizeof(DATA8));
+   buf = malloc(im->w * 3 * sizeof(uint8_t));
    if (!buf)
       return LOAD_FAIL;
 
@@ -331,7 +329,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
         /* convcert scaline from ARGB to RGB packed */
         for (j = 0, i = 0; i < im->w; i++)
           {
-             DATA32              pixel = *ptr++;
+             uint32_t            pixel = *ptr++;
 
              buf[j++] = PIXEL_R(pixel);
              buf[j++] = PIXEL_G(pixel);

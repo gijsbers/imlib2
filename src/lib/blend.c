@@ -23,7 +23,7 @@
                 RESHADE_COLOR(G_VAL(dest), g, G_VAL(dest)); \
                 RESHADE_COLOR(B_VAL(dest), b, B_VAL(dest));
 
-DATA8               pow_lut[256][256];
+uint8_t             pow_lut[256][256];
 
 void
 __imlib_build_pow_lut(void)
@@ -54,7 +54,7 @@ __imlib_build_pow_lut(void)
 /* COPY OPS */
 
 static void
-__imlib_BlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_BlendRGBAToRGB(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                        int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -63,8 +63,8 @@ __imlib_BlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = A_VAL(src);
              switch (a)
@@ -88,7 +88,7 @@ __imlib_BlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_BlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_BlendRGBAToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                         int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -97,8 +97,8 @@ __imlib_BlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              aa = A_VAL(src);
              switch (aa)
@@ -124,7 +124,7 @@ __imlib_BlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_CopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_CopyRGBAToRGB(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                       int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -144,7 +144,7 @@ __imlib_CopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_CopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_CopyRGBToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                       int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -164,7 +164,7 @@ __imlib_CopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_CopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_CopyRGBAToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                        int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -186,7 +186,7 @@ __imlib_CopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 /* ADD OPS */
 
 static void
-__imlib_AddBlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_AddBlendRGBAToRGB(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                           int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -195,8 +195,8 @@ __imlib_AddBlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = A_VAL(src);
              switch (a)
@@ -220,7 +220,7 @@ __imlib_AddBlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_AddBlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_AddBlendRGBAToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                            int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -229,8 +229,8 @@ __imlib_AddBlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              aa = A_VAL(src);
              switch (aa)
@@ -257,7 +257,7 @@ __imlib_AddBlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_AddCopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_AddCopyRGBAToRGB(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                          int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -266,7 +266,7 @@ __imlib_AddCopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              ADD_COPY(R_VAL(src), G_VAL(src), B_VAL(src), dst);
              src++;
@@ -279,7 +279,7 @@ __imlib_AddCopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_AddCopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_AddCopyRGBAToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                           int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -288,7 +288,7 @@ __imlib_AddCopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = A_VAL(src);
              ADD_COPY(R_VAL(src), G_VAL(src), B_VAL(src), dst);
@@ -302,7 +302,7 @@ __imlib_AddCopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_AddCopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_AddCopyRGBToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                          int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -311,7 +311,7 @@ __imlib_AddCopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = 0xff;
              ADD_COPY(R_VAL(src), G_VAL(src), B_VAL(src), dst);
@@ -327,7 +327,7 @@ __imlib_AddCopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 /* SUBTRACT OPS */
 
 static void
-__imlib_SubBlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_SubBlendRGBAToRGB(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                           int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -336,8 +336,8 @@ __imlib_SubBlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = A_VAL(src);
              switch (a)
@@ -361,7 +361,7 @@ __imlib_SubBlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_SubBlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_SubBlendRGBAToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                            int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -370,8 +370,8 @@ __imlib_SubBlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              aa = A_VAL(src);
              switch (aa)
@@ -398,7 +398,7 @@ __imlib_SubBlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_SubCopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_SubCopyRGBAToRGB(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                          int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -407,7 +407,7 @@ __imlib_SubCopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              SUB_COPY(R_VAL(src), G_VAL(src), B_VAL(src), dst);
              src++;
@@ -420,7 +420,7 @@ __imlib_SubCopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_SubCopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_SubCopyRGBAToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                           int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -429,7 +429,7 @@ __imlib_SubCopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = A_VAL(src);
              SUB_COPY(R_VAL(src), G_VAL(src), B_VAL(src), dst);
@@ -443,7 +443,7 @@ __imlib_SubCopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_SubCopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_SubCopyRGBToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                          int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -452,7 +452,7 @@ __imlib_SubCopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = 0xff;
              SUB_COPY(R_VAL(src), G_VAL(src), B_VAL(src), dst);
@@ -468,7 +468,7 @@ __imlib_SubCopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 /* RESHADE OPS */
 
 static void
-__imlib_ReBlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReBlendRGBAToRGB(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                          int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -477,8 +477,8 @@ __imlib_ReBlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = A_VAL(src);
              switch (a)
@@ -502,7 +502,7 @@ __imlib_ReBlendRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_ReBlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReBlendRGBAToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                           int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -511,8 +511,8 @@ __imlib_ReBlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              aa = A_VAL(src);
              switch (aa)
@@ -539,7 +539,7 @@ __imlib_ReBlendRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_ReCopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReCopyRGBAToRGB(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                         int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -548,7 +548,7 @@ __imlib_ReCopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              RE_COPY(R_VAL(src), G_VAL(src), B_VAL(src), dst);
              src++;
@@ -561,7 +561,7 @@ __imlib_ReCopyRGBAToRGB(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_ReCopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReCopyRGBAToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                          int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -570,7 +570,7 @@ __imlib_ReCopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = A_VAL(src);
              RE_COPY(R_VAL(src), G_VAL(src), B_VAL(src), dst);
@@ -584,7 +584,7 @@ __imlib_ReCopyRGBAToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_ReCopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReCopyRGBToRGBA(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                         int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
@@ -593,7 +593,7 @@ __imlib_ReCopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = 0xff;
              RE_COPY(R_VAL(src), G_VAL(src), B_VAL(src), dst);
@@ -610,19 +610,19 @@ __imlib_ReCopyRGBToRGBA(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 /* COPY OPS */
 
 static void
-__imlib_BlendRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_BlendRGBAToRGBCmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                            int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = amod[A_VAL(src)];
              switch (a)
@@ -649,19 +649,19 @@ __imlib_BlendRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_BlendRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_BlendRGBAToRGBACmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                             int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              aa = amod[A_VAL(src)];
              switch (aa)
@@ -691,20 +691,20 @@ __imlib_BlendRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_BlendRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_BlendRGBToRGBACmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                            int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = pow_lut[am][A_VAL(dst)];
              BLEND_COLOR(am, A_VAL(dst), 255, A_VAL(dst))
@@ -720,19 +720,19 @@ __imlib_BlendRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_BlendRGBToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_BlendRGBToRGBCmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                           int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              BLEND(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)], am,
                    dst);
@@ -746,11 +746,11 @@ __imlib_BlendRGBToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_CopyRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_CopyRGBAToRGBCmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                           int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *rmod = cm->red_mapping,
+   uint8_t            *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
@@ -770,13 +770,13 @@ __imlib_CopyRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_CopyRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_CopyRGBToRGBACmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                           int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
@@ -796,11 +796,11 @@ __imlib_CopyRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_CopyRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_CopyRGBAToRGBACmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                            int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
@@ -823,19 +823,19 @@ __imlib_CopyRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 /* ADD OPS */
 
 static void
-__imlib_AddBlendRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
-                              int w, int h, ImlibColorModifier * cm)
+__imlib_AddBlendRGBAToRGBCmod(uint32_t * src, int srcw, uint32_t * dst,
+                              int dstw, int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = amod[A_VAL(src)];
              switch (a)
@@ -861,19 +861,19 @@ __imlib_AddBlendRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_AddBlendRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
-                               int w, int h, ImlibColorModifier * cm)
+__imlib_AddBlendRGBAToRGBACmod(uint32_t * src, int srcw, uint32_t * dst,
+                               int dstw, int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              aa = amod[A_VAL(src)];
              switch (aa)
@@ -902,19 +902,19 @@ __imlib_AddBlendRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_AddBlendRGBToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_AddBlendRGBToRGBCmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                              int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              BLEND_ADD(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)], am,
                        dst);
@@ -928,20 +928,20 @@ __imlib_AddBlendRGBToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_AddBlendRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
-                              int w, int h, ImlibColorModifier * cm)
+__imlib_AddBlendRGBToRGBACmod(uint32_t * src, int srcw, uint32_t * dst,
+                              int dstw, int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = pow_lut[am][A_VAL(dst)];
              BLEND_COLOR(am, A_VAL(dst), 255, A_VAL(dst));
@@ -957,18 +957,18 @@ __imlib_AddBlendRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_AddCopyRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_AddCopyRGBAToRGBCmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                              int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *rmod = cm->red_mapping,
+   uint8_t            *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              ADD_COPY(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)],
                       dst);
@@ -982,18 +982,18 @@ __imlib_AddCopyRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_AddCopyRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
-                              int w, int h, ImlibColorModifier * cm)
+__imlib_AddCopyRGBAToRGBACmod(uint32_t * src, int srcw, uint32_t * dst,
+                              int dstw, int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = amod[A_VAL(src)];
              ADD_COPY(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)],
@@ -1008,19 +1008,19 @@ __imlib_AddCopyRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_AddCopyRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_AddCopyRGBToRGBACmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                              int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = am;
              ADD_COPY(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)],
@@ -1037,19 +1037,19 @@ __imlib_AddCopyRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 /* SUBTRACT OPS */
 
 static void
-__imlib_SubBlendRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
-                              int w, int h, ImlibColorModifier * cm)
+__imlib_SubBlendRGBAToRGBCmod(uint32_t * src, int srcw, uint32_t * dst,
+                              int dstw, int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = amod[A_VAL(src)];
              switch (a)
@@ -1075,19 +1075,19 @@ __imlib_SubBlendRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_SubBlendRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
-                               int w, int h, ImlibColorModifier * cm)
+__imlib_SubBlendRGBAToRGBACmod(uint32_t * src, int srcw, uint32_t * dst,
+                               int dstw, int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              aa = amod[A_VAL(src)];
              switch (aa)
@@ -1116,19 +1116,19 @@ __imlib_SubBlendRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_SubBlendRGBToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_SubBlendRGBToRGBCmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                              int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              BLEND_SUB(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)], am,
                        dst);
@@ -1142,20 +1142,20 @@ __imlib_SubBlendRGBToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_SubBlendRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
-                              int w, int h, ImlibColorModifier * cm)
+__imlib_SubBlendRGBToRGBACmod(uint32_t * src, int srcw, uint32_t * dst,
+                              int dstw, int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = pow_lut[am][A_VAL(dst)];
              BLEND_COLOR(am, A_VAL(dst), 255, A_VAL(dst));
@@ -1171,18 +1171,18 @@ __imlib_SubBlendRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_SubCopyRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_SubCopyRGBAToRGBCmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                              int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *rmod = cm->red_mapping,
+   uint8_t            *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              SUB_COPY(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)],
                       dst);
@@ -1196,18 +1196,18 @@ __imlib_SubCopyRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_SubCopyRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
-                              int w, int h, ImlibColorModifier * cm)
+__imlib_SubCopyRGBAToRGBACmod(uint32_t * src, int srcw, uint32_t * dst,
+                              int dstw, int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = amod[A_VAL(src)];
              SUB_COPY(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)],
@@ -1222,19 +1222,19 @@ __imlib_SubCopyRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_SubCopyRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_SubCopyRGBToRGBACmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                              int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = am;
              SUB_COPY(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)],
@@ -1251,19 +1251,19 @@ __imlib_SubCopyRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 /* RESHADE OPS */
 
 static void
-__imlib_ReBlendRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReBlendRGBAToRGBCmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                              int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = amod[A_VAL(src)];
              switch (a)
@@ -1289,19 +1289,19 @@ __imlib_ReBlendRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_ReBlendRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
-                              int w, int h, ImlibColorModifier * cm)
+__imlib_ReBlendRGBAToRGBACmod(uint32_t * src, int srcw, uint32_t * dst,
+                              int dstw, int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a, aa;
+             uint32_t            tmp;
+             uint8_t             a, aa;
 
              aa = amod[A_VAL(src)];
              switch (aa)
@@ -1329,19 +1329,19 @@ __imlib_ReBlendRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_ReBlendRGBToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReBlendRGBToRGBCmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                             int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              BLEND_RE(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)], am,
                       dst);
@@ -1355,20 +1355,20 @@ __imlib_ReBlendRGBToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_ReBlendRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReBlendRGBToRGBACmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                              int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
-             DATA8               a;
+             uint32_t            tmp;
+             uint8_t             a;
 
              a = pow_lut[am][A_VAL(dst)];
              BLEND_COLOR(am, A_VAL(dst), 255, A_VAL(dst));
@@ -1384,18 +1384,18 @@ __imlib_ReBlendRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_ReCopyRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReCopyRGBAToRGBCmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                             int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *rmod = cm->red_mapping,
+   uint8_t            *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              RE_COPY(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)], dst);
              src++;
@@ -1408,18 +1408,18 @@ __imlib_ReCopyRGBAToRGBCmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_ReCopyRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReCopyRGBAToRGBACmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                              int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = amod[A_VAL(src)];
              RE_COPY(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)], dst);
@@ -1433,19 +1433,19 @@ __imlib_ReCopyRGBAToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
 }
 
 static void
-__imlib_ReCopyRGBToRGBACmod(DATA32 * src, int srcw, DATA32 * dst, int dstw,
+__imlib_ReCopyRGBToRGBACmod(uint32_t * src, int srcw, uint32_t * dst, int dstw,
                             int w, int h, ImlibColorModifier * cm)
 {
    int                 src_step = (srcw - w), dst_step = (dstw - w), ww = w;
-   DATA8              *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
+   uint8_t            *amod = cm->alpha_mapping, *rmod = cm->red_mapping,
       *gmod = cm->green_mapping, *bmod = cm->blue_mapping;
-   DATA8               am = amod[255];
+   uint8_t             am = amod[255];
 
    while (h--)
      {
         while (w--)
           {
-             DATA32              tmp;
+             uint32_t            tmp;
 
              A_VAL(dst) = am;
              RE_COPY(rmod[R_VAL(src)], gmod[G_VAL(src)], bmod[B_VAL(src)], dst);
@@ -1739,7 +1739,7 @@ __imlib_GetBlendFunction(ImlibOp op, char blend, char merge_alpha, char rgb_src,
 }
 
 void
-__imlib_BlendRGBAToData(DATA32 * src, int src_w, int src_h, DATA32 * dst,
+__imlib_BlendRGBAToData(uint32_t * src, int src_w, int src_h, uint32_t * dst,
                         int dst_w, int dst_h, int sx, int sy, int dx, int dy,
                         int w, int h, char blend, char merge_alpha,
                         ImlibColorModifier * cm, ImlibOp op, char rgb_src)
@@ -1846,7 +1846,7 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
    else
      {
         ImlibScaleInfo     *scaleinfo = NULL;
-        DATA32             *buf = NULL;
+        uint32_t           *buf = NULL;
         int                 sx, sy, sw, sh, dx, dy, dw, dh, dxx, dyy, y2, x2;
         int                 psx, psy, psw, psh;
         int                 y, h, hh;
@@ -1919,7 +1919,7 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
            return;
         /* if we are scaling the image at all make a scaling buffer */
         /* allocate a buffer to render scaled RGBA data into */
-        buf = malloc(dw * LINESIZE * sizeof(DATA32));
+        buf = malloc(dw * LINESIZE * sizeof(uint32_t));
         if (!buf)
           {
              __imlib_FreeScaleInfo(scaleinfo);

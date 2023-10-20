@@ -44,7 +44,7 @@ uncompress_file(const void *fdata, unsigned int fsize, int dest)
  quit:
    inflateEnd(&strm);
 
-   return ret;
+   return ok;
 }
 
 static const char  *const list_formats[] = { "gz" };

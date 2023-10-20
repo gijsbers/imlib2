@@ -6,7 +6,7 @@ static struct {
 } mdata;
 
 static void
-mm_init(void *src, unsigned int size)
+mm_init(const void *src, unsigned int size)
 {
    mdata.data = mdata.dptr = src;
    mdata.size = size;
@@ -36,7 +36,7 @@ load2(ImlibImage * im, int load_data)
    int                 rc;
    void               *fdata;
    int                 alpha;
-   DATA32             *ptr;
+   uint32_t           *ptr;
    int                 y;
    const char         *fptr, *row;
    unsigned int        size;
@@ -104,8 +104,6 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   if (rc <= 0)
-      __imlib_FreeData(im);
    munmap(fdata, im->fsize);
 
    return rc;
@@ -116,7 +114,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
    int                 rc;
    FILE               *f;
-   DATA32             *ptr;
+   uint32_t           *ptr;
    int                 y, alpha = 0;
 
    f = fopen(im->real_file, "wb");
@@ -124,7 +122,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
       return LOAD_FAIL;
 
 #ifdef WORDS_BIGENDIAN
-   DATA32             *buf = (DATA32 *) malloc(im->w * 4);
+   uint32_t           *buf = (uint32_t *) malloc(im->w * 4);
 #endif
 
    if (IM_FLAG_ISSET(im, F_HAS_ALPHA))

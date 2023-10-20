@@ -21,9 +21,9 @@
 /* size of the lines per segment we scale / render at a time */
 #define LINESIZE 16
 
-DATA32
+uint32_t
 __imlib_RenderGetPixel(Display * d, Drawable w, Visual * v, Colormap cm,
-                       int depth, DATA8 r, DATA8 g, DATA8 b)
+                       int depth, uint8_t r, uint8_t g, uint8_t b)
 {
    Context            *ct;
 
@@ -74,7 +74,7 @@ __imlib_RenderGetPixel(Display * d, Drawable w, Visual * v, Colormap cm,
      {
         unsigned int        rm, gm, bm;
         int                 i, rshift = 0, gshift = 0, bshift = 0;
-        DATA32              val;
+        uint32_t            val;
 
         rm = v->red_mask;
         gm = v->green_mask;
@@ -136,7 +136,7 @@ __imlib_RenderGetPixel(Display * d, Drawable w, Visual * v, Colormap cm,
 }
 
 static void
-__imlib_generic_render(DATA32 * src, int jump, int w, int h, int dx, int dy,
+__imlib_generic_render(uint32_t * src, int jump, int w, int h, int dx, int dy,
                        XImage * xim, Visual * v, Context * ct)
 {
    int                 x, y, hh;
@@ -144,7 +144,7 @@ __imlib_generic_render(DATA32 * src, int jump, int w, int h, int dx, int dy,
    unsigned int        rmask, gmask, bmask;
    int                 i, rshift, gshift, bshift;
 
-   static const DATA8  _dither_88[8][8] = {
+   static const uint8_t _dither_88[8][8] = {
       {0, 32, 8, 40, 2, 34, 10, 42},
       {48, 16, 56, 24, 50, 18, 58, 26},
       {12, 44, 4, 36, 14, 46, 6, 38},
@@ -257,7 +257,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
 {
    XImage             *xim = NULL, *mxim = NULL;
    Context            *ct;
-   DATA32             *buf = NULL, *pointer = NULL, *back = NULL;
+   uint32_t           *buf = NULL, *pointer = NULL, *back = NULL;
    int                 y, h, hh, jump;
    XGCValues           gcv;
    ImlibScaleInfo     *scaleinfo = NULL;
@@ -318,7 +318,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
    __imlib_RGBASetupContext(ct);
    if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
      {
-        back = malloc(dw * dh * sizeof(DATA32));
+        back = malloc(dw * dh * sizeof(uint32_t));
         if (!__imlib_GrabDrawableToRGBA
             (back, 0, 0, dw, dh, d, w, 0, v, cm, depth, dx, dy, dw, dh, 0, 1))
           {
@@ -350,7 +350,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
    if (scaleinfo)
      {
         /* allocate a buffer to render scaled RGBA data into */
-        buf = malloc(dw * LINESIZE * sizeof(DATA32));
+        buf = malloc(dw * LINESIZE * sizeof(uint32_t));
         if (!buf)
           {
              __imlib_ConsumeXImage(d, xim);
@@ -403,7 +403,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
              if (cmod)
                {
                   if (!buf)
-                     buf = malloc(im->w * LINESIZE * sizeof(DATA32));
+                     buf = malloc(im->w * LINESIZE * sizeof(uint32_t));
                   if (!buf)
                     {
                        __imlib_ConsumeXImage(d, xim);
@@ -414,7 +414,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
                        return;
                     }
                   memcpy(buf, im->data + ((y + sy) * im->w),
-                         im->w * hh * sizeof(DATA32));
+                         im->w * hh * sizeof(uint32_t));
                   __imlib_DataCmodApply(buf, im->w, hh, 0, NULL, cmod);
                   pointer = buf + sx;
                   jump = im->w - sw;
@@ -435,13 +435,13 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
         /* once scaled... convert chunk to bit depth into XImage bufer */
         if (rgbaer)
            rgbaer(pointer, jump,
-                  ((DATA8 *) xim->data) + (y * (xim->bytes_per_line)),
+                  ((uint8_t *) xim->data) + (y * (xim->bytes_per_line)),
                   xim->bytes_per_line, dw, hh, dx, dy + y);
         else
            __imlib_generic_render(pointer, jump, dw, hh, 0, y, xim, v, ct);
         if (m)
            masker(pointer, jump,
-                  ((DATA8 *) mxim->data) + (y * (mxim->bytes_per_line)),
+                  ((uint8_t *) mxim->data) + (y * (mxim->bytes_per_line)),
                   mxim->bytes_per_line, dw, hh, dx, dy + y, mat);
         h -= LINESIZE;
      }
@@ -566,7 +566,7 @@ __imlib_RenderImageSkewed(Display * d, ImlibImage * im, Drawable w, Drawable m,
    __imlib_GetContext(d, v, cm, depth);
 
    back = __imlib_CreateImage(dw, dh, NULL);
-   back->data = calloc(dw * dh, sizeof(DATA32));
+   back->data = calloc(dw * dh, sizeof(uint32_t));
    __imlib_GrabDrawableToRGBA(back->data, 0, 0, dw, dh, d, w, 0, v, cm,
                               depth, dx1, dy1, dw, dh, 0, 1);
 

@@ -82,8 +82,6 @@ bg_im_init(int w, int h)
 {
    int                 x, y, onoff;
 
-   V2printf("Image  WxH=%dx%d\n", w, h);
-
    if (bg_im)
      {
         imlib_context_set_image(bg_im);
@@ -223,7 +221,7 @@ anim_update(Imlib_Image im, const rect_t * up_in, rect_t * up_out, int flags)
 
    if (flags & IMLIB_FRAME_DISPOSE_PREV)
      {
-        Dprintf("Save  %d,%d %dx%d\n", up_in->x, up_in->y, up_in->w, up_in->h);
+        Dprintf(" Save  %d,%d %dx%d\n", up_in->x, up_in->y, up_in->w, up_in->h);
         im_save =
            imlib_create_cropped_image(up_in->x, up_in->y, up_in->w, up_in->h);
      }
@@ -233,7 +231,7 @@ anim_update(Imlib_Image im, const rect_t * up_in, rect_t * up_out, int flags)
         /* "dispose" of (clear) previous area before rendering new */
         if (im_prev)
           {
-             Dprintf("Prev  %d,%d %dx%d\n",
+             Dprintf(" Prev  %d,%d %dx%d\n",
                      r_prev.x, r_prev.y, r_prev.w, r_prev.h);
              imlib_context_set_blend(0);
              imlib_blend_image_onto_image(im_prev, 1,
@@ -247,7 +245,7 @@ anim_update(Imlib_Image im, const rect_t * up_in, rect_t * up_out, int flags)
           }
         else
           {
-             Dprintf("Clear %d,%d %dx%d\n",
+             Dprintf(" Clear %d,%d %dx%d\n",
                      r_prev.x, r_prev.y, r_prev.w, r_prev.h);
              imlib_context_set_color(0, 0, 0, 0);
              imlib_image_fill_rectangle(r_prev.x, r_prev.y, r_prev.w, r_prev.h);
@@ -271,7 +269,7 @@ anim_update(Imlib_Image im, const rect_t * up_in, rect_t * up_out, int flags)
       r_prev = r_zero;          /* No clearing before next frame */
 
    /* Render new frame on canvas */
-   Dprintf("Render %d,%d %dx%d\n", up_in->x, up_in->y, up_in->w, up_in->h);
+   Dprintf(" Render %d,%d %dx%d\n", up_in->x, up_in->y, up_in->w, up_in->h);
    if (flags & IMLIB_FRAME_BLEND)
       imlib_context_set_blend(1);
    else
@@ -307,7 +305,7 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
         window_height = DisplayHeight(disp, DefaultScreen(disp));
         window_width -= 32;     /* Allow for decorations */
         window_height -= 32;
-        Dprintf("Screen WxH=%dx%d\n", window_width, window_height);
+        Dprintf(" Screen WxH=%dx%d\n", window_width, window_height);
 
         image_width = fixedframe ? finfo.frame_w : finfo.canvas_w;
         image_height = fixedframe ? finfo.frame_h : finfo.canvas_h;
@@ -337,7 +335,10 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
              window_height = MAX_DIM;
              scale_y = (double)MAX_DIM / image_height;
           }
-        Dprintf("Window WxH=%dx%d\n", window_width, window_height);
+        Dprintf(" Window WxH=%dx%d\n", window_width, window_height);
+
+        V2printf(" Image  WxH=%dx%d fmt='%s'\n",
+                 image_width, image_height, imlib_image_format());
 
         /* Initialize checkered background image */
         bg_im_init(image_width, image_height);
@@ -401,7 +402,7 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
      }
 
    /* Render image on background image */
-   Dprintf("Update %d,%d %dx%d\n", r_up.x, r_up.y, r_up.w, r_up.h);
+   Dprintf(" Update %d,%d %dx%d\n", r_up.x, r_up.y, r_up.w, r_up.h);
    imlib_context_set_image(bg_im);
    imlib_context_set_blend(1);
    imlib_blend_image_onto_image(im, 1,
@@ -413,7 +414,7 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
    up_wy = SCALE_Y(r_up.y);
    up_ww = SCALE_X(r_up.w);
    up_wh = SCALE_Y(r_up.h);
-   Dprintf("Paint  %d,%d %dx%d\n", up_wx, up_wy, up_ww, up_wh);
+   Dprintf(" Paint  %d,%d %dx%d\n", up_wx, up_wy, up_ww, up_wh);
    imlib_context_set_blend(0);
    imlib_context_set_drawable(bg_pm);
    imlib_render_image_part_on_drawable_at_size(r_up.x, r_up.y, r_up.w, r_up.h,
@@ -652,7 +653,7 @@ main(int argc, char **argv)
 
         if (im)
           {
-             Dprintf("Cache usage: %d/%d\n", imlib_get_cache_used(),
+             Dprintf(" Cache usage: %d/%d\n", imlib_get_cache_used(),
                      imlib_get_cache_size());
              imlib_context_set_image(im);
              if (opt_cache)

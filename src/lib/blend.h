@@ -266,10 +266,10 @@ nc = (tmp | (-(tmp >> 8))) & (~(tmp >> 9));
 tmp = (cc) + (((c) - 127) << 1); \
 nc = (tmp | (-(tmp >> 8))) & (~(tmp >> 9));
 
-extern DATA8        pow_lut[256][256];
+extern uint8_t      pow_lut[256][256];
 
 #define BLEND_DST_ALPHA(r1, g1, b1, a1, dest) \
-{ DATA8 _aa; \
+{ uint8_t _aa; \
 _aa = pow_lut[a1][A_VAL(dest)]; \
 BLEND_COLOR(a1, A_VAL(dest), 255, A_VAL(dest)); \
 BLEND_COLOR(_aa, R_VAL(dest), r1, R_VAL(dest)); \
@@ -304,7 +304,7 @@ enum _imlibop {
    OP_RESHADE
 };
 
-typedef void        (*ImlibBlendFunction)(DATA32 *, int, DATA32 *, int, int,
+typedef void        (*ImlibBlendFunction)(uint32_t *, int, uint32_t *, int, int,
                                           int, ImlibColorModifier *);
 
 ImlibBlendFunction  __imlib_GetBlendFunction(ImlibOp op, char merge_alpha,
@@ -320,211 +320,211 @@ void                __imlib_BlendImageToImage(ImlibImage * im_src,
                                               ImlibColorModifier * cm,
                                               ImlibOp op, int clx, int cly,
                                               int clw, int clh);
-void                __imlib_BlendRGBAToData(DATA32 * src, int src_w, int src_h,
-                                            DATA32 * dst, int dst_w, int dst_h,
-                                            int sx, int sy, int dx, int dy,
-                                            int w, int h,
-                                            char blend, char merge_alpha,
+void                __imlib_BlendRGBAToData(uint32_t * src, int src_w,
+                                            int src_h, uint32_t * dst,
+                                            int dst_w, int dst_h, int sx,
+                                            int sy, int dx, int dy, int w,
+                                            int h, char blend, char merge_alpha,
                                             ImlibColorModifier * cm, ImlibOp op,
                                             char rgb_src);
 void                __imlib_build_pow_lut(void);
 
 /* *INDENT-OFF* */
 #ifdef DO_MMX_ASM
-void    __imlib_mmx_blend_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_blend_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                       int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_blend_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_blend_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                        int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_copy_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_copy_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                      int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_copy_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_copy_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                       int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_copy_rgb_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_copy_rgb_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                      int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_blend_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_blend_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                           int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_blend_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_blend_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                            int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_copy_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_copy_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                          int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_copy_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_copy_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                           int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_copy_rgb_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_copy_rgb_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                          int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_blend_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_blend_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_blend_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_blend_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                 int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_copy_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_copy_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                               int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_copy_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_copy_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_copy_rgb_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_copy_rgb_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                               int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_blend_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_reshade_blend_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                               int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_blend_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_reshade_blend_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_copy_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_reshade_copy_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                              int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_copy_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_reshade_copy_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                           int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_copy_rgb_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_reshade_copy_rgb_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                          int w, int h, ImlibColorModifier * cm);
 
-void    __imlib_mmx_blend_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_blend_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                            int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_blend_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_blend_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                             int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_blend_rgb_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_blend_rgb_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                           int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_blend_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_blend_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                            int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_copy_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_copy_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                           int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_copy_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_copy_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                            int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_copy_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_copy_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                           int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_blend_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_blend_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_blend_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_blend_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                 int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_blend_rgb_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_blend_rgb_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                               int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_blend_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_blend_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_copy_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_copy_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                               int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_copy_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_copy_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_add_copy_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_add_copy_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                               int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_blend_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_blend_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                     int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_blend_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_blend_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                      int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_blend_rgb_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_blend_rgb_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                    int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_blend_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_blend_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                     int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_copy_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_copy_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                    int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_copy_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_copy_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                     int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_subtract_copy_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_subtract_copy_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                    int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_blend_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_reshade_blend_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                    int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_blend_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_reshade_blend_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                     int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_blend_rgb_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_reshade_blend_rgb_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                   int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_blend_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_reshade_blend_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                    int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_copy_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_mmx_reshade_copy_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                   int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_copy_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw, 
+void    __imlib_mmx_reshade_copy_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw, 
                                                    int w, int h, ImlibColorModifier * cm);
-void    __imlib_mmx_reshade_copy_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw, 
+void    __imlib_mmx_reshade_copy_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw, 
                                                   int w, int h, ImlibColorModifier * cm);
 #elif DO_AMD64_ASM
-void    __imlib_amd64_blend_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_blend_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                         int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_blend_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_blend_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                          int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_copy_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_copy_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                        int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_copy_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_copy_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                         int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_copy_rgb_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_copy_rgb_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                        int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_blend_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_blend_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                             int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_blend_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_blend_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                              int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_copy_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_copy_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                            int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_copy_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_copy_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                             int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_copy_rgb_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_copy_rgb_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                            int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_blend_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_blend_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                  int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_blend_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_blend_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                   int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_copy_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_copy_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                 int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_copy_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_copy_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                  int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_copy_rgb_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_copy_rgb_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                 int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_blend_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_blend_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                 int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_blend_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_blend_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                  int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_copy_rgba_to_rgb(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_copy_rgba_to_rgb(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_copy_rgba_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_copy_rgba_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                 int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_copy_rgb_to_rgba(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_copy_rgb_to_rgba(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                int w, int h, ImlibColorModifier * cm);
 
-void    __imlib_amd64_blend_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_blend_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                              int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_blend_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_blend_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                               int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_blend_rgb_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_blend_rgb_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                             int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_blend_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_blend_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                              int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_copy_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_copy_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                             int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_copy_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_copy_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                              int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_copy_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_copy_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                             int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_blend_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_blend_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                  int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_blend_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_blend_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                   int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_blend_rgb_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_blend_rgb_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                 int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_blend_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_blend_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                  int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_copy_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_copy_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                 int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_copy_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_copy_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                  int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_add_copy_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_add_copy_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                 int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_blend_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_blend_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                       int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_blend_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_blend_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                        int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_blend_rgb_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_blend_rgb_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                      int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_blend_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_blend_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                       int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_copy_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_copy_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                      int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_copy_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_copy_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                       int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_subtract_copy_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_subtract_copy_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                      int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_blend_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_blend_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                      int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_blend_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_blend_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                       int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_blend_rgb_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_blend_rgb_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                     int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_blend_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_blend_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                      int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_copy_rgba_to_rgb_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_copy_rgba_to_rgb_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                     int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_copy_rgba_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_copy_rgba_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                      int w, int h, ImlibColorModifier * cm);
-void    __imlib_amd64_reshade_copy_rgb_to_rgba_cmod(DATA32 * src, int sw, DATA32 * dst, int dw,
+void    __imlib_amd64_reshade_copy_rgb_to_rgba_cmod(uint32_t * src, int sw, uint32_t * dst, int dw,
                                                     int w, int h, ImlibColorModifier * cm);
 #endif
 /* *INDENT-ON* */

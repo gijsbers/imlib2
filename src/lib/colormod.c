@@ -7,7 +7,7 @@
 #include "colormod.h"
 #include "image.h"
 
-static DATABIG      mod_count = 0;
+static uint64_t     mod_count = 0;
 
 ImlibColorModifier *
 __imlib_CreateCmod(void)
@@ -19,10 +19,10 @@ __imlib_CreateCmod(void)
    cm->modification_count = mod_count;
    for (i = 0; i < 256; i++)
      {
-        cm->red_mapping[i] = (DATA8) i;
-        cm->green_mapping[i] = (DATA8) i;
-        cm->blue_mapping[i] = (DATA8) i;
-        cm->alpha_mapping[i] = (DATA8) i;
+        cm->red_mapping[i] = (uint8_t) i;
+        cm->green_mapping[i] = (uint8_t) i;
+        cm->blue_mapping[i] = (uint8_t) i;
+        cm->alpha_mapping[i] = (uint8_t) i;
      }
    return cm;
 }
@@ -42,7 +42,7 @@ __imlib_CmodChanged(ImlibColorModifier * cm)
 
 void
 __imlib_CmodSetTables(ImlibColorModifier * cm,
-                      DATA8 * r, DATA8 * g, DATA8 * b, DATA8 * a)
+                      uint8_t * r, uint8_t * g, uint8_t * b, uint8_t * a)
 {
    int                 i;
 
@@ -67,20 +67,20 @@ __imlib_CmodReset(ImlibColorModifier * cm)
 
    for (i = 0; i < 256; i++)
      {
-        cm->red_mapping[i] = (DATA8) i;
-        cm->green_mapping[i] = (DATA8) i;
-        cm->blue_mapping[i] = (DATA8) i;
-        cm->alpha_mapping[i] = (DATA8) i;
+        cm->red_mapping[i] = (uint8_t) i;
+        cm->green_mapping[i] = (uint8_t) i;
+        cm->blue_mapping[i] = (uint8_t) i;
+        cm->alpha_mapping[i] = (uint8_t) i;
      }
    __imlib_CmodChanged(cm);
 }
 
 void
-__imlib_DataCmodApply(DATA32 * data, int w, int h, int jump,
+__imlib_DataCmodApply(uint32_t * data, int w, int h, int jump,
                       ImlibImageFlags * fl, ImlibColorModifier * cm)
 {
    int                 x, y;
-   DATA32             *p;
+   uint32_t           *p;
 
    /* We might be adding alpha */
    if (fl && !(*fl & F_HAS_ALPHA))
@@ -116,17 +116,17 @@ __imlib_DataCmodApply(DATA32 * data, int w, int h, int jump,
 }
 
 void
-__imlib_CmodGetTables(ImlibColorModifier * cm, DATA8 * r, DATA8 * g,
-                      DATA8 * b, DATA8 * a)
+__imlib_CmodGetTables(ImlibColorModifier * cm, uint8_t * r, uint8_t * g,
+                      uint8_t * b, uint8_t * a)
 {
    if (r)
-      memcpy(r, cm->red_mapping, (256 * sizeof(DATA8)));
+      memcpy(r, cm->red_mapping, (256 * sizeof(uint8_t)));
    if (g)
-      memcpy(g, cm->green_mapping, (256 * sizeof(DATA8)));
+      memcpy(g, cm->green_mapping, (256 * sizeof(uint8_t)));
    if (b)
-      memcpy(b, cm->blue_mapping, (256 * sizeof(DATA8)));
+      memcpy(b, cm->blue_mapping, (256 * sizeof(uint8_t)));
    if (a)
-      memcpy(a, cm->alpha_mapping, (256 * sizeof(DATA8)));
+      memcpy(a, cm->alpha_mapping, (256 * sizeof(uint8_t)));
 }
 
 void
@@ -142,28 +142,28 @@ __imlib_CmodModBrightness(ImlibColorModifier * cm, double v)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->red_mapping[i] = (DATA8) val2;
+        cm->red_mapping[i] = (uint8_t) val2;
 
         val2 = (int)cm->green_mapping[i] + val;
         if (val2 < 0)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->green_mapping[i] = (DATA8) val2;
+        cm->green_mapping[i] = (uint8_t) val2;
 
         val2 = (int)cm->blue_mapping[i] + val;
         if (val2 < 0)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->blue_mapping[i] = (DATA8) val2;
+        cm->blue_mapping[i] = (uint8_t) val2;
 
         val2 = (int)cm->alpha_mapping[i] + val;
         if (val2 < 0)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->alpha_mapping[i] = (DATA8) val2;
+        cm->alpha_mapping[i] = (uint8_t) val2;
      }
 }
 
@@ -179,28 +179,28 @@ __imlib_CmodModContrast(ImlibColorModifier * cm, double v)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->red_mapping[i] = (DATA8) val2;
+        cm->red_mapping[i] = (uint8_t) val2;
 
         val2 = (int)(((double)cm->green_mapping[i] - 127) * v) + 127;
         if (val2 < 0)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->green_mapping[i] = (DATA8) val2;
+        cm->green_mapping[i] = (uint8_t) val2;
 
         val2 = (int)(((double)cm->blue_mapping[i] - 127) * v) + 127;
         if (val2 < 0)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->blue_mapping[i] = (DATA8) val2;
+        cm->blue_mapping[i] = (uint8_t) val2;
 
         val2 = (int)(((double)cm->alpha_mapping[i] - 127) * v) + 127;
         if (val2 < 0)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->alpha_mapping[i] = (DATA8) val2;
+        cm->alpha_mapping[i] = (uint8_t) val2;
      }
 }
 
@@ -218,28 +218,28 @@ __imlib_CmodModGamma(ImlibColorModifier * cm, double v)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->red_mapping[i] = (DATA8) val2;
+        cm->red_mapping[i] = (uint8_t) val2;
 
         val2 = (int)(pow(((double)cm->green_mapping[i] / 255), (1 / v)) * 255);
         if (val2 < 0)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->green_mapping[i] = (DATA8) val2;
+        cm->green_mapping[i] = (uint8_t) val2;
 
         val2 = (int)(pow(((double)cm->blue_mapping[i] / 255), (1 / v)) * 255);
         if (val2 < 0)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->blue_mapping[i] = (DATA8) val2;
+        cm->blue_mapping[i] = (uint8_t) val2;
 
         val2 = (int)(pow(((double)cm->alpha_mapping[i] / 255), (1 / v)) * 255);
         if (val2 < 0)
            val2 = 0;
         if (val2 > 255)
            val2 = 255;
-        cm->alpha_mapping[i] = (DATA8) val2;
+        cm->alpha_mapping[i] = (uint8_t) val2;
      }
 }
 

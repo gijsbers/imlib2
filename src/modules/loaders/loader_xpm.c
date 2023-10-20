@@ -7,7 +7,7 @@ static struct {
 } mdata;
 
 static void
-mm_init(void *src, unsigned int size)
+mm_init(const void *src, unsigned int size)
 {
    mdata.data = mdata.dptr = src;
    mdata.size = size;
@@ -29,7 +29,7 @@ mm_getc(void)
 static FILE        *rgb_txt = NULL;
 
 static void
-xpm_parse_color(char *color, DATA32 * pixel)
+xpm_parse_color(char *color, uint32_t * pixel)
 {
    char                buf[4096];
    int                 r, g, b;
@@ -120,7 +120,7 @@ typedef struct {
    char                assigned;
    unsigned char       transp;
    char                str[6];
-   DATA32              pixel;
+   uint32_t            pixel;
 } cmap_t;
 
 static int
@@ -129,7 +129,7 @@ xpm_cmap_sort(const void *a, const void *b)
    return strcmp(((const cmap_t *)a)->str, ((const cmap_t *)b)->str);
 }
 
-static              DATA32
+static              uint32_t
 xpm_cmap_lookup(const cmap_t * cmap, int nc, int cpp, const char *s)
 {
    int                 i, i1, i2, x;
@@ -155,7 +155,7 @@ load2(ImlibImage * im, int load_data)
 {
    int                 rc;
    void               *fdata;
-   DATA32             *ptr;
+   uint32_t           *ptr;
    int                 pc, c, i, j, k, w, h, ncolors, cpp;
    int                 comment, transp, quote, context, len, done, backslash;
    char               *line, s[256], tok[256], col[256];
@@ -464,9 +464,6 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   if (rc <= 0)
-      __imlib_FreeData(im);
-
    free(cmap);
    free(line);
 

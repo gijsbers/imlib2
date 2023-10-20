@@ -57,7 +57,7 @@ void                __imlib_copy_image_data(ImlibImage * im, int x, int y,
 
 /* point and line drawing: in line.c */
 
-ImlibUpdate        *__imlib_Point_DrawToImage(int x, int y, DATA32 color,
+ImlibUpdate        *__imlib_Point_DrawToImage(int x, int y, uint32_t color,
                                               ImlibImage * im,
                                               int clx, int cly,
                                               int clw, int clh,
@@ -65,7 +65,7 @@ ImlibUpdate        *__imlib_Point_DrawToImage(int x, int y, DATA32 color,
                                               char make_updates);
 
 ImlibUpdate        *__imlib_Line_DrawToImage(int x0, int y0, int x1, int y1,
-                                             DATA32 color, ImlibImage * im,
+                                             uint32_t color, ImlibImage * im,
                                              int clx, int cly, int clw, int clh,
                                              ImlibOp op, char blend,
                                              char anti_alias,
@@ -74,28 +74,28 @@ ImlibUpdate        *__imlib_Line_DrawToImage(int x0, int y0, int x1, int y1,
 /* rectangle drawing and filling: in rectangle.c */
 
 void                __imlib_Rectangle_DrawToImage(int xc, int yc, int w, int h,
-                                                  DATA32 color, ImlibImage * im,
-                                                  int clx, int cly,
-                                                  int clw, int clh,
+                                                  uint32_t color,
+                                                  ImlibImage * im, int clx,
+                                                  int cly, int clw, int clh,
                                                   ImlibOp op, char blend);
 
 void                __imlib_Rectangle_FillToImage(int xc, int yc, int w, int h,
-                                                  DATA32 color, ImlibImage * im,
-                                                  int clx, int cly,
-                                                  int clw, int clh,
+                                                  uint32_t color,
+                                                  ImlibImage * im, int clx,
+                                                  int cly, int clw, int clh,
                                                   ImlibOp op, char blend);
 
 /* ellipse drawing and filling: in ellipse.c */
 
 void                __imlib_Ellipse_DrawToImage(int xc, int yc, int a, int b,
-                                                DATA32 color, ImlibImage * im,
+                                                uint32_t color, ImlibImage * im,
                                                 int clx, int cly,
                                                 int clw, int clh,
                                                 ImlibOp op, char blend,
                                                 char anti_alias);
 
 void                __imlib_Ellipse_FillToImage(int xc, int yc, int a, int b,
-                                                DATA32 color, ImlibImage * im,
+                                                uint32_t color, ImlibImage * im,
                                                 int clx, int cly,
                                                 int clw, int clh,
                                                 ImlibOp op, char blend,
@@ -115,16 +115,15 @@ void                __imlib_polygon_get_bounds(ImlibPoly * poly,
 /* polygon drawing and filling: in polygon.c */
 
 void                __imlib_Polygon_DrawToImage(ImlibPoly * poly, char closed,
-                                                DATA32 color, ImlibImage * im,
+                                                uint32_t color, ImlibImage * im,
                                                 int clx, int cly,
                                                 int clw, int clh,
                                                 ImlibOp op, char blend,
                                                 char anti_alias);
-void                __imlib_Polygon_FillToImage(ImlibPoly * poly, DATA32 color,
-                                                ImlibImage * im,
-                                                int clx, int cly,
-                                                int clw, int clh,
-                                                ImlibOp op, char blend,
+void                __imlib_Polygon_FillToImage(ImlibPoly * poly,
+                                                uint32_t color, ImlibImage * im,
+                                                int clx, int cly, int clw,
+                                                int clh, ImlibOp op, char blend,
                                                 char anti_alias);
 
 #endif

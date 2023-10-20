@@ -7,7 +7,7 @@
 #define VAR_CHAR 1
 #define VAR_PTR  2
 
-#define ASSIGN_DATA8( var, v ) if( strcmp( ptr->key, var ) == 0 ) v = (DATA8)atoi( (char *)ptr->data )
+#define ASSIGN_DATA8( var, v ) if( strcmp( ptr->key, var ) == 0 ) v = (uint8_t)atoi( (char *)ptr->data )
 #define ASSIGN_INT(k, v)                           \
        if (!strcmp((k), ptr->key)) {                 \
 	  if (ptr->type == VAR_PTR) {                \

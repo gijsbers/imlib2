@@ -1,7 +1,6 @@
 /* Farbfeld (http://tools.suckless.org/farbfeld) */
 #include "loader_common.h"
 
-#include <stdint.h>
 #include <arpa/inet.h>
 
 #define mm_check(p) ((const char *)(p) <= (const char *)fdata + im->fsize)
@@ -80,8 +79,6 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   if (rc <= 0)
-      __imlib_FreeData(im);
    munmap(fdata, im->fsize);
 
    return rc;

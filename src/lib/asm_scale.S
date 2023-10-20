@@ -12,7 +12,7 @@
 	.align 8
 FN_(imlib_Scale_mmx_AARGBA)
 
-/*\ Prototype: __imlib_Scale_mmx_AARGBA(ImlibScaleInfo *isi, DATA32 *dest,
+/*\ Prototype: __imlib_Scale_mmx_AARGBA(ImlibScaleInfo *isi, uint32_t *dest,
 |*|	int dxx, int dyy, int dx, int dy, int dw, int dh, int dow, int sow)
 \*/
 

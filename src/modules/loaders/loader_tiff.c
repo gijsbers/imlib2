@@ -1,8 +1,107 @@
 #include "loader_common.h"
 
 #include <setjmp.h>
-#include <stdint.h>
 #include <tiffio.h>
+
+#define DBG_PFX "LDR-tiff"
+
+#define DD(fmt...)  DC(0x80, fmt)
+
+static struct {
+   const unsigned char *data, *dptr;
+   unsigned int        size;
+} mdata;
+
+static void
+mm_init(const void *src, unsigned int size)
+{
+   mdata.data = mdata.dptr = src;
+   mdata.size = size;
+}
+
+static              tmsize_t
+_tiff_read(thandle_t ctx, void *buf, tmsize_t len)
+{
+   DD("%s: len=%ld\n", __func__, len);
+
+   if (mdata.dptr + len > mdata.data + mdata.size)
+      return 0;                 /* Out of data */
+
+   memcpy(buf, mdata.dptr, len);
+   mdata.dptr += len;
+
+   return len;
+}
+
+static              tmsize_t
+_tiff_write(thandle_t ctx, void *buf, tmsize_t len)
+{
+   DD("%s: len=%ld\n", __func__, len);
+
+   return 0;
+}
+
+static              toff_t
+_tiff_seek(thandle_t ctx, toff_t offs, int whence)
+{
+   const unsigned char *dptr;
+
+   DD("%s: offs=%ld, whence=%d\n", __func__, offs, whence);
+
+   switch (whence)
+     {
+     default:
+        return -1;
+     case SEEK_SET:
+        dptr = mdata.data + offs;
+        break;
+     case SEEK_CUR:
+        dptr = mdata.data += offs;
+        break;
+     case SEEK_END:
+        dptr = mdata.data + mdata.size + offs;
+        break;
+     }
+
+   if (dptr > mdata.data + mdata.size)
+      return -1;                /* Out of data */
+
+   mdata.dptr = dptr;
+
+   return mdata.dptr - mdata.data;
+}
+
+static int
+_tiff_close(thandle_t ctx)
+{
+   DD("%s\n", __func__);
+
+   return 0;
+}
+
+static              toff_t
+_tiff_size(thandle_t ctx)
+{
+   DD("%s: size=%d\n", __func__, mdata.size);
+
+   return mdata.size;
+}
+
+static int
+_tiff_map(thandle_t ctx, void **base, toff_t * size)
+{
+   DD("%s\n", __func__);
+
+   *base = (void *)mdata.data;
+   *size = mdata.size;
+
+   return 1;
+}
+static void
+_tiff_unmap(thandle_t ctx, void *base, toff_t size)
+{
+   DD("%s\n", __func__);
+}
 
 /* This is a wrapper data structure for TIFFRGBAImage, so that data can be */
 /* passed into the callbacks. More elegent, I think, than a bunch of globals */
@@ -23,7 +122,7 @@ raster(TIFFRGBAImage_Extra * img, uint32_t * rast,
    uint32_t            image_width, image_height;
    uint32_t           *pixel, pixel_value;
    uint32_t            i, j, k;
-   DATA32             *buffer_pixel, *buffer = img->image->data;
+   uint32_t           *buffer_pixel, *buffer = img->image->data;
    int                 alpha_premult;
    int                 a, r, g, b;
 
@@ -233,7 +332,7 @@ put_separate_and_raster(TIFFRGBAImage * img, uint32_t * rast,
 int
 load2(ImlibImage * im, int load_data)
 {
-   int                 rc, fd;
+   int                 rc;
    void               *fdata;
    TIFF               *tif = NULL;
    uint16_t            magic_number;
@@ -242,7 +341,6 @@ load2(ImlibImage * im, int load_data)
    char                txt[1024];
 
    rc = LOAD_FAIL;
-   fd = fileno(im->fp);
    rgba_image.image = NULL;
 
    /* Do initial signature check */
@@ -251,24 +349,22 @@ load2(ImlibImage * im, int load_data)
    if (im->fsize < (int)TIFF_BYTES_TO_CHECK)
       return rc;
 
-   fdata = mmap(NULL, TIFF_BYTES_TO_CHECK, PROT_READ, MAP_SHARED, fd, 0);
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
       return LOAD_BADFILE;
 
    magic_number = *(uint16_t *) fdata;
 
-   munmap(fdata, TIFF_BYTES_TO_CHECK);
-
    if (magic_number != TIFF_BIGENDIAN && magic_number != TIFF_LITTLEENDIAN)
       return rc;
 
-   fd = dup(fd);
-   tif = TIFFFdOpen(fd, im->real_file, "r");
+   mm_init(fdata, im->fsize);
+
+   tif = TIFFClientOpen(im->real_file, "r", NULL, _tiff_read, _tiff_write,
+                        _tiff_seek, _tiff_close, _tiff_size,
+                        _tiff_map, _tiff_unmap);
    if (!tif)
-     {
-        close(fd);
-        goto quit;
-     }
+      goto quit;
 
    strcpy(txt, "Cannot be processed by libtiff");
    if (!TIFFRGBAImageOK(tif, txt))
@@ -347,12 +443,11 @@ load2(ImlibImage * im, int load_data)
  quit:
    if (rast)
       _TIFFfree(rast);
-   if (rc <= 0)
-      __imlib_FreeData(im);
    if (rgba_image.image)
       TIFFRGBAImageEnd((TIFFRGBAImage *) & rgba_image);
    if (tif)
       TIFFClose(tif);
+   munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -366,7 +461,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    int                 rc;
    TIFF               *tif = NULL;
    uint8_t            *buf = NULL;
-   DATA32              pixel, *data = im->data;
+   uint32_t            pixel, *data = im->data;
    double              alpha_factor;
    int                 x, y;
    uint8_t             r, g, b, a = 0;

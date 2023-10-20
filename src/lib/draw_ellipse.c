@@ -18,14 +18,14 @@ div_round_16(int n)
 }
 
 static void
-__imlib_Ellipse_DrawToData(int xc, int yc, int a, int b, DATA32 color,
-                           DATA32 * dst, int dstw, int clx, int cly, int clw,
+__imlib_Ellipse_DrawToData(int xc, int yc, int a, int b, uint32_t color,
+                           uint32_t * dst, int dstw, int clx, int cly, int clw,
                            int clh, ImlibOp op, char dst_alpha, char blend)
 {
    ImlibPointDrawFunction pfunc;
    int                 xx, yy, x, y, prev_x, prev_y, ty, by, lx, rx;
-   DATA32              a2, b2, *tp, *bp;
-   DATA64              dx, dy;
+   uint32_t            a2, b2, *tp, *bp;
+   uint64_t            dx, dy;
 
    if (A_VAL(&color) == 0xff)
       blend = 0;
@@ -153,15 +153,16 @@ __imlib_Ellipse_DrawToData(int xc, int yc, int a, int b, DATA32 color,
 }
 
 static void
-__imlib_Ellipse_DrawToData_AA(int xc, int yc, int a, int b, DATA32 color,
-                              DATA32 * dst, int dstw, int clx, int cly, int clw,
-                              int clh, ImlibOp op, char dst_alpha, char blend)
+__imlib_Ellipse_DrawToData_AA(int xc, int yc, int a, int b, uint32_t color,
+                              uint32_t * dst, int dstw, int clx, int cly,
+                              int clw, int clh, ImlibOp op, char dst_alpha,
+                              char blend)
 {
    ImlibPointDrawFunction pfunc;
    int                 xx, yy, x, y, prev_x, prev_y, ty, by, lx, rx;
-   DATA32              a2, b2, col0, col1, *tp, *bp;
-   DATA64              dx, dy;
-   DATA8               ca = A_VAL(&color);
+   uint32_t            a2, b2, col0, col1, *tp, *bp;
+   uint64_t            dx, dy;
+   uint8_t             ca = A_VAL(&color);
 
    pfunc = __imlib_GetPointDrawFunction(op, dst_alpha, blend);
    if (!pfunc)
@@ -192,7 +193,7 @@ __imlib_Ellipse_DrawToData_AA(int xc, int yc, int a, int b, DATA32 color,
    while (dy < dx)
      {
         int                 len;
-        DATA32              tmp;
+        uint32_t            tmp;
 
         y = yy >> 16;
 
@@ -268,7 +269,7 @@ __imlib_Ellipse_DrawToData_AA(int xc, int yc, int a, int b, DATA32 color,
    while (ty < yc)
      {
         int                 len;
-        DATA32              tmp;
+        uint32_t            tmp;
 
         x = xx >> 16;
 
@@ -331,15 +332,15 @@ __imlib_Ellipse_DrawToData_AA(int xc, int yc, int a, int b, DATA32 color,
 }
 
 static void
-__imlib_Ellipse_FillToData(int xc, int yc, int a, int b, DATA32 color,
-                           DATA32 * dst, int dstw, int clx, int cly, int clw,
+__imlib_Ellipse_FillToData(int xc, int yc, int a, int b, uint32_t color,
+                           uint32_t * dst, int dstw, int clx, int cly, int clw,
                            int clh, ImlibOp op, char dst_alpha, char blend)
 {
    ImlibPointDrawFunction pfunc;
    ImlibSpanDrawFunction sfunc;
    int                 xx, yy, x, y, prev_x, prev_y, ty, by, lx, rx;
-   DATA32              a2, b2, *tp, *bp;
-   DATA64              dx, dy;
+   uint32_t            a2, b2, *tp, *bp;
+   uint64_t            dx, dy;
 
    if (A_VAL(&color) == 0xff)
       blend = 0;
@@ -372,7 +373,7 @@ __imlib_Ellipse_FillToData(int xc, int yc, int a, int b, DATA32 color,
    while (dy < dx)
      {
         int                 len;
-        DATA32             *tpp, *bpp;
+        uint32_t           *tpp, *bpp;
 
         y = div_round_16(yy);
 
@@ -443,7 +444,7 @@ __imlib_Ellipse_FillToData(int xc, int yc, int a, int b, DATA32 color,
    while (ty < yc)
      {
         int                 len;
-        DATA32             *tpp, *bpp;
+        uint32_t           *tpp, *bpp;
 
         x = div_round_16(xx);
 
@@ -491,16 +492,17 @@ __imlib_Ellipse_FillToData(int xc, int yc, int a, int b, DATA32 color,
 }
 
 static void
-__imlib_Ellipse_FillToData_AA(int xc, int yc, int a, int b, DATA32 color,
-                              DATA32 * dst, int dstw, int clx, int cly, int clw,
-                              int clh, ImlibOp op, char dst_alpha, char blend)
+__imlib_Ellipse_FillToData_AA(int xc, int yc, int a, int b, uint32_t color,
+                              uint32_t * dst, int dstw, int clx, int cly,
+                              int clw, int clh, ImlibOp op, char dst_alpha,
+                              char blend)
 {
    ImlibPointDrawFunction pfunc;
    ImlibSpanDrawFunction sfunc;
    int                 xx, yy, x, y, prev_x, prev_y, ty, by, lx, rx;
-   DATA32              a2, b2, col1, *tp, *bp;
-   DATA64              dx, dy;
-   DATA8               ca = A_VAL(&color);
+   uint32_t            a2, b2, col1, *tp, *bp;
+   uint64_t            dx, dy;
+   uint8_t             ca = A_VAL(&color);
 
    pfunc = __imlib_GetPointDrawFunction(op, dst_alpha, blend);
    if (ca == 0xff)
@@ -534,7 +536,7 @@ __imlib_Ellipse_FillToData_AA(int xc, int yc, int a, int b, DATA32 color,
    while (dy < dx)
      {
         int                 len;
-        DATA32              tmp, *tpp, *bpp;
+        uint32_t            tmp, *tpp, *bpp;
 
         y = yy >> 16;
 
@@ -610,7 +612,7 @@ __imlib_Ellipse_FillToData_AA(int xc, int yc, int a, int b, DATA32 color,
    while (ty < yc)
      {
         int                 len;
-        DATA32              tmp, *tpp, *bpp;
+        uint32_t            tmp, *tpp, *bpp;
 
         x = xx >> 16;
 
@@ -673,7 +675,7 @@ __imlib_Ellipse_FillToData_AA(int xc, int yc, int a, int b, DATA32 color,
 }
 
 void
-__imlib_Ellipse_DrawToImage(int xc, int yc, int a, int b, DATA32 color,
+__imlib_Ellipse_DrawToImage(int xc, int yc, int a, int b, uint32_t color,
                             ImlibImage * im, int clx, int cly, int clw, int clh,
                             ImlibOp op, char blend, char anti_alias)
 {
@@ -741,7 +743,7 @@ __imlib_Ellipse_DrawToImage(int xc, int yc, int a, int b, DATA32 color,
 }
 
 void
-__imlib_Ellipse_FillToImage(int xc, int yc, int a, int b, DATA32 color,
+__imlib_Ellipse_FillToImage(int xc, int yc, int a, int b, uint32_t color,
                             ImlibImage * im, int clx, int cly, int clw, int clh,
                             ImlibOp op, char blend, char anti_alias)
 {

@@ -21,7 +21,7 @@ int                 __imlib_XActualDepth(Display * d, Visual * v);
 Visual             *__imlib_BestVisual(Display * d, int screen,
                                        int *depth_return);
 
-DATA8              *__imlib_AllocColorTable(Display * d, Colormap cmap,
+uint8_t            *__imlib_AllocColorTable(Display * d, Colormap cmap,
                                             unsigned char *type_return,
                                             Visual * v);
 

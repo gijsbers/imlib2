@@ -39,9 +39,9 @@ exec(char *filter, void *im, IFunctionParam * params)
    if (strcmp(filter, "tint") == 0)
      {
         Imlib_Color_Modifier cm;
-        DATA8               atab[256];
+        uint8_t             atab[256];
         int                 x = 0, y = 0, w = 0, h = 0;
-        DATA8               r = 255, b = 255, g = 255, a = 255;
+        uint8_t             r = 255, b = 255, g = 255, a = 255;
 
 /*     
       printf( "filter_test.c: tint called\n" );

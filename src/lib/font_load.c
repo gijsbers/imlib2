@@ -207,6 +207,8 @@ __imlib_font_load(const char *name, int faceidx, int size)
 void
 __imlib_font_free(ImlibFont * fn)
 {
+   __imlib_font_remove_from_fallback_chain_imp(fn);
+
    fn->references--;
    if (fn->references == 0)
      {

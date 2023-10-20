@@ -36,15 +36,24 @@ static const char  *const ext_ico[] = { "ico", NULL };
 #ifdef BUILD_JPEG_LOADER
 static const char  *const ext_jpeg[] = { "jpg", "jpeg", "jfif", "jfi", NULL };
 #endif
+#ifdef BUILD_J2K_LOADER
+static const char  *const ext_j2k[] = { "jp2", "j2k", NULL };
+#endif
+#ifdef BUILD_JXL_LOADER
+static const char  *const ext_jxl[] = { "jxl", NULL };
+#endif
 static const char  *const ext_lbm[] = { "iff", "ilbm", "lbm", NULL };
 #ifdef BUILD_PNG_LOADER
 static const char  *const ext_png[] = { "png", NULL };
 #endif
+static const char  *const ext_pnm[] =
+   { "pnm", "ppm", "pgm", "pbm", "pam", NULL };
+#ifdef BUILD_PS_LOADER
+static const char  *const ext_ps[] = { "ps", "eps", NULL };
+#endif
 #ifdef BUILD_SVG_LOADER
 static const char  *const ext_svg[] = { "svg", NULL };
 #endif
-static const char  *const ext_pnm[] =
-   { "pnm", "ppm", "pgm", "pbm", "pam", NULL };
 static const char  *const ext_tga[] = { "tga", NULL };
 #ifdef BUILD_TIFF_LOADER
 static const char  *const ext_tiff[] = { "tiff", "tif", NULL };
@@ -83,9 +92,18 @@ static const KnownLoader loaders_known[] = {
 #ifdef BUILD_JPEG_LOADER
    {"jpeg", ext_jpeg},
 #endif
+#ifdef BUILD_J2K_LOADER
+   {"j2k", ext_j2k},
+#endif
+#ifdef BUILD_JXL_LOADER
+   {"jxl", ext_jxl},
+#endif
    {"lbm", ext_lbm},
 #ifdef BUILD_PNG_LOADER
    {"png", ext_png},
+#endif
+#ifdef BUILD_PS_LOADER
+   {"ps", ext_ps},
 #endif
    {"pnm", ext_pnm},
 #ifdef BUILD_SVG_LOADER
@@ -274,6 +292,12 @@ __imlib_LookupKnownLoader(const char *format)
    return l;
 }
 
+static int
+_loader_ok_for(const ImlibLoader * l, int for_save)
+{
+   return (for_save && l->save) || (!for_save && (l->load2 || l->load));
+}
+
 static ImlibLoader *
 __imlib_LookupLoadedLoader(const char *format, int for_save)
 {
@@ -304,8 +328,7 @@ __imlib_LookupLoadedLoader(const char *format, int for_save)
              if (strcasecmp(l->formats[i], format) == 0)
                {
                   /* does it provide the function we need? */
-                  if ((for_save && l->save) ||
-                      (!for_save && (l->load2 || l->load)))
+                  if (_loader_ok_for(l, for_save))
                      goto done;
                }
           }
@@ -338,7 +361,7 @@ __imlib_FindBestLoader(const char *file, const char *format, int for_save)
      }
 
    l = __imlib_LookupKnownLoader(format);
-   if (l)
+   if (l && _loader_ok_for(l, for_save))
       goto done;
 
    __imlib_LoadAllLoaders();

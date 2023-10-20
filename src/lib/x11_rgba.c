@@ -26,31 +26,31 @@
 /* x86: RGBA in byte order = ABGR when read as an int (in register/int) */
 
 /* lookup table to see what color index to use */
-static DATA8       *_dither_color_lut;
+static uint8_t     *_dither_color_lut;
 
-/* using DATA32 - major speedup for aligned memory reads */
+/* using uint32_t - major speedup for aligned memory reads */
 
 /* these data structs global rather than context-based for speed */
-static DATA16      *_dither_r16;
-static DATA16      *_dither_g16;
-static DATA16      *_dither_b16;
-static DATA8       *_dither_r8;
-static DATA8       *_dither_g8;
-static DATA8       *_dither_b8;
-static DATA8       *_dither_666r;
-static DATA8       *_dither_666g;
-static DATA8       *_dither_666b;
+static uint16_t    *_dither_r16;
+static uint16_t    *_dither_g16;
+static uint16_t    *_dither_b16;
+static uint8_t     *_dither_r8;
+static uint8_t     *_dither_g8;
+static uint8_t     *_dither_b8;
+static uint8_t     *_dither_666r;
+static uint8_t     *_dither_666g;
+static uint8_t     *_dither_666b;
 static int          dither_a_init = 0;
-static DATA8        _dither_a1[8 * 8 * 256];
+static uint8_t      _dither_a1[8 * 8 * 256];
 
 /* the famous dither matrix */
-static const DATA8  _dither_44[4][4] = {
+static const uint8_t _dither_44[4][4] = {
    {0, 4, 1, 5},
    {6, 2, 7, 3},
    {1, 5, 0, 4},
    {7, 3, 6, 2}
 };
-static const DATA8  _dither_88[8][8] = {
+static const uint8_t _dither_88[8][8] = {
    {0, 32, 8, 40, 2, 34, 10, 42},
    {48, 16, 56, 24, 50, 18, 58, 26},
    {12, 44, 4, 36, 14, 46, 6, 38},
@@ -65,7 +65,7 @@ static const DATA8  _dither_88[8][8] = {
  *    technology (US Patent 5,276,535). The dither table itself is in the
  *    public domain. */
 
-static const DATA8  _dither_128128[128][128] = {
+static const uint8_t _dither_128128[128][128] = {
    {0, 41, 23, 5, 17, 39, 7, 15, 62, 23, 40, 51, 31, 47, 9, 32, 52, 27, 57, 25,
     6, 61, 27, 52, 37, 7, 40, 63, 18, 36, 10, 42, 25, 62, 45, 34, 20, 42, 37,
     14, 35, 29, 50, 10, 61, 2, 40, 8, 37, 12, 58, 22, 5, 41, 10, 39, 0, 60, 11,
@@ -978,7 +978,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB565(src, dest)                   \
 {                                                       \
- *((DATA32 *)dest) = ((src[1] >> 8) & 0xf800) |         \
+ *((uint32_t *)dest) = ((src[1] >> 8) & 0xf800) |         \
                      ((src[1] >> 5) & 0x7e0) |          \
                      ((src[1] >> 3) & 0x1f) |           \
                      ((src[0] << 8) & 0xf8000000) |     \
@@ -989,7 +989,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE2_RGBA_RGB565(src, dest)                    \
 {                                                        \
- *((DATA32 *)dest) = ((src[0] >> 8) & 0xf800) |          \
+ *((uint32_t *)dest) = ((src[0] >> 8) & 0xf800) |          \
                      ((src[0] >> 5) & 0x7e0) |           \
                      ((src[0] >> 3) & 0x1f) |            \
                      ((src[1] << 8) & 0xf8000000) |      \
@@ -1014,7 +1014,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB565_DITHER(src, dest)                  \
 {                                                             \
- *((DATA32 *)dest) = ((DITHER_RGBA_565_LUT_R(1))) |           \
+ *((uint32_t *)dest) = ((DITHER_RGBA_565_LUT_R(1))) |           \
                      ((DITHER_RGBA_565_LUT_G(1))) |           \
                      ((DITHER_RGBA_565_LUT_B(1))) |           \
                      ((DITHER_RGBA_565_LUT_R(0) << 16)) |     \
@@ -1025,7 +1025,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE2_RGBA_RGB565_DITHER(src, dest)                  \
 {                                                             \
- *((DATA32 *)dest) = ((DITHER_RGBA_565_LUT_R(0))) |           \
+ *((uint32_t *)dest) = ((DITHER_RGBA_565_LUT_R(0))) |           \
                      ((DITHER_RGBA_565_LUT_G(0))) |           \
                      ((DITHER_RGBA_565_LUT_B(0))) |           \
                      ((DITHER_RGBA_565_LUT_R(1) << 16)) |     \
@@ -1043,7 +1043,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_BGR565(src, dest)                   \
 {                                                       \
- *((DATA32 *)dest) = ((src[1] << 8) & 0xf800) |         \
+ *((uint32_t *)dest) = ((src[1] << 8) & 0xf800) |         \
                      ((src[1] >> 5) & 0x7e0) |          \
                      ((src[1] >> 19)& 0x1f) |           \
                      ((src[0] << 24) & 0xf8000000) |     \
@@ -1054,7 +1054,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE2_RGBA_BGR565(src, dest)                    \
 {                                                        \
- *((DATA32 *)dest) = ((src[0] << 8) & 0xf800) |          \
+ *((uint32_t *)dest) = ((src[0] << 8) & 0xf800) |          \
                      ((src[0] >> 5) & 0x7e0) |           \
                      ((src[0] >> 19)& 0x1f) |            \
                      ((src[1] << 24) & 0xf8000000) |      \
@@ -1079,7 +1079,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_BGR565_DITHER(src, dest)                  \
 {                                                             \
- *((DATA32 *)dest) = ((DITHER_RGBA_BGR565_LUT_R(1))) |        \
+ *((uint32_t *)dest) = ((DITHER_RGBA_BGR565_LUT_R(1))) |        \
                      ((DITHER_RGBA_BGR565_LUT_G(1))) |        \
                      ((DITHER_RGBA_BGR565_LUT_B(1))) |        \
                      ((DITHER_RGBA_BGR565_LUT_R(0) << 16)) |  \
@@ -1090,7 +1090,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE2_RGBA_BGR565_DITHER(src, dest)                  \
 {                                                             \
- *((DATA32 *)dest) = ((DITHER_RGBA_BGR565_LUT_R(0))) |        \
+ *((uint32_t *)dest) = ((DITHER_RGBA_BGR565_LUT_R(0))) |        \
                      ((DITHER_RGBA_BGR565_LUT_G(0))) |        \
                      ((DITHER_RGBA_BGR565_LUT_B(0))) |        \
                      ((DITHER_RGBA_BGR565_LUT_R(1) << 16)) |  \
@@ -1114,7 +1114,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB555(src, dest)                   \
 {                                                       \
- *((DATA32 *)dest) = ((src[1] >> 9) & 0x7c00) |         \
+ *((uint32_t *)dest) = ((src[1] >> 9) & 0x7c00) |         \
                      ((src[1] >> 6) & 0x3e0) |          \
                      ((src[1] >> 3) & 0x1f) |          \
                      ((src[0] << 7) & 0x7c000000) |    \
@@ -1125,7 +1125,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE2_RGBA_RGB555(src, dest)                    \
 {                                                        \
- *((DATA32 *)dest) = ((src[0] >> 9) & 0x7c00) |          \
+ *((uint32_t *)dest) = ((src[0] >> 9) & 0x7c00) |          \
                      ((src[0] >> 6) & 0x3e0) |           \
                      ((src[0] >> 3) & 0x1f) |           \
                      ((src[1] << 7) & 0x7c000000) |     \
@@ -1150,7 +1150,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB555_DITHER(src, dest)                  \
 {                                                             \
- *((DATA32 *)dest) = ((DITHER_RGBA_555_LUT_R(1))) |           \
+ *((uint32_t *)dest) = ((DITHER_RGBA_555_LUT_R(1))) |           \
                      ((DITHER_RGBA_555_LUT_G(1))) |           \
                      ((DITHER_RGBA_555_LUT_B(1))) |           \
                      ((DITHER_RGBA_555_LUT_R(0) << 16)) |     \
@@ -1161,7 +1161,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE2_RGBA_RGB555_DITHER(src, dest)                  \
 {                                                             \
- *((DATA32 *)dest) = ((DITHER_RGBA_555_LUT_R(0))) |           \
+ *((uint32_t *)dest) = ((DITHER_RGBA_555_LUT_R(0))) |           \
                      ((DITHER_RGBA_555_LUT_G(0))) |           \
                      ((DITHER_RGBA_555_LUT_B(0))) |           \
                      ((DITHER_RGBA_555_LUT_R(1) << 16)) |     \
@@ -1180,7 +1180,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_BGR555(src, dest)                   \
 {                                                       \
- *((DATA32 *)dest) = ((src[1] << 7) & 0x7c00) |         \
+ *((uint32_t *)dest) = ((src[1] << 7) & 0x7c00) |         \
                      ((src[1] >> 6) & 0x3e0) |          \
                      ((src[1] >> 19)& 0x1f) |          \
                      ((src[0] << 23) & 0x7c000000) |    \
@@ -1191,7 +1191,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE2_RGBA_BGR555(src, dest)                    \
 {                                                        \
- *((DATA32 *)dest) = ((src[0] << 7) & 0x7c00) |          \
+ *((uint32_t *)dest) = ((src[0] << 7) & 0x7c00) |          \
                      ((src[0] >> 6) & 0x3e0) |           \
                      ((src[0] >> 19)& 0x1f) |           \
                      ((src[1] << 23) & 0x7c000000) |     \
@@ -1216,7 +1216,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_BGR555_DITHER(src, dest)                  \
 {                                                             \
- *((DATA32 *)dest) = ((DITHER_RGBA_BGR555_LUT_R(1))) |        \
+ *((uint32_t *)dest) = ((DITHER_RGBA_BGR555_LUT_R(1))) |        \
                      ((DITHER_RGBA_BGR555_LUT_G(1))) |        \
                      ((DITHER_RGBA_BGR555_LUT_B(1))) |        \
                      ((DITHER_RGBA_BGR555_LUT_R(0) << 16)) |  \
@@ -1227,7 +1227,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE2_RGBA_BGR555_DITHER(src, dest)                  \
 {                                                             \
- *((DATA32 *)dest) = ((DITHER_RGBA_BGR555_LUT_R(0))) |        \
+ *((uint32_t *)dest) = ((DITHER_RGBA_BGR555_LUT_R(0))) |        \
                      ((DITHER_RGBA_BGR555_LUT_G(0))) |        \
                      ((DITHER_RGBA_BGR555_LUT_B(0))) |        \
                      ((DITHER_RGBA_BGR555_LUT_R(1) << 16)) |  \
@@ -1251,7 +1251,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB332(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[1] >> 6)  & 0x03) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[1] >> 6)  & 0x03) |          \
                                         ((src[1] >> 11) & 0x1c) |          \
                                         ((src[1] >> 16) & 0xe0)]) |        \
                      (_dither_color_lut[((src[0] >> 6)  & 0x03) |          \
@@ -1261,7 +1261,7 @@ static const DATA8  _dither_128128[128][128] = {
 }
 #define WRITE4_RGBA_RGB332(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[3] >> 6)  & 0x03) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[3] >> 6)  & 0x03) |          \
                                         ((src[3] >> 11) & 0x1c) |          \
                                         ((src[3] >> 16) & 0xe0)]) |        \
                      (_dither_color_lut[((src[2] >> 6)  & 0x03) |          \
@@ -1278,7 +1278,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE2_RGBA_RGB332(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[0] >> 6)  & 0x03) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[0] >> 6)  & 0x03) |          \
                                         ((src[0] >> 11) & 0x1c) |          \
                                         ((src[0] >> 16) & 0xe0)]) |        \
                      (_dither_color_lut[((src[1] >> 6)  & 0x03) |          \
@@ -1288,7 +1288,7 @@ static const DATA8  _dither_128128[128][128] = {
 }
 #define WRITE4_RGBA_RGB332(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[0] >> 6)  & 0x03) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[0] >> 6)  & 0x03) |          \
                                         ((src[0] >> 11) & 0x1c) |          \
                                         ((src[0] >> 16) & 0xe0)]) |        \
                      (_dither_color_lut[((src[1] >> 6)  & 0x03) |          \
@@ -1319,7 +1319,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE4_RGBA_RGB332_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_332_LUT_R(3))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_332_LUT_R(3))) |         \
                                         ((DITHER_RGBA_332_LUT_G(3))) |         \
                                         ((DITHER_RGBA_332_LUT_B(3)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_332_LUT_R(2))) |         \
@@ -1335,7 +1335,7 @@ static const DATA8  _dither_128128[128][128] = {
 }
 #define WRITE2_RGBA_RGB332_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_332_LUT_R(1))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_332_LUT_R(1))) |         \
                                         ((DITHER_RGBA_332_LUT_G(1))) |         \
                                         ((DITHER_RGBA_332_LUT_B(1)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_332_LUT_R(0))) |         \
@@ -1346,7 +1346,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE4_RGBA_RGB332_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_332_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_332_LUT_R(0))) |         \
                                         ((DITHER_RGBA_332_LUT_G(0))) |         \
                                         ((DITHER_RGBA_332_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_332_LUT_R(1))) |         \
@@ -1362,7 +1362,7 @@ static const DATA8  _dither_128128[128][128] = {
 }
 #define WRITE2_RGBA_RGB332_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_332_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_332_LUT_R(0))) |         \
                                         ((DITHER_RGBA_332_LUT_G(0))) |         \
                                         ((DITHER_RGBA_332_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_332_LUT_R(1))) |         \
@@ -1388,7 +1388,7 @@ static const DATA8  _dither_128128[128][128] = {
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB666(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[(_dither_666r[(src[1] >> 16) & 0xff]     ) + \
+ *((uint32_t *)dest) = (_dither_color_lut[(_dither_666r[(src[1] >> 16) & 0xff]     ) + \
                                         (_dither_666g[(src[1] >> 8 ) & 0xff]     ) + \
                                         (_dither_666b[(src[1]      ) & 0xff]     )]) | \
                      (_dither_color_lut[(_dither_666r[(src[0] >> 16) & 0xff]     ) + \
@@ -1398,7 +1398,7 @@ static const DATA8  _dither_128128[128][128] = {
 }
 #define WRITE4_RGBA_RGB666(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[(_dither_666r[(src[3] >> 16) & 0xff]     ) + \
+ *((uint32_t *)dest) = (_dither_color_lut[(_dither_666r[(src[3] >> 16) & 0xff]     ) + \
                                         (_dither_666g[(src[3] >> 8 ) & 0xff]     ) + \
                                         (_dither_666b[(src[3]      ) & 0xff]     )]) | \
                      (_dither_color_lut[(_dither_666r[(src[2] >> 16) & 0xff]     ) + \
@@ -1415,7 +1415,7 @@ static const DATA8  _dither_128128[128][128] = {
 #else
 #define WRITE2_RGBA_RGB666(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[(_dither_666r[(src[0] >> 16) & 0xff]     ) + \
+ *((uint32_t *)dest) = (_dither_color_lut[(_dither_666r[(src[0] >> 16) & 0xff]     ) + \
                                         (_dither_666g[(src[0] >> 8 ) & 0xff]     ) + \
                                         (_dither_666b[(src[0]      ) & 0xff]     )]) | \
                      (_dither_color_lut[(_dither_666r[(src[1] >> 16) & 0xff]     ) + \
@@ -1425,7 +1425,7 @@ static const DATA8  _dither_128128[128][128] = {
 }
 #define WRITE4_RGBA_RGB666(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[(_dither_666r[(src[0] >> 16) & 0xff]     ) + \
+ *((uint32_t *)dest) = (_dither_color_lut[(_dither_666r[(src[0] >> 16) & 0xff]     ) + \
                                         (_dither_666g[(src[0] >> 8 ) & 0xff]     ) + \
                                         (_dither_666b[(src[0]      ) & 0xff]     )]) | \
                      (_dither_color_lut[(_dither_666r[(src[1] >> 16) & 0xff]     ) + \
@@ -1457,7 +1457,7 @@ _dith = (_dither_128128[(x + 0) & 0x7f][y & 0x7f] << 2) | 7; \
 _r[0] = ((((src[0] >> 16) & 0xff) * 5) + _dith) >> 8; \
 _g[0] = ((((src[0] >> 8 ) & 0xff) * 5) + (262 - _dith)) >> 8; \
 _b[0] = ((((src[0]      ) & 0xff) * 5) + _dith) >> 8; \
- *((DATA8 *)dest) = \
+ *((uint8_t *)dest) = \
 (_dither_color_lut[(_r[0] * 36) + (_g[0] * 6) + _b[0]])       \
 ; \
 dest += 1; src += 1; \
@@ -1483,7 +1483,7 @@ _dith = (_dither_128128[(x + 3) & 0x7f][y & 0x7f] << 2) | 7; \
 _r[3] = ((((src[3] >> 16) & 0xff) * 5) + _dith) >> 8; \
 _g[3] = ((((src[3] >> 8 ) & 0xff) * 5) + (262 - _dith)) >> 8; \
 _b[3] = ((((src[3]      ) & 0xff) * 5) + _dith) >> 8; \
- *((DATA32 *)dest) = \
+ *((uint32_t *)dest) = \
 (_dither_color_lut[(_r[3] * 36) + (_g[3] * 6) + _b[3]]) |       \
 (_dither_color_lut[(_r[2] * 36) + (_g[2] * 6) + _b[2]] << 8) |  \
 (_dither_color_lut[(_r[1] * 36) + (_g[1] * 6) + _b[1]] << 16) | \
@@ -1503,7 +1503,7 @@ _dith = (_dither_128128[(x + 1) & 0x7f][y & 0x7f] << 2) | 7; \
 _r[1] = ((((src[1] >> 16) & 0xff) * 5) + _dith) >> 8; \
 _g[1] = ((((src[1] >> 8 ) & 0xff) * 5) + (262 - _dith)) >> 8; \
 _b[1] = ((((src[1]      ) & 0xff) * 5) + _dith) >> 8; \
- *((DATA16 *)dest) = \
+ *((uint16_t *)dest) = \
 (_dither_color_lut[(_r[1] * 36) + (_g[1] * 6) + _b[1]]) |       \
 (_dither_color_lut[(_r[0] * 36) + (_g[0] * 6) + _b[0]] << 8)  \
 ; \
@@ -1513,7 +1513,7 @@ dest += 2; src += 2; \
 #if 0                           /* OOOOOOLD code for 666 - the 666 dithering uses the 128x128 dither mask :) */
 #define WRITE4_RGBA_RGB666_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_666_LUT_R(0))) +         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_666_LUT_R(0))) +         \
                                         ((DITHER_RGBA_666_LUT_G(0))) +         \
                                         ((DITHER_RGBA_666_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_666_LUT_R(1))) +         \
@@ -1529,7 +1529,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB666_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA16 *)dest) = (_dither_color_lut[((DITHER_RGBA_666_LUT_R(0))) +         \
+ *((uint16_t *)dest) = (_dither_color_lut[((DITHER_RGBA_666_LUT_R(0))) +         \
                                         ((DITHER_RGBA_666_LUT_G(0))) +         \
                                         ((DITHER_RGBA_666_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_666_LUT_R(1))) +         \
@@ -1558,7 +1558,7 @@ _dith = (_dither_128128[(x + 3) & 0x7f][y & 0x7f] << 2) | 7; \
 _r[3] = ((((src[3] >> 16) & 0xff) * 5) + _dith) >> 8; \
 _g[3] = ((((src[3] >> 8 ) & 0xff) * 5) + (262 - _dith)) >> 8; \
 _b[3] = ((((src[3]      ) & 0xff) * 5) + _dith) >> 8; \
- *((DATA32 *)dest) = \
+ *((uint32_t *)dest) = \
 (_dither_color_lut[(_r[0] * 36) + (_g[0] * 6) + _b[0]]) |       \
 (_dither_color_lut[(_r[1] * 36) + (_g[1] * 6) + _b[1]] << 8) |  \
 (_dither_color_lut[(_r[2] * 36) + (_g[2] * 6) + _b[2]] << 16) | \
@@ -1578,7 +1578,7 @@ _dith = (_dither_128128[(x + 1) & 0x7f][y & 0x7f] << 2) | 7; \
 _r[1] = ((((src[1] >> 16) & 0xff) * 5) + _dith) >> 8; \
 _g[1] = ((((src[1] >> 8 ) & 0xff) * 5) + (262 - _dith)) >> 8; \
 _b[1] = ((((src[1]      ) & 0xff) * 5) + _dith) >> 8; \
- *((DATA16 *)dest) = \
+ *((uint16_t *)dest) = \
 (_dither_color_lut[(_r[0] * 36) + (_g[0] * 6) + _b[0]]) |       \
 (_dither_color_lut[(_r[1] * 36) + (_g[1] * 6) + _b[1]] << 8)  \
 ; \
@@ -1608,7 +1608,7 @@ dest += 2; src += 2; \
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB232(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[1] RGB232_BSHIFT) RGB232_BMASK) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[1] RGB232_BSHIFT) RGB232_BMASK) |          \
                                         ((src[1] RGB232_GSHIFT) RGB232_GMASK) |          \
                                         ((src[1] RGB232_RSHIFT) RGB232_RMASK)]) |        \
                      (_dither_color_lut[((src[0] RGB232_BSHIFT) RGB232_BMASK) |          \
@@ -1618,7 +1618,7 @@ dest += 2; src += 2; \
 }
 #define WRITE4_RGBA_RGB232(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[3] RGB232_BSHIFT) RGB232_BMASK) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[3] RGB232_BSHIFT) RGB232_BMASK) |          \
                                         ((src[3] RGB232_GSHIFT) RGB232_GMASK) |          \
                                         ((src[3] RGB232_RSHIFT) RGB232_RMASK)]) |        \
                      (_dither_color_lut[((src[2] RGB232_BSHIFT) RGB232_BMASK) |          \
@@ -1635,7 +1635,7 @@ dest += 2; src += 2; \
 #else
 #define WRITE2_RGBA_RGB232(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[0] RGB232_BSHIFT) RGB232_BMASK) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[0] RGB232_BSHIFT) RGB232_BMASK) |          \
                                         ((src[0] RGB232_GSHIFT) RGB232_GMASK) |          \
                                         ((src[0] RGB232_RSHIFT) RGB232_RMASK)]) |        \
                      (_dither_color_lut[((src[1] RGB232_BSHIFT) RGB232_BMASK) |          \
@@ -1645,7 +1645,7 @@ dest += 2; src += 2; \
 }
 #define WRITE4_RGBA_RGB232(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[0] RGB232_BSHIFT) RGB232_BMASK) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[0] RGB232_BSHIFT) RGB232_BMASK) |          \
                                         ((src[0] RGB232_GSHIFT) RGB232_GMASK) |          \
                                         ((src[0] RGB232_RSHIFT) RGB232_RMASK)]) |        \
                      (_dither_color_lut[((src[1] RGB232_BSHIFT) RGB232_BMASK) |          \
@@ -1676,7 +1676,7 @@ dest += 2; src += 2; \
 #ifdef WORDS_BIGENDIAN
 #define WRITE4_RGBA_RGB232_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_232_LUT_R(3))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_232_LUT_R(3))) |         \
                                         ((DITHER_RGBA_232_LUT_G(3))) |         \
                                         ((DITHER_RGBA_232_LUT_B(3)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_232_LUT_R(2))) |         \
@@ -1692,7 +1692,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB232_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_232_LUT_R(1))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_232_LUT_R(1))) |         \
                                         ((DITHER_RGBA_232_LUT_G(1))) |         \
                                         ((DITHER_RGBA_232_LUT_B(1)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_232_LUT_R(0))) |         \
@@ -1703,7 +1703,7 @@ dest += 2; src += 2; \
 #else
 #define WRITE4_RGBA_RGB232_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_232_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_232_LUT_R(0))) |         \
                                         ((DITHER_RGBA_232_LUT_G(0))) |         \
                                         ((DITHER_RGBA_232_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_232_LUT_R(1))) |         \
@@ -1719,7 +1719,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB232_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_232_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_232_LUT_R(0))) |         \
                                         ((DITHER_RGBA_232_LUT_G(0))) |         \
                                         ((DITHER_RGBA_232_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_232_LUT_R(1))) |         \
@@ -1750,7 +1750,7 @@ dest += 2; src += 2; \
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB222(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[1] RGB222_BSHIFT) RGB222_BMASK) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[1] RGB222_BSHIFT) RGB222_BMASK) |          \
                                         ((src[1] RGB222_GSHIFT) RGB222_GMASK) |          \
                                         ((src[1] RGB222_RSHIFT) RGB222_RMASK)]) |        \
                      (_dither_color_lut[((src[0] RGB222_BSHIFT) RGB222_BMASK) |          \
@@ -1760,7 +1760,7 @@ dest += 2; src += 2; \
 }
 #define WRITE4_RGBA_RGB222(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[3] RGB222_BSHIFT) RGB222_BMASK) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[3] RGB222_BSHIFT) RGB222_BMASK) |          \
                                         ((src[3] RGB222_GSHIFT) RGB222_GMASK) |          \
                                         ((src[3] RGB222_RSHIFT) RGB222_RMASK)]) |        \
                      (_dither_color_lut[((src[2] RGB222_BSHIFT) RGB222_BMASK) |          \
@@ -1777,7 +1777,7 @@ dest += 2; src += 2; \
 #else
 #define WRITE2_RGBA_RGB222(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[0] RGB222_BSHIFT) RGB222_BMASK) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[0] RGB222_BSHIFT) RGB222_BMASK) |          \
                                         ((src[0] RGB222_GSHIFT) RGB222_GMASK) |          \
                                         ((src[0] RGB222_RSHIFT) RGB222_RMASK)]) |        \
                      (_dither_color_lut[((src[1] RGB222_BSHIFT) RGB222_BMASK) |          \
@@ -1787,7 +1787,7 @@ dest += 2; src += 2; \
 }
 #define WRITE4_RGBA_RGB222(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[0] RGB222_BSHIFT) RGB222_BMASK) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[0] RGB222_BSHIFT) RGB222_BMASK) |          \
                                         ((src[0] RGB222_GSHIFT) RGB222_GMASK) |          \
                                         ((src[0] RGB222_RSHIFT) RGB222_RMASK)]) |        \
                      (_dither_color_lut[((src[1] RGB222_BSHIFT) RGB222_BMASK) |          \
@@ -1818,7 +1818,7 @@ dest += 2; src += 2; \
 #ifdef WORDS_BIGENDIAN
 #define WRITE4_RGBA_RGB222_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_222_LUT_R(3))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_222_LUT_R(3))) |         \
                                         ((DITHER_RGBA_222_LUT_G(3))) |         \
                                         ((DITHER_RGBA_222_LUT_B(3)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_222_LUT_R(2))) |         \
@@ -1834,7 +1834,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB222_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_222_LUT_R(1))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_222_LUT_R(1))) |         \
                                         ((DITHER_RGBA_222_LUT_G(1))) |         \
                                         ((DITHER_RGBA_222_LUT_B(1)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_222_LUT_R(0))) |         \
@@ -1845,7 +1845,7 @@ dest += 2; src += 2; \
 #else
 #define WRITE4_RGBA_RGB222_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_222_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_222_LUT_R(0))) |         \
                                         ((DITHER_RGBA_222_LUT_G(0))) |         \
                                         ((DITHER_RGBA_222_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_222_LUT_R(1))) |         \
@@ -1861,7 +1861,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB222_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_222_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_222_LUT_R(0))) |         \
                                         ((DITHER_RGBA_222_LUT_G(0))) |         \
                                         ((DITHER_RGBA_222_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_222_LUT_R(1))) |         \
@@ -1892,7 +1892,7 @@ dest += 2; src += 2; \
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB221(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[1] RGB221_BSHIFT) RGB221_BMASK) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[1] RGB221_BSHIFT) RGB221_BMASK) |          \
                                         ((src[1] RGB221_GSHIFT) RGB221_GMASK) |          \
                                         ((src[1] RGB221_RSHIFT) RGB221_RMASK)]) |        \
                      (_dither_color_lut[((src[0] RGB221_BSHIFT) RGB221_BMASK) |          \
@@ -1902,7 +1902,7 @@ dest += 2; src += 2; \
 }
 #define WRITE4_RGBA_RGB221(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[3] RGB221_BSHIFT) RGB221_BMASK) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[3] RGB221_BSHIFT) RGB221_BMASK) |          \
                                         ((src[3] RGB221_GSHIFT) RGB221_GMASK) |          \
                                         ((src[3] RGB221_RSHIFT) RGB221_RMASK)]) |        \
                      (_dither_color_lut[((src[2] RGB221_BSHIFT) RGB221_BMASK) |          \
@@ -1919,7 +1919,7 @@ dest += 2; src += 2; \
 #else
 #define WRITE2_RGBA_RGB221(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[0] RGB221_BSHIFT) RGB221_BMASK) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[0] RGB221_BSHIFT) RGB221_BMASK) |          \
                                         ((src[0] RGB221_GSHIFT) RGB221_GMASK) |          \
                                         ((src[0] RGB221_RSHIFT) RGB221_RMASK)]) |        \
                      (_dither_color_lut[((src[1] RGB221_BSHIFT) RGB221_BMASK) |          \
@@ -1929,7 +1929,7 @@ dest += 2; src += 2; \
 }
 #define WRITE4_RGBA_RGB221(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[0] RGB221_BSHIFT) RGB221_BMASK) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[0] RGB221_BSHIFT) RGB221_BMASK) |          \
                                         ((src[0] RGB221_GSHIFT) RGB221_GMASK) |          \
                                         ((src[0] RGB221_RSHIFT) RGB221_RMASK)]) |        \
                      (_dither_color_lut[((src[1] RGB221_BSHIFT) RGB221_BMASK) |          \
@@ -1960,7 +1960,7 @@ dest += 2; src += 2; \
 #ifdef WORDS_BIGENDIAN
 #define WRITE4_RGBA_RGB221_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_221_LUT_R(3))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_221_LUT_R(3))) |         \
                                         ((DITHER_RGBA_221_LUT_G(3))) |         \
                                         ((DITHER_RGBA_221_LUT_B(3)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_221_LUT_R(2))) |         \
@@ -1976,7 +1976,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB221_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_221_LUT_R(1))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_221_LUT_R(1))) |         \
                                         ((DITHER_RGBA_221_LUT_G(1))) |         \
                                         ((DITHER_RGBA_221_LUT_B(1)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_221_LUT_R(0))) |         \
@@ -1987,7 +1987,7 @@ dest += 2; src += 2; \
 #else
 #define WRITE4_RGBA_RGB221_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_221_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_221_LUT_R(0))) |         \
                                         ((DITHER_RGBA_221_LUT_G(0))) |         \
                                         ((DITHER_RGBA_221_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_221_LUT_R(1))) |         \
@@ -2003,7 +2003,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB221_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_221_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_221_LUT_R(0))) |         \
                                         ((DITHER_RGBA_221_LUT_G(0))) |         \
                                         ((DITHER_RGBA_221_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_221_LUT_R(1))) |         \
@@ -2034,7 +2034,7 @@ dest += 2; src += 2; \
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB121(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[1] RGB121_BSHIFT) RGB121_BMASK) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[1] RGB121_BSHIFT) RGB121_BMASK) |          \
                                         ((src[1] RGB121_GSHIFT) RGB121_GMASK) |          \
                                         ((src[1] RGB121_RSHIFT) RGB121_RMASK)]) |        \
                      (_dither_color_lut[((src[0] RGB121_BSHIFT) RGB121_BMASK) |          \
@@ -2044,7 +2044,7 @@ dest += 2; src += 2; \
 }
 #define WRITE4_RGBA_RGB121(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[3] RGB121_BSHIFT) RGB121_BMASK) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[3] RGB121_BSHIFT) RGB121_BMASK) |          \
                                         ((src[3] RGB121_GSHIFT) RGB121_GMASK) |          \
                                         ((src[3] RGB121_RSHIFT) RGB121_RMASK)]) |        \
                      (_dither_color_lut[((src[2] RGB121_BSHIFT) RGB121_BMASK) |          \
@@ -2061,7 +2061,7 @@ dest += 2; src += 2; \
 #else
 #define WRITE2_RGBA_RGB121(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[0] RGB121_BSHIFT) RGB121_BMASK) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[0] RGB121_BSHIFT) RGB121_BMASK) |          \
                                         ((src[0] RGB121_GSHIFT) RGB121_GMASK) |          \
                                         ((src[0] RGB121_RSHIFT) RGB121_RMASK)]) |        \
                      (_dither_color_lut[((src[1] RGB121_BSHIFT) RGB121_BMASK) |          \
@@ -2071,7 +2071,7 @@ dest += 2; src += 2; \
 }
 #define WRITE4_RGBA_RGB121(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[0] RGB121_BSHIFT) RGB121_BMASK) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[0] RGB121_BSHIFT) RGB121_BMASK) |          \
                                         ((src[0] RGB121_GSHIFT) RGB121_GMASK) |          \
                                         ((src[0] RGB121_RSHIFT) RGB121_RMASK)]) |        \
                      (_dither_color_lut[((src[1] RGB121_BSHIFT) RGB121_BMASK) |          \
@@ -2102,7 +2102,7 @@ dest += 2; src += 2; \
 #ifdef WORDS_BIGENDIAN
 #define WRITE4_RGBA_RGB121_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_121_LUT_R(3))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_121_LUT_R(3))) |         \
                                         ((DITHER_RGBA_121_LUT_G(3))) |         \
                                         ((DITHER_RGBA_121_LUT_B(3)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_121_LUT_R(2))) |         \
@@ -2118,7 +2118,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB121_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_121_LUT_R(1))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_121_LUT_R(1))) |         \
                                         ((DITHER_RGBA_121_LUT_G(1))) |         \
                                         ((DITHER_RGBA_121_LUT_B(1)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_121_LUT_R(0))) |         \
@@ -2129,7 +2129,7 @@ dest += 2; src += 2; \
 #else
 #define WRITE4_RGBA_RGB121_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_121_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_121_LUT_R(0))) |         \
                                         ((DITHER_RGBA_121_LUT_G(0))) |         \
                                         ((DITHER_RGBA_121_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_121_LUT_R(1))) |         \
@@ -2145,7 +2145,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB121_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_121_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_121_LUT_R(0))) |         \
                                         ((DITHER_RGBA_121_LUT_G(0))) |         \
                                         ((DITHER_RGBA_121_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_121_LUT_R(1))) |         \
@@ -2176,7 +2176,7 @@ dest += 2; src += 2; \
 #ifdef WORDS_BIGENDIAN
 #define WRITE2_RGBA_RGB111(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[1] RGB111_BSHIFT) RGB111_BMASK) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[1] RGB111_BSHIFT) RGB111_BMASK) |          \
                                         ((src[1] RGB111_GSHIFT) RGB111_GMASK) |          \
                                         ((src[1] RGB111_RSHIFT) RGB111_RMASK)]) |        \
                      (_dither_color_lut[((src[0] RGB111_BSHIFT) RGB111_BMASK) |          \
@@ -2186,7 +2186,7 @@ dest += 2; src += 2; \
 }
 #define WRITE4_RGBA_RGB111(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[3] RGB111_BSHIFT) RGB111_BMASK) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[3] RGB111_BSHIFT) RGB111_BMASK) |          \
                                         ((src[3] RGB111_GSHIFT) RGB111_GMASK) |          \
                                         ((src[3] RGB111_RSHIFT) RGB111_RMASK)]) |        \
                      (_dither_color_lut[((src[2] RGB111_BSHIFT) RGB111_BMASK) |          \
@@ -2203,7 +2203,7 @@ dest += 2; src += 2; \
 #else
 #define WRITE2_RGBA_RGB111(src, dest)                                      \
 {                                                                          \
- *((DATA16 *)dest) = (_dither_color_lut[((src[0] RGB111_BSHIFT) RGB111_BMASK) |          \
+ *((uint16_t *)dest) = (_dither_color_lut[((src[0] RGB111_BSHIFT) RGB111_BMASK) |          \
                                         ((src[0] RGB111_GSHIFT) RGB111_GMASK) |          \
                                         ((src[0] RGB111_RSHIFT) RGB111_RMASK)]) |        \
                      (_dither_color_lut[((src[1] RGB111_BSHIFT) RGB111_BMASK) |          \
@@ -2213,7 +2213,7 @@ dest += 2; src += 2; \
 }
 #define WRITE4_RGBA_RGB111(src, dest)                                      \
 {                                                                          \
- *((DATA32 *)dest) = (_dither_color_lut[((src[0] RGB111_BSHIFT) RGB111_BMASK) |          \
+ *((uint32_t *)dest) = (_dither_color_lut[((src[0] RGB111_BSHIFT) RGB111_BMASK) |          \
                                         ((src[0] RGB111_GSHIFT) RGB111_GMASK) |          \
                                         ((src[0] RGB111_RSHIFT) RGB111_RMASK)]) |        \
                      (_dither_color_lut[((src[1] RGB111_BSHIFT) RGB111_BMASK) |          \
@@ -2244,7 +2244,7 @@ dest += 2; src += 2; \
 #ifdef WORDS_BIGENDIAN
 #define WRITE4_RGBA_RGB111_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_111_LUT_R(3))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_111_LUT_R(3))) |         \
                                         ((DITHER_RGBA_111_LUT_G(3))) |         \
                                         ((DITHER_RGBA_111_LUT_B(3)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_111_LUT_R(2))) |         \
@@ -2260,7 +2260,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB111_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_111_LUT_R(1))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_111_LUT_R(1))) |         \
                                         ((DITHER_RGBA_111_LUT_G(1))) |         \
                                         ((DITHER_RGBA_111_LUT_B(1)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_111_LUT_R(0))) |         \
@@ -2271,7 +2271,7 @@ dest += 2; src += 2; \
 #else
 #define WRITE4_RGBA_RGB111_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_111_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_111_LUT_R(0))) |         \
                                         ((DITHER_RGBA_111_LUT_G(0))) |         \
                                         ((DITHER_RGBA_111_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_111_LUT_R(1))) |         \
@@ -2287,7 +2287,7 @@ dest += 2; src += 2; \
 }
 #define WRITE2_RGBA_RGB111_DITHER(src, dest)                                   \
 {                                                                              \
- *((DATA32 *)dest) = (_dither_color_lut[((DITHER_RGBA_111_LUT_R(0))) |         \
+ *((uint32_t *)dest) = (_dither_color_lut[((DITHER_RGBA_111_LUT_R(0))) |         \
                                         ((DITHER_RGBA_111_LUT_G(0))) |         \
                                         ((DITHER_RGBA_111_LUT_B(0)))]) |       \
                      (_dither_color_lut[((DITHER_RGBA_111_LUT_R(1))) |         \
@@ -2414,9 +2414,9 @@ __imlib_RGBASetupContext(Context * ct)
 
    if ((ct->depth == 16) || (ct->depth == 15))
      {
-        _dither_r16 = (DATA16 *) ct->r_dither;
-        _dither_g16 = (DATA16 *) ct->g_dither;
-        _dither_b16 = (DATA16 *) ct->b_dither;
+        _dither_r16 = (uint16_t *) ct->r_dither;
+        _dither_g16 = (uint16_t *) ct->g_dither;
+        _dither_b16 = (uint16_t *) ct->b_dither;
      }
    else if (ct->depth <= 8)
      {
@@ -2429,18 +2429,18 @@ __imlib_RGBASetupContext(Context * ct)
           case PAL_TYPE_121:
           case PAL_TYPE_111:
           case PAL_TYPE_666:
-             _dither_r8 = (DATA8 *) ct->r_dither;
-             _dither_g8 = (DATA8 *) ct->g_dither;
-             _dither_b8 = (DATA8 *) ct->b_dither;
+             _dither_r8 = (uint8_t *) ct->r_dither;
+             _dither_g8 = (uint8_t *) ct->g_dither;
+             _dither_b8 = (uint8_t *) ct->b_dither;
              break;
           case PAL_TYPE_1:
-             _dither_r8 = (DATA8 *) ct->r_dither;
+             _dither_r8 = (uint8_t *) ct->r_dither;
              break;
           default:
              break;
           }
      }
-   _dither_r8 = (DATA8 *) ct->r_dither;
+   _dither_r8 = (uint8_t *) ct->r_dither;
 }
 
 /* Palette mode stuff */
@@ -2448,8 +2448,8 @@ __imlib_RGBASetupContext(Context * ct)
 void
 __imlib_RGBA_init(void *rd, void *gd, void *bd, int depth, int palette_type)
 {
-   DATA16             *rd16, *gd16, *bd16;
-   DATA8              *rd8, *gd8, *bd8;
+   uint16_t           *rd16, *gd16, *bd16;
+   uint8_t            *rd8, *gd8, *bd8;
    int                 i, x, y;
 
    if (!dither_a_init)
@@ -2480,9 +2480,9 @@ __imlib_RGBA_init(void *rd, void *gd, void *bd, int depth, int palette_type)
    switch (depth)
      {
      case 16:
-        rd16 = (DATA16 *) rd;
-        gd16 = (DATA16 *) gd;
-        bd16 = (DATA16 *) bd;
+        rd16 = (uint16_t *) rd;
+        gd16 = (uint16_t *) gd;
+        bd16 = (uint16_t *) bd;
         for (y = 0; y < 4; y++)
           {
              for (x = 0; x < 4; x++)
@@ -2514,9 +2514,9 @@ __imlib_RGBA_init(void *rd, void *gd, void *bd, int depth, int palette_type)
           }
         break;
      case 15:
-        rd16 = (DATA16 *) rd;
-        gd16 = (DATA16 *) gd;
-        bd16 = (DATA16 *) bd;
+        rd16 = (uint16_t *) rd;
+        gd16 = (uint16_t *) gd;
+        bd16 = (uint16_t *) bd;
         for (y = 0; y < 4; y++)
           {
              for (x = 0; x < 4; x++)
@@ -2548,9 +2548,9 @@ __imlib_RGBA_init(void *rd, void *gd, void *bd, int depth, int palette_type)
           }
         break;
      default:
-        rd8 = (DATA8 *) rd;
-        gd8 = (DATA8 *) gd;
-        bd8 = (DATA8 *) bd;
+        rd8 = (uint8_t *) rd;
+        gd8 = (uint8_t *) gd;
+        bd8 = (uint8_t *) bd;
         switch (palette_type)
           {
           case PAL_TYPE_332:
@@ -2595,15 +2595,15 @@ __imlib_RGBA_init(void *rd, void *gd, void *bd, int depth, int palette_type)
           case PAL_TYPE_666:   /* 666 8 bit 216 color rgb cube */
              if (!_dither_666r)
                {
-                  _dither_666r = malloc(256 * sizeof(DATA8));
-                  _dither_666g = malloc(256 * sizeof(DATA8));
-                  _dither_666b = malloc(256 * sizeof(DATA8));
+                  _dither_666r = malloc(256 * sizeof(uint8_t));
+                  _dither_666g = malloc(256 * sizeof(uint8_t));
+                  _dither_666b = malloc(256 * sizeof(uint8_t));
                }
              for (y = 0; y < 256; y++)
                {
-                  _dither_666r[y] = (DATA8) (((y * 6) >> 8) * 6 * 6);
-                  _dither_666g[y] = (DATA8) (((y * 6) >> 8) * 6);
-                  _dither_666b[y] = (DATA8) (((y * 6) >> 8));
+                  _dither_666r[y] = (uint8_t) (((y * 6) >> 8) * 6 * 6);
+                  _dither_666g[y] = (uint8_t) (((y * 6) >> 8) * 6);
+                  _dither_666b[y] = (uint8_t) (((y * 6) >> 8));
                }
              for (y = 0; y < DM_Y; y++)
                {
@@ -2617,7 +2617,7 @@ __imlib_RGBA_init(void *rd, void *gd, void *bd, int depth, int palette_type)
                                (((double)i -
                                  (_dither_666b[i] * (256.0 / 6.0))) /
                                 (256.0 / 6.0));
-                            if ((_dither_88[x][y] < (DATA8) pi)
+                            if ((_dither_88[x][y] < (uint8_t) pi)
                                 && ((double)i < (256 - (256.0 / 6.0))))
                               {
                                  rd8[(x << DM_BS1) | (y << DM_BS2) | i] =
@@ -2864,13 +2864,13 @@ __imlib_RGBA_init(void *rd, void *gd, void *bd, int depth, int palette_type)
 }
 
 static void
-__imlib_RGBA_to_RGB565_fast(DATA32 * src, int src_jump,
-                            DATA8 * dst, int dow,
+__imlib_RGBA_to_RGB565_fast(uint32_t * src, int src_jump,
+                            uint8_t * dst, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
-   DATA16             *dest = (DATA16 *) dst;
-   int                 dest_jump = (dow / sizeof(DATA16)) - width;
+   uint16_t           *dest = (uint16_t *) dst;
+   int                 dest_jump = (dow / sizeof(uint16_t)) - width;
 
    w = width;
    h = height;
@@ -2931,13 +2931,13 @@ __imlib_RGBA_to_RGB565_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB565_dither(DATA32 * src, int src_jump,
-                              DATA8 * dst, int dow,
+__imlib_RGBA_to_RGB565_dither(uint32_t * src, int src_jump,
+                              uint8_t * dst, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
-   DATA16             *dest = (DATA16 *) dst;
-   int                 dest_jump = (dow / sizeof(DATA16)) - width;
+   uint16_t           *dest = (uint16_t *) dst;
+   int                 dest_jump = (dow / sizeof(uint16_t)) - width;
 
    w = width + dx;
    h = height + dy;
@@ -3000,13 +3000,13 @@ __imlib_RGBA_to_RGB565_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_BGR565_fast(DATA32 * src, int src_jump,
-                            DATA8 * dst, int dow,
+__imlib_RGBA_to_BGR565_fast(uint32_t * src, int src_jump,
+                            uint8_t * dst, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
-   DATA16             *dest = (DATA16 *) dst;
-   int                 dest_jump = (dow / sizeof(DATA16)) - width;
+   uint16_t           *dest = (uint16_t *) dst;
+   int                 dest_jump = (dow / sizeof(uint16_t)) - width;
 
    w = width;
    h = height;
@@ -3067,13 +3067,13 @@ __imlib_RGBA_to_BGR565_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_BGR565_dither(DATA32 * src, int src_jump,
-                              DATA8 * dst, int dow,
+__imlib_RGBA_to_BGR565_dither(uint32_t * src, int src_jump,
+                              uint8_t * dst, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
-   DATA16             *dest = (DATA16 *) dst;
-   int                 dest_jump = (dow / sizeof(DATA16)) - width;
+   uint16_t           *dest = (uint16_t *) dst;
+   int                 dest_jump = (dow / sizeof(uint16_t)) - width;
 
    w = width + dx;
    h = height + dy;
@@ -3136,13 +3136,13 @@ __imlib_RGBA_to_BGR565_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB555_fast(DATA32 * src, int src_jump,
-                            DATA8 * dst, int dow,
+__imlib_RGBA_to_RGB555_fast(uint32_t * src, int src_jump,
+                            uint8_t * dst, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
-   DATA16             *dest = (DATA16 *) dst;
-   int                 dest_jump = (dow / sizeof(DATA16)) - width;
+   uint16_t           *dest = (uint16_t *) dst;
+   int                 dest_jump = (dow / sizeof(uint16_t)) - width;
 
    w = width;
    h = height;
@@ -3203,13 +3203,13 @@ __imlib_RGBA_to_RGB555_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB555_dither(DATA32 * src, int src_jump,
-                              DATA8 * dst, int dow,
+__imlib_RGBA_to_RGB555_dither(uint32_t * src, int src_jump,
+                              uint8_t * dst, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
-   DATA16             *dest = (DATA16 *) dst;
-   int                 dest_jump = (dow / sizeof(DATA16)) - width;
+   uint16_t           *dest = (uint16_t *) dst;
+   int                 dest_jump = (dow / sizeof(uint16_t)) - width;
 
    w = width + dx;
    h = height + dy;
@@ -3272,13 +3272,13 @@ __imlib_RGBA_to_RGB555_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_BGR555_fast(DATA32 * src, int src_jump,
-                            DATA8 * dst, int dow,
+__imlib_RGBA_to_BGR555_fast(uint32_t * src, int src_jump,
+                            uint8_t * dst, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
-   DATA16             *dest = (DATA16 *) dst;
-   int                 dest_jump = (dow / sizeof(DATA16)) - width;
+   uint16_t           *dest = (uint16_t *) dst;
+   int                 dest_jump = (dow / sizeof(uint16_t)) - width;
 
    w = width;
    h = height;
@@ -3339,13 +3339,13 @@ __imlib_RGBA_to_BGR555_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_BGR555_dither(DATA32 * src, int src_jump,
-                              DATA8 * dst, int dow,
+__imlib_RGBA_to_BGR555_dither(uint32_t * src, int src_jump,
+                              uint8_t * dst, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
-   DATA16             *dest = (DATA16 *) dst;
-   int                 dest_jump = (dow / sizeof(DATA16)) - width;
+   uint16_t           *dest = (uint16_t *) dst;
+   int                 dest_jump = (dow / sizeof(uint16_t)) - width;
 
    w = width + dx;
    h = height + dy;
@@ -3408,8 +3408,8 @@ __imlib_RGBA_to_BGR555_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB332_fast(DATA32 * src, int src_jump,
-                            DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB332_fast(uint32_t * src, int src_jump,
+                            uint8_t * dest, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -3503,8 +3503,8 @@ __imlib_RGBA_to_RGB332_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB332_dither(DATA32 * src, int src_jump,
-                              DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB332_dither(uint32_t * src, int src_jump,
+                              uint8_t * dest, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -3580,8 +3580,8 @@ __imlib_RGBA_to_RGB332_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB666_fast(DATA32 * src, int src_jump,
-                            DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB666_fast(uint32_t * src, int src_jump,
+                            uint8_t * dest, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -3675,8 +3675,8 @@ __imlib_RGBA_to_RGB666_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB666_dither(DATA32 * src, int src_jump,
-                              DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB666_dither(uint32_t * src, int src_jump,
+                              uint8_t * dest, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -3752,8 +3752,8 @@ __imlib_RGBA_to_RGB666_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB232_fast(DATA32 * src, int src_jump,
-                            DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB232_fast(uint32_t * src, int src_jump,
+                            uint8_t * dest, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -3847,8 +3847,8 @@ __imlib_RGBA_to_RGB232_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB232_dither(DATA32 * src, int src_jump,
-                              DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB232_dither(uint32_t * src, int src_jump,
+                              uint8_t * dest, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -3924,8 +3924,8 @@ __imlib_RGBA_to_RGB232_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB222_fast(DATA32 * src, int src_jump,
-                            DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB222_fast(uint32_t * src, int src_jump,
+                            uint8_t * dest, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4019,8 +4019,8 @@ __imlib_RGBA_to_RGB222_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB222_dither(DATA32 * src, int src_jump,
-                              DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB222_dither(uint32_t * src, int src_jump,
+                              uint8_t * dest, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4096,8 +4096,8 @@ __imlib_RGBA_to_RGB222_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB221_fast(DATA32 * src, int src_jump,
-                            DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB221_fast(uint32_t * src, int src_jump,
+                            uint8_t * dest, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4191,8 +4191,8 @@ __imlib_RGBA_to_RGB221_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB221_dither(DATA32 * src, int src_jump,
-                              DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB221_dither(uint32_t * src, int src_jump,
+                              uint8_t * dest, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4268,8 +4268,8 @@ __imlib_RGBA_to_RGB221_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB121_fast(DATA32 * src, int src_jump,
-                            DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB121_fast(uint32_t * src, int src_jump,
+                            uint8_t * dest, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4363,8 +4363,8 @@ __imlib_RGBA_to_RGB121_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB121_dither(DATA32 * src, int src_jump,
-                              DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB121_dither(uint32_t * src, int src_jump,
+                              uint8_t * dest, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4440,8 +4440,8 @@ __imlib_RGBA_to_RGB121_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB111_fast(DATA32 * src, int src_jump,
-                            DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB111_fast(uint32_t * src, int src_jump,
+                            uint8_t * dest, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4535,8 +4535,8 @@ __imlib_RGBA_to_RGB111_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB111_dither(DATA32 * src, int src_jump,
-                              DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB111_dither(uint32_t * src, int src_jump,
+                              uint8_t * dest, int dow,
                               int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4612,8 +4612,8 @@ __imlib_RGBA_to_RGB111_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB1_fast(DATA32 * src, int src_jump,
-                          DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB1_fast(uint32_t * src, int src_jump,
+                          uint8_t * dest, int dow,
                           int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4634,8 +4634,8 @@ __imlib_RGBA_to_RGB1_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB1_dither(DATA32 * src, int src_jump,
-                            DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB1_dither(uint32_t * src, int src_jump,
+                            uint8_t * dest, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4656,8 +4656,8 @@ __imlib_RGBA_to_RGB1_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_A1_fast(DATA32 * src, int src_jump,
-                        DATA8 * dest, int dow,
+__imlib_RGBA_to_A1_fast(uint32_t * src, int src_jump,
+                        uint8_t * dest, int dow,
                         int width, int height, int dx, int dy, int threshold)
 {
    int                 x, y, w, h;
@@ -4670,7 +4670,7 @@ __imlib_RGBA_to_A1_fast(DATA32 * src, int src_jump,
      {
         for (x = 0; x < w; x++)
           {
-             WRITE1_RGBA_A1(src, dest, (DATA32) threshold);
+             WRITE1_RGBA_A1(src, dest, (uint32_t) threshold);
           }
         src += src_jump;
         dest += dest_jump;
@@ -4678,8 +4678,8 @@ __imlib_RGBA_to_A1_fast(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_A1_dither(DATA32 * src, int src_jump,
-                          DATA8 * dest, int dow,
+__imlib_RGBA_to_A1_dither(uint32_t * src, int src_jump,
+                          uint8_t * dest, int dow,
                           int width, int height, int dx, int dy, int threshold)
 {
    int                 x, y, w, h;
@@ -4700,13 +4700,13 @@ __imlib_RGBA_to_A1_dither(DATA32 * src, int src_jump,
 }
 
 static void
-__imlib_RGBA_to_RGB8888_fast(DATA32 * src, int src_jump,
-                             DATA8 * dst, int dow,
+__imlib_RGBA_to_RGB8888_fast(uint32_t * src, int src_jump,
+                             uint8_t * dst, int dow,
                              int width, int height, int dx, int dy)
 {
    int                 y, w, h;
-   DATA32             *dest = (DATA32 *) dst;
-   int                 dest_jump = (dow / sizeof(DATA32)) - width;
+   uint32_t           *dest = (uint32_t *) dst;
+   int                 dest_jump = (dow / sizeof(uint32_t)) - width;
 
    w = width;
    h = height;
@@ -4715,24 +4715,24 @@ __imlib_RGBA_to_RGB8888_fast(DATA32 * src, int src_jump,
      {
         for (y = h; y > 0; y--)
           {
-             memcpy(dest, src, w * sizeof(DATA32));
+             memcpy(dest, src, w * sizeof(uint32_t));
              src += src_jump + w;
              dest += dest_jump + w;
           }
      }
    else
-      memcpy(dest, src, h * w * sizeof(DATA32));
+      memcpy(dest, src, h * w * sizeof(uint32_t));
 }
 
 #if 0                           /* Unused */
 static void
-__imlib_RGBA_to_BGR8888_fast(DATA32 * src, int src_jump,
-                             DATA8 * dst, int dow,
+__imlib_RGBA_to_BGR8888_fast(uint32_t * src, int src_jump,
+                             uint8_t * dst, int dow,
                              int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
-   DATA32             *dest = (DATA32 *) dst;
-   int                 dest_jump = (dow / sizeof(DATA32)) - width;
+   uint32_t           *dest = (uint32_t *) dst;
+   int                 dest_jump = (dow / sizeof(uint32_t)) - width;
 
    w = width;
    h = height;
@@ -4750,8 +4750,8 @@ __imlib_RGBA_to_BGR8888_fast(DATA32 * src, int src_jump,
 #endif
 
 static void
-__imlib_RGBA_to_RGB888_fast(DATA32 * src, int src_jump,
-                            DATA8 * dest, int dow,
+__imlib_RGBA_to_RGB888_fast(uint32_t * src, int src_jump,
+                            uint8_t * dest, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4773,8 +4773,8 @@ __imlib_RGBA_to_RGB888_fast(DATA32 * src, int src_jump,
 
 #if 0                           /* Unused */
 static void
-__imlib_RGBA_to_BGR888_fast(DATA32 * src, int src_jump,
-                            DATA8 * dest, int dow,
+__imlib_RGBA_to_BGR888_fast(uint32_t * src, int src_jump,
+                            uint8_t * dest, int dow,
                             int width, int height, int dx, int dy)
 {
    int                 x, y, w, h;
@@ -4797,8 +4797,8 @@ __imlib_RGBA_to_BGR888_fast(DATA32 * src, int src_jump,
 
 #if 0                           /* Unused */
 static void
-__imlib_RGBA_to_Nothing(DATA32 * src, int src_jump,
-                        DATA8 * dest, int dow,
+__imlib_RGBA_to_Nothing(uint32_t * src, int src_jump,
+                        uint8_t * dest, int dow,
                         int width, int height, int dx, int dy)
 {
    /*\ Nothing: Dummy function \ */

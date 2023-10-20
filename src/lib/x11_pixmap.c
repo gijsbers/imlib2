@@ -24,7 +24,7 @@ typedef struct _ImlibImagePixmap {
    char               *file;
    char                dirty;
    int                 references;
-   DATABIG             modification_count;
+   uint64_t            modification_count;
    struct _ImlibImagePixmap *next;
 } ImlibImagePixmap;
 
@@ -62,7 +62,7 @@ static ImlibImagePixmap *
 __imlib_FindCachedImagePixmap(ImlibImage * im, int w, int h, Display * d,
                               Visual * v, int depth, int sx, int sy, int sw,
                               int sh, Colormap cm, char aa, char hiq,
-                              char dmask, DATABIG modification_count)
+                              char dmask, uint64_t modification_count)
 {
    ImlibImagePixmap   *ip, *ip_prev;
 
@@ -103,7 +103,7 @@ __imlib_AddImagePixmapToCache(ImlibImage * im, Pixmap pmap, Pixmap mask,
                               Display * d, Visual * v, int depth,
                               int sx, int sy, int sw, int sh,
                               Colormap cm, char aa, char hiq, char dmask,
-                              DATABIG modification_count)
+                              uint64_t modification_count)
 {
    ImlibImagePixmap   *ip;
 

@@ -87,7 +87,7 @@ load2(ImlibImage * im, int load_data)
 
    if (WebPDecodeBGRAInto
        (iter.fragment.bytes, iter.fragment.size, (uint8_t *) im->data,
-        sizeof(DATA32) * im->w * im->h, im->w * 4) == NULL)
+        sizeof(uint32_t) * im->w * im->h, im->w * 4) == NULL)
       goto quit;
 
    if (im->lc)
@@ -96,8 +96,6 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   if (rc <= 0)
-      __imlib_FreeData(im);
    if (demux)
       WebPDemuxDelete(demux);
    munmap(fdata, im->fsize);
@@ -147,7 +145,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    encoded_size = WebPEncodeBGRA((uint8_t *) im->data, im->w, im->h,
                                  im->w * 4, quality, &fdata);
 
-   if (fwrite(fdata, encoded_size, 1, f) != encoded_size)
+   if (fwrite(fdata, encoded_size, 1, f) != 1)
       goto quit;
 
    rc = LOAD_SUCCESS;

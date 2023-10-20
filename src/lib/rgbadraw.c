@@ -9,7 +9,7 @@
 void
 __imlib_FlipImageHoriz(ImlibImage * im)
 {
-   DATA32             *p1, *p2, tmp;
+   uint32_t           *p1, *p2, tmp;
    int                 x, y;
 
    for (y = 0; y < im->h; y++)
@@ -33,7 +33,7 @@ __imlib_FlipImageHoriz(ImlibImage * im)
 void
 __imlib_FlipImageVert(ImlibImage * im)
 {
-   DATA32             *p1, *p2, tmp;
+   uint32_t           *p1, *p2, tmp;
    int                 x, y;
 
    for (y = 0; y < (im->h >> 1); y++)
@@ -57,7 +57,7 @@ __imlib_FlipImageVert(ImlibImage * im)
 void
 __imlib_FlipImageBoth(ImlibImage * im)
 {
-   DATA32             *p1, *p2, tmp;
+   uint32_t           *p1, *p2, tmp;
    int                 x;
 
    p1 = im->data;
@@ -87,10 +87,10 @@ __imlib_FlipImageBoth(ImlibImage * im)
 void
 __imlib_FlipImageDiagonal(ImlibImage * im, int direction)
 {
-   DATA32             *data, *to, *from;
+   uint32_t           *data, *to, *from;
    int                 x, y, w, hw, tmp;
 
-   data = malloc(im->w * im->h * sizeof(DATA32));
+   data = malloc(im->w * im->h * sizeof(uint32_t));
    w = im->h;
    im->h = im->w;
    im->w = w;
@@ -157,14 +157,14 @@ __imlib_FlipImageDiagonal(ImlibImage * im, int direction)
 void
 __imlib_BlurImage(ImlibImage * im, int rad)
 {
-   DATA32             *p1, *p2, *data;
+   uint32_t           *p1, *p2, *data;
    int                 x, y, mx, my, mw, mh, mt, xx, yy;
    int                 a, r, g, b;
    int                *as, *rs, *gs, *bs;
 
    if (rad < 1)
       return;
-   data = malloc(im->w * im->h * sizeof(DATA32));
+   data = malloc(im->w * im->h * sizeof(uint32_t));
    as = malloc(sizeof(int) * im->w);
    rs = malloc(sizeof(int) * im->w);
    gs = malloc(sizeof(int) * im->w);
@@ -247,13 +247,13 @@ __imlib_BlurImage(ImlibImage * im, int rad)
 void
 __imlib_SharpenImage(ImlibImage * im, int rad)
 {
-   DATA32             *data, *p1, *p2;
+   uint32_t           *data, *p1, *p2;
    int                 a, r, g, b, x, y;
 
    if (rad == 0)
       return;
 
-   data = malloc(im->w * im->h * sizeof(DATA32));
+   data = malloc(im->w * im->h * sizeof(uint32_t));
    if (!data)
       return;
 
@@ -305,11 +305,11 @@ __imlib_SharpenImage(ImlibImage * im, int rad)
 void
 __imlib_TileImageHoriz(ImlibImage * im)
 {
-   DATA32             *p1, *p2, *p3, *p, *data;
+   uint32_t           *p1, *p2, *p3, *p, *data;
    int                 x, y, per, tmp, na, nr, ng, nb, mix, a, r, g, b, aa, rr,
       gg, bb;
 
-   data = malloc(im->w * im->h * sizeof(DATA32));
+   data = malloc(im->w * im->h * sizeof(uint32_t));
    p1 = im->data;
    p = data;
    for (y = 0; y < im->h; y++)
@@ -378,11 +378,11 @@ __imlib_TileImageHoriz(ImlibImage * im)
 void
 __imlib_TileImageVert(ImlibImage * im)
 {
-   DATA32             *p1, *p2, *p, *data;
+   uint32_t           *p1, *p2, *p, *data;
    int                 x, y, tmp, na, nr, ng, nb, mix, a, r, g, b, aa, rr, gg,
       bb;
 
-   data = malloc(im->w * im->h * sizeof(DATA32));
+   data = malloc(im->w * im->h * sizeof(uint32_t));
    p = data;
    for (y = 0; y < im->h; y++)
      {
@@ -431,7 +431,7 @@ __imlib_copy_image_data(ImlibImage * im, int x, int y, int w, int h, int nx,
                         int ny)
 {
    int                 xx, yy, jump;
-   DATA32             *p1, *p2;
+   uint32_t           *p1, *p2;
 
    /* clip horizontal co-ordinates so that both dest and src fit inside */
    /* the image */
@@ -533,7 +533,7 @@ __imlib_copy_alpha_data(ImlibImage * src, ImlibImage * dst, int x, int y,
                         int w, int h, int nx, int ny)
 {
    int                 xx, yy, jump, jump2;
-   DATA32             *p1, *p2;
+   uint32_t           *p1, *p2;
 
    /* clip horizontal co-ordinates so that both dest and src fit inside */
    /* the image */

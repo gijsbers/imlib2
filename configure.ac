@@ -1,4 +1,4 @@
-AC_INIT([imlib2],[1.8.1],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.9.0],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -21,9 +21,9 @@ define([AC_LIBTOOL_LANG_CXX_CONFIG], [:])dnl
 define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
-VERSION_CUR=9
-VERSION_REV=1
-VERSION_AGE=8
+VERSION_CUR=10
+VERSION_REV=0
+VERSION_AGE=9
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
 
@@ -196,8 +196,11 @@ loader_check_gif() {
 EC_LOADER_CHECK(GIF,  auto, , loader_check_gif)
 EC_LOADER_CHECK(HEIF, auto, libheif)
 EC_LOADER_CHECK(JPEG, auto, libjpeg)
+EC_LOADER_CHECK(J2K,  auto, libopenjp2)
+EC_LOADER_CHECK(JXL,  auto, libjxl libjxl_threads)
 EC_LOADER_CHECK(PNG,  auto, libpng)
-EC_LOADER_CHECK(SVG,  auto, librsvg-2.0)
+EC_LOADER_CHECK(PS,   auto, libspectre)
+EC_LOADER_CHECK(SVG,  auto, librsvg-2.0 >= 2.46)
 EC_LOADER_CHECK(TIFF, auto, libtiff-4)
 EC_LOADER_CHECK(WEBP, auto, libwebpdemux)
 
@@ -230,6 +233,11 @@ AC_ARG_ENABLE([debug],
 )
 AM_CONDITIONAL(BUILD_DEBUG, test "$enable_debug" = "yes")
 
+AC_ARG_ENABLE([doc-build],
+  [AS_HELP_STRING([--enable-doc-build], [Enable building documentation (not installed) @<:@default=no@:>@])]
+)
+AM_CONDITIONAL(BUILD_DOC, test "$enable_doc_build" = "yes")
+
 EC_C_WARNINGS()
 EC_C_VISIBILITY(yes)
 EC_C_ASAN()
@@ -256,6 +264,8 @@ data/Makefile
 data/fonts/Makefile
 data/images/Makefile
 doc/Makefile
+doc/Doxyfile
+doc/imlib2_intro.dox
 README
 ])
 AM_COND_IF([SRC_IS_GIT], [ AC_CONFIG_FILES([test/Makefile]) ])
@@ -276,7 +286,10 @@ echo " Regular image loaders"
 echo "  GIF.....................: $gif_ok"
 echo "  HEIF....................: $heif_ok"
 echo "  JPEG....................: $jpeg_ok"
+echo "  J2K.....................: $j2k_ok"
+echo "  JXL.....................: $jxl_ok"
 echo "  PNG.....................: $png_ok"
+echo "  PS......................: $ps_ok"
 echo "  SVG.....................: $svg_ok"
 echo "  TIFF....................: $tiff_ok"
 echo "  WEBP....................: $webp_ok"

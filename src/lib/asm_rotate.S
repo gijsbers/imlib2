@@ -13,7 +13,7 @@
 FN_(imlib_mmx_RotateAA)
 
 
-/*\ Prototype: __imlib_mmx_RotateAA(DATA32 *src, DATA32 *dest, int sow, int sw,
+/*\ Prototype: __imlib_mmx_RotateAA(uint32_t *src, uint32_t *dest, int sow, int sw,
 |*|				int sh, int dow, int dw, int dh, int x, int y,
 |*|				int dxh, int dyh, int dxv, int dyv)
 \*/
