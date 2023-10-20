@@ -140,7 +140,7 @@ imlib2_show_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_imlib2_test_OBJECTS = imlib2_test.$(OBJEXT)
 imlib2_test_OBJECTS = $(am_imlib2_test_OBJECTS)
 imlib2_test_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
-am_imlib2_view_OBJECTS = imlib2_view.$(OBJEXT)
+am_imlib2_view_OBJECTS = imlib2_view.$(OBJEXT) props.$(OBJEXT)
 imlib2_view_OBJECTS = $(am_imlib2_view_OBJECTS)
 imlib2_view_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 AM_V_P = $(am__v_P_@AM_V@)
@@ -162,7 +162,8 @@ am__depfiles_remade = ./$(DEPDIR)/imlib2_bumpmap.Po \
 	./$(DEPDIR)/imlib2_colorspace.Po ./$(DEPDIR)/imlib2_conv.Po \
 	./$(DEPDIR)/imlib2_grab.Po ./$(DEPDIR)/imlib2_load.Po \
 	./$(DEPDIR)/imlib2_poly.Po ./$(DEPDIR)/imlib2_show.Po \
-	./$(DEPDIR)/imlib2_test.Po ./$(DEPDIR)/imlib2_view.Po
+	./$(DEPDIR)/imlib2_test.Po ./$(DEPDIR)/imlib2_view.Po \
+	./$(DEPDIR)/props.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -392,7 +393,7 @@ imlib2_poly_SOURCES = imlib2_poly.c
 imlib2_poly_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
 imlib2_colorspace_SOURCES = imlib2_colorspace.c
 imlib2_colorspace_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
-imlib2_view_SOURCES = imlib2_view.c
+imlib2_view_SOURCES = imlib2_view.c props.c props.h
 imlib2_view_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
 imlib2_grab_SOURCES = imlib2_grab.c
 imlib2_grab_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
@@ -530,6 +531,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_show.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_view.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/props.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -701,6 +703,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/imlib2_show.Po
 	-rm -f ./$(DEPDIR)/imlib2_test.Po
 	-rm -f ./$(DEPDIR)/imlib2_view.Po
+	-rm -f ./$(DEPDIR)/props.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -755,6 +758,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/imlib2_show.Po
 	-rm -f ./$(DEPDIR)/imlib2_test.Po
 	-rm -f ./$(DEPDIR)/imlib2_view.Po
+	-rm -f ./$(DEPDIR)/props.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

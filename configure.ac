@@ -1,4 +1,4 @@
-AC_INIT([imlib2],[1.7.3],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.7.4],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -21,7 +21,7 @@ define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
 VERSION_CUR=8
-VERSION_REV=3
+VERSION_REV=4
 VERSION_AGE=7
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)

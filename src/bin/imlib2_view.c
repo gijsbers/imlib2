@@ -8,22 +8,27 @@
 #include <unistd.h>
 
 #include "Imlib2.h"
+#include "props.h"
 
 Display            *disp;
-Window              win;
-Pixmap              pm = 0;
-int                 depth;
-int                 image_width = 0, image_height = 0;
-int                 window_width = 0, window_height = 0;
-double              scale_x = 1.;
-double              scale_y = 1.;
-Imlib_Image         bg_im = NULL;
-static char         progress_granularity = 10;
-static char         progress_print = 0;
-static int          progress_delay = 0;
 
-static Atom         ATOM_WM_DELETE_WINDOW = None;
-static Atom         ATOM_WM_PROTOCOLS = None;
+static int          debug = 0;
+static Window       win;
+static Pixmap       pm = 0;
+static int          depth;
+static int          image_width = 0, image_height = 0;
+static int          window_width = 0, window_height = 0;
+static Imlib_Image  bg_im = NULL;
+
+static char         opt_scale = 0;
+static double       opt_scale_x = 1.;
+static double       opt_scale_y = 1.;
+static char         opt_progress_granularity = 10;
+static char         opt_progress_print = 0;
+static int          opt_progress_delay = 0;
+
+#define Dprintf if (debug) printf
+#define Vprintf if (verbose) printf
 
 #define MAX_DIM	32767
 
@@ -34,6 +39,7 @@ static Atom         ATOM_WM_PROTOCOLS = None;
    "Usage:\n" \
    "  imlib2_view [OPTIONS] FILE...\n" \
    "OPTIONS:\n" \
+   "  -d  : Enable debug\n" \
    "  -g N: Set progress granularity to N%% (default 10(%%))\n" \
    "  -l N: Introduce N ms delay in progress callback (default 0)\n" \
    "  -p  : Print info in progress callback (default no)\n" \
@@ -50,9 +56,10 @@ static int
 progress(Imlib_Image im, char percent, int update_x, int update_y,
          int update_w, int update_h)
 {
+   static double       scale_x = 0., scale_y = 0.;
    int                 up_wx, up_wy, up_ww, up_wh;
 
-   if (progress_print)
+   if (opt_progress_print)
       printf("%s: %3d%% %4d,%4d %4dx%4d\n",
              __func__, percent, update_x, update_y, update_w, update_h);
 
@@ -65,9 +72,33 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
      {
         int                 x, y, onoff;
 
+        scale_x = opt_scale_x;
+        scale_y = opt_scale_y;
+
+        window_width = DisplayWidth(disp, DefaultScreen(disp));
+        window_height = DisplayHeight(disp, DefaultScreen(disp));
+        window_width -= 32;     /* Allow for decorations */
+        window_height -= 32;
+        Dprintf("Screen WxH=%dx%d\n", window_width, window_height);
+
         imlib_context_set_image(im);
         image_width = imlib_image_get_width();
         image_height = imlib_image_get_height();
+        Dprintf("Image  WxH=%dx%d\n", image_width, image_height);
+
+        if (!opt_scale &&
+            (image_width > window_width || image_height > window_height))
+          {
+             scale_x = scale_y = 1.;
+             while (window_width < SCALE_X(image_width) ||
+                    window_height < SCALE_Y(image_height))
+               {
+                  scale_x *= .5;
+                  scale_y = scale_x;
+                  Dprintf(" scale WxH=%.3fx%.3f\n", scale_x, scale_y);
+               }
+          }
+
         window_width = SCALE_X(image_width);
         window_height = SCALE_Y(image_height);
         if (window_width > MAX_DIM)
@@ -80,6 +111,8 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
              window_height = MAX_DIM;
              scale_y = (double)MAX_DIM / image_height;
           }
+        Dprintf("Window WxH=%dx%d\n", window_width, window_height);
+
         if (pm)
            XFreePixmap(disp, pm);
         pm = XCreatePixmap(disp, win, window_width, window_height, depth);
@@ -135,8 +168,8 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
    XClearArea(disp, win, up_wx, up_wy, up_ww, up_wh, False);
    XFlush(disp);
 
-   if (progress_delay > 0)
-      usleep(progress_delay);
+   if (opt_progress_delay > 0)
+      usleep(opt_progress_delay);
 
    return 1;
 }
@@ -152,21 +185,25 @@ main(int argc, char **argv)
 
    verbose = 0;
 
-   while ((opt = getopt(argc, argv, "g:l:ps:v")) != -1)
+   while ((opt = getopt(argc, argv, "dg:l:ps:v")) != -1)
      {
         switch (opt)
           {
+          case 'd':
+             debug += 1;
+             break;
           case 'g':
-             progress_granularity = atoi(optarg);
+             opt_progress_granularity = atoi(optarg);
              break;
           case 'l':
-             progress_delay = 1000 * atoi(optarg);
+             opt_progress_delay = 1000 * atoi(optarg);
              break;
           case 'p':
-             progress_print = 1;
+             opt_progress_print = 1;
              break;
           case 's':            /* Scale (window size wrt. image size) */
-             scale_x = scale_y = atof(optarg);
+             opt_scale = 1;
+             opt_scale_x = opt_scale_y = atof(optarg);
              break;
           case 'v':
              verbose += 1;
@@ -200,15 +237,13 @@ main(int argc, char **argv)
    XSelectInput(disp, win, KeyPressMask | ButtonPressMask | ButtonReleaseMask |
                 ButtonMotionMask | PointerMotionMask);
 
-   ATOM_WM_PROTOCOLS = XInternAtom(disp, "WM_PROTOCOLS", False);
-   ATOM_WM_DELETE_WINDOW = XInternAtom(disp, "WM_DELETE_WINDOW", False);
-   XSetWMProtocols(disp, win, &ATOM_WM_DELETE_WINDOW, 1);
+   props_win_set_proto_quit(win);
 
    imlib_context_set_display(disp);
    imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
    imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
    imlib_context_set_progress_function(progress);
-   imlib_context_set_progress_granularity(progress_granularity);
+   imlib_context_set_progress_granularity(opt_progress_granularity);
    imlib_context_set_drawable(win);
 
    no = -1;
@@ -221,8 +256,7 @@ main(int argc, char **argv)
              exit(0);
           }
         file = argv[no];
-        if (verbose)
-           printf("Show  %d: '%s'\n", no, file);
+        Vprintf("Show  %d: '%s'\n", no, file);
         image_width = 0;
         im = imlib_load_image(file);
      }
@@ -250,8 +284,7 @@ main(int argc, char **argv)
              break;
 
           case ClientMessage:
-             if (ev.xclient.message_type == ATOM_WM_PROTOCOLS &&
-                 (Atom) ev.xclient.data.l[0] == ATOM_WM_DELETE_WINDOW)
+             if (props_clientmsg_check_quit(&ev.xclient))
                 goto quit;
              break;
           case KeyPress:
@@ -366,8 +399,7 @@ main(int argc, char **argv)
                        continue;
                     }
                   file = argv[no2];
-                  if (verbose)
-                     printf("Show  %d: '%s'\n", no2, file);
+                  Vprintf("Show  %d: '%s'\n", no2, file);
                   if (no2 == no)
                      break;
                   image_width = 0;

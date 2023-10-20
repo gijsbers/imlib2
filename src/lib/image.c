@@ -527,10 +527,10 @@ __imlib_LoadImageWrapper(const ImlibLoader * l, ImlibImage * im, int load_data)
      }
    else
      {
-        return 0;
+        return LOAD_FAIL;
      }
 
-   if (rc == 0)
+   if (rc <= LOAD_FAIL)
      {
         /* Failed - clean up */
         if (im->w != 0 || im->h != 0)
@@ -711,7 +711,7 @@ __imlib_LoadImage(const char *file, FILE * fp, ImlibProgressFunction progress,
 
    __imlib_LoadAllLoaders();
 
-   loader_ret = 0;
+   loader_ret = LOAD_FAIL;
 
    /* take a guess by extension on the best loader to use */
    best_loader = __imlib_FindBestLoaderForFile(im->real_file, 0);
@@ -719,7 +719,7 @@ __imlib_LoadImage(const char *file, FILE * fp, ImlibProgressFunction progress,
    if (best_loader)
       loader_ret = __imlib_LoadImageWrapper(best_loader, im, immediate_load);
 
-   if (loader_ret > 0)
+   if (loader_ret > LOAD_FAIL)
      {
         im->loader = best_loader;
      }
@@ -735,9 +735,10 @@ __imlib_LoadImage(const char *file, FILE * fp, ImlibProgressFunction progress,
              /* if its not the best loader that already failed - try load */
              if (l == best_loader)
                 continue;
+             fflush(im->fp);
              rewind(im->fp);
              loader_ret = __imlib_LoadImageWrapper(l, im, immediate_load);
-             if (loader_ret > 0)
+             if (loader_ret > LOAD_FAIL)
                 break;
           }
 
@@ -764,7 +765,7 @@ __imlib_LoadImage(const char *file, FILE * fp, ImlibProgressFunction progress,
 
    /* all loaders have been tried and they all failed. free the skeleton */
    /* image struct we had and return NULL */
-   if (loader_ret <= 0)
+   if (loader_ret <= LOAD_FAIL)
      {
         /* if the caller wants an error return */
         if (er)
@@ -776,7 +777,7 @@ __imlib_LoadImage(const char *file, FILE * fp, ImlibProgressFunction progress,
    /* the load succeeded - make sure the image is referenced then add */
    /* it to our cache if dont_cache isn't set */
    im->references = 1;
-   if (loader_ret == 2)
+   if (loader_ret == LOAD_BREAK)
       dont_cache = 1;
    if (!dont_cache)
       __imlib_AddImageToCache(im);
@@ -790,7 +791,7 @@ int
 __imlib_LoadImageData(ImlibImage * im)
 {
    if (!im->data && im->loader)
-      if (__imlib_LoadImageWrapper(im->loader, im, 1) == 0)
+      if (__imlib_LoadImageWrapper(im->loader, im, 1) <= LOAD_FAIL)
          return 1;              /* Load failed */
    return im->data == NULL;
 }

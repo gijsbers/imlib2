@@ -1,4 +1,4 @@
-Imlib2 1.7.3
+Imlib2 1.7.4
 
 This is the Imlib 2 library - a library that does image file loading and
 saving as well as rendering, manipulation, arbitrary polygon support, etc.
@@ -36,7 +36,7 @@ BUILDING PACKAGES:
 
 RPM: To build rpm packages:
   
-  sudo rpm -ta imlib2-1.7.3.tar.gz
+  sudo rpm -ta imlib2-1.7.4.tar.gz
 
 You will find rpm packages in your system /usr/src/redhat/* dirs (note you may
 not need to use sudo or root if you have your own ~/.rpmrc. see rpm documents
@@ -44,11 +44,11 @@ for more details)
 
 DEB: To build deb packages:
 
-  tar zvf imlib2-1.7.3.tar.gz
-  cd imlib2-1.7.3
+  tar zvf imlib2-1.7.4.tar.gz
+  cd imlib2-1.7.4
   dpkg-buildpackage -us -uc -rfakeroot
   cd ..
-  rm -rf imlib2-1.7.3
+  rm -rf imlib2-1.7.4
 
 You will find all the debian source, binary etc. packages put in the directory
 where you first untarred the source tarball.

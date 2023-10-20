@@ -195,9 +195,12 @@ bodyrow(unsigned char *p, int z, ILBM * ilbm)
 
    for (i = 0; i < z; i += w)
      {
-        b = ilbm->body.data[ilbm->offset++];
-        while (b == 0x80 && ilbm->offset < ilbm->body.size)
-           b = ilbm->body.data[ilbm->offset++];
+        if (ilbm->offset < ilbm->body.size)
+          {
+             b = ilbm->body.data[ilbm->offset++];
+             while (b == 0x80 && ilbm->offset < ilbm->body.size)
+                b = ilbm->body.data[ilbm->offset++];
+          }
 
         if (ilbm->offset >= ilbm->body.size)
           {

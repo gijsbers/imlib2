@@ -1,17 +1,29 @@
+v1.7.4 - 2021-09-16
+-------------------
+Kim Woelders (14):
+      imlib2_view: Move property stuff to separate file
+      imlib2_view: Cleanups
+      imlib2_view: By default scale large images to fit on screen
+      imlib2_view: Add some debug
+      imlib2_view: Fix issue with new default scaling
+      WEBP loader: Remove forgotten debug printout
+      WEBP loader: Rename fd variable to be same as everywhere else
+      LBM loader: Fix potential out-of-bounds memory access
+      GIF, TIFF, WEBP loaders: Fix loading if filename does not have usual suffix
+      Revert "GIF, TIFF, WEBP loaders: Fix loading if filename does not have usual suffix"
+      GIF, TIFF, WEBP loaders: Fix loading if filename does not have usual suffix - take 2
+      Add script to generate Changelog
+      Update Changelog to new format
+      image.c: Use the LOAD_... macros to check loader return values
 
-***
-*** Version 1.7.3 ***
-***
-
+v1.7.3 - 2021-08-08
+-------------------
 Kim Woelders (2):
       autofoo: Resurrect non-pkg check for bzip2
       1.7.3
 
-
-***
-*** Version 1.7.2 ***
-***
-
+v1.7.2 - 2021-07-27
+-------------------
 Kim Woelders (31):
       Remove some unnecessary X_DISPLAY_MISSING stuff
       rend.c: Remove some pointless lines
@@ -45,11 +57,8 @@ Kim Woelders (31):
       WEBP saver: Use fopen() etc. like all other savers
       1.7.2
 
-
-***
-*** Version 1.7.1 ***
-***
-
+v1.7.1 - 2020-12-09
+-------------------
 Daniel Kolesa (1):
       Fix big endian build
 
@@ -61,11 +70,8 @@ Kim Woelders (6):
       Silence a couple of sign-compare warnings
       1.7.1
 
-
-***
-*** Version 1.7.0 ***
-***
-
+v1.7.0 - 2020-08-01
+-------------------
 Alexander Volkov (3):
       GIF loader: Don't close file descriptor twice
       Introduce imlib_load_image_from_fd()
@@ -126,11 +132,8 @@ Tobias Stoeckmann (2):
       ICO loader: Do not crash on invalid files
       ICO loader: Handle malloc failures
 
-
-***
-*** Version 1.6.1 ***
-***
-
+v1.6.1 - 2019-12-13
+-------------------
 Kim Woelders (11):
       gz loader: Use FILE, not fd
       gz, bz2 loaders: Fix recent breakage when file name has more than two dots
@@ -147,11 +150,8 @@ Kim Woelders (11):
 Luiz Carlos Ramos (1):
       BMP loader: Fix size calculation when saving files
 
-
-***
-*** Version 1.6.0 ***
-***
-
+v1.6.0 - 2019-11-24
+-------------------
 Alexander Volkov (1):
       Allow to use custom memory management functions for loaded images
 
@@ -228,11 +228,8 @@ Olof-Joachim Frahm (欧雅福) (2):
 Ralph Siemsen (1):
       loader_tga: fix regression in RLE raw byte handling
 
-
-***
-*** Version 1.5.1 ***
-***
-
+v1.5.1 - 2018-03-17
+-------------------
 Kim Woelders (13):
       Fix build without HAVE_X11_SHM_FD (T6752)
       XPM loader: Fix potential use of uninitialized value (T6746)
@@ -248,11 +245,8 @@ Kim Woelders (13):
       imlib2_conv.c: Fix gcc8 warning
       1.5.1.
 
-
-***
-*** Version 1.5.0 ***
-***
-
+v1.5.0 - 2018-02-22
+-------------------
 Alexander Volkov (3):
       put a check for shared memory inside __imlib_ShmGetXImage()
       introduce __imlib_ShmDestroyXImage() instead of __imlib_ShmDetach()
@@ -279,11 +273,8 @@ Kim Woelders (19):
       Drop -Waggregate-return
       1.5.0.
 
-
-***
-*** Version 1.4.10 ***
-***
-
+v1.4.10 - 2017-04-15
+-------------------
 Kim Woelders (3):
       PNM loader: Fix reading PNM bitmaps.
       Fix missing break.
@@ -294,11 +285,8 @@ Tobias Stoeckmann (3):
       Properly release resources on error path
       Prevent OOB read with large file support on 32 bit
 
-
-***
-*** Version 1.4.9 ***
-***
-
+v1.4.9 - 2016-04-29
+-------------------
 Alexander Smirnov (1):
       Fix cross-endianness for masks (1-bit depth images)
 
@@ -328,11 +316,8 @@ Yuriy M. Kaminskiy (3):
       loader_xpm: remove nonsense/impossible/broken condition
       Harden API and internals against overly large images
 
-
-***
-*** Version 1.4.8 ***
-***
-
+v1.4.8 - 2016-03-12
+-------------------
 Chloe Kudryavtsev (1):
       add time.h include to common.h for time_t
 
@@ -349,11 +334,8 @@ Quentin Rameau (2):
       Fix bz2 loader filename check
       Fix zlib loader filename check
 
-
-***
-*** Version 1.4.7 ***
-***
-
+v1.4.7 - 2015-04-04
+-------------------
 Fabian Keil (14):
       Prevent division-by-zero crashes
       imlib_conv: Use proper buffer size to prevent invalid write of size one
@@ -405,11 +387,8 @@ Mike Frysinger (5):
       fix X_DISPLAY_MISSING redefined warnings when X is disabled
       do not link with X libs when X is disabled
 
-
-***
-*** Version 1.4.6 ***
-***
-
+v1.4.6 - 2013-12-21
+-------------------
 Cedric BAIL (2):
       autotools: move to AC_CONFIG_HEADERS.
       trunk: remove use of AM_PROG_CC_STDC as AC_PROG_CC does it.
@@ -436,11 +415,8 @@ Kim Woelders (20):
       Remove ChangeLog and obsolete rule to generate it.
       1.4.6.
 
-
-***
-*** Version 1.4.5 ***
-***
-
+v1.4.5 - 2011-08-15
+-------------------
 Carsten Haitzler (1):
       no more debian dir in our svn - debian now handles this tehmselves.
 
@@ -472,11 +448,8 @@ Mike Frysinger (2):
       png loader: use png_jmpbuf() macro rather than hitting jmpbuf directly
       png loader: do not hit "interlaced" member of the png ptr struct
 
-
-***
-*** Version 1.4.4 ***
-***
-
+v1.4.4 - 2010-05-05
+-------------------
 Carsten Haitzler (1):
       minor buglet - w * w - duh!
 
@@ -488,11 +461,8 @@ Kim Woelders (6):
       1.4.4.
       Update ChangeLog.
 
-
-***
-*** Version 1.4.3 ***
-***
-
+v1.4.3 - 2010-03-14
+-------------------
 Carsten Haitzler (4):
       crash fix.
       fix the copying license to
@@ -560,11 +530,8 @@ Mike Frysinger (1):
 Vincent Torri (1):
       aclocal flag could be needed. I prefer being polite and saying nothing about libtool...
 
-
-***
-*** Version 1.4.2 ***
-***
-
+v1.4.2 - 2008-10-22
+-------------------
 Carsten Haitzler (1):
       ok. i think most binary files are now fixed.
 
@@ -591,11 +558,8 @@ Mike Frysinger (1):
 Peter Wehrfritz (1):
       configure.in -> configure.ac
 
-
-***
-*** Version 1.4.1 ***
-***
-
+v1.4.1 - 2008-06-10
+-------------------
 Carsten Haitzler (12):
       fontset patch from winfred
       patches for imlib2 and e.
@@ -655,11 +619,8 @@ Sebastian Dransfeld (2):
 Vincent Torri (1):
       * improve autotools stuff  * move libtool versioning from src/bin/Makefile.am to configure.in  * formatting
 
-
-***
-*** Version 1.4.0 ***
-***
-
+v1.4.0 - 2007-05-06
+-------------------
 Carsten Haitzler (6):
       fix possible overflow in tga loader
       fix width and height checks in case of buffer overflow.
@@ -692,11 +653,8 @@ Sebastian Dransfeld (2):
 Tilman Kuepper (1):
       don't _require_ freetype2
 
-
-***
-*** Version 1.3.0 ***
-***
-
+v1.3.0 - 2006-09-30
+-------------------
 Ben Rockwood (1):
       Solaris workarounds.
 
@@ -738,11 +696,8 @@ Sebastian Dransfeld (2):
       Remove unused variables.
       EAPI
 
-
-***
-*** Version 1.2.2 ***
-***
-
+v1.2.2 - 2006-03-18
+-------------------
 Azundris (1):
       * update specs
 
@@ -846,10 +801,8 @@ Sebastian Dransfeld (13):
       Build fix.
 
 
-***
-*** Version 1.2.1 (from dawn of time) ***
-***
-
+v1.2.1 - 2006-03-18 (from dawn of time)
+---------------------------------------
 Azundris (7):
       various fu for changed evas-API
       nominal fix for memory leak in font.c (freetype1 font handling), just so we're in a defined state before switching to freetype2.  by azundris and atmos.

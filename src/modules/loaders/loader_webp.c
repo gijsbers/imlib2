@@ -35,16 +35,16 @@ load2(ImlibImage * im, int load_data)
    int                 rc;
    uint8_t            *encoded_data;
    struct stat         stats;
-   int                 encoded_fd;
+   int                 fd;
    WebPBitstreamFeatures features;
    VP8StatusCode       vp8return;
    unsigned int        size;
 
-   encoded_fd = fileno(im->fp);
-   if (encoded_fd < 0)
+   fd = fileno(im->fp);
+   if (fd < 0)
       return LOAD_FAIL;
 
-   if (fstat(encoded_fd, &stats) < 0)
+   if (fstat(fd, &stats) < 0)
       return LOAD_FAIL;
 
    rc = LOAD_FAIL;
@@ -55,7 +55,7 @@ load2(ImlibImage * im, int load_data)
 
    /* Check signature */
    size = 12;
-   if (read(encoded_fd, encoded_data, size) != (long)size)
+   if (read(fd, encoded_data, size) != (long)size)
       goto quit;
    if (memcmp(encoded_data + 0, "RIFF", 4) != 0 ||
        memcmp(encoded_data + 8, "WEBP", 4) != 0)
@@ -66,7 +66,7 @@ load2(ImlibImage * im, int load_data)
       goto quit;
 
    size -= 12;
-   if (read(encoded_fd, encoded_data + 12, size) != (long)size)
+   if (read(fd, encoded_data + 12, size) != (long)size)
       goto quit;
 
    if (WebPGetInfo(encoded_data, stats.st_size, &im->w, &im->h) == 0)
@@ -125,8 +125,6 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    float               quality;
    uint8_t            *encoded_data;
    size_t              encoded_size;
-
-   printf("FOO\n");
 
    f = fopen(im->real_file, "wb");
    if (!f)
