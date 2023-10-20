@@ -80,11 +80,9 @@ xpm_parse_color(char *color, uint32_t * pixel)
 
    /* look in rgb txt database */
    if (!rgb_txt)
+      rgb_txt = fopen(PACKAGE_DATA_DIR "/rgb.txt", "r");
+   if (!rgb_txt)
       rgb_txt = fopen("/usr/share/X11/rgb.txt", "r");
-   if (!rgb_txt)
-      rgb_txt = fopen("/usr/X11R6/lib/X11/rgb.txt", "r");
-   if (!rgb_txt)
-      rgb_txt = fopen("/usr/openwin/lib/X11/rgb.txt", "r");
    if (!rgb_txt)
       goto done;
 

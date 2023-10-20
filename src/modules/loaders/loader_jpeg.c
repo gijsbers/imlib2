@@ -71,7 +71,7 @@ _load(ImlibImage * im, int load_data)
    struct jpeg_decompress_struct jds;
    ImLib_JPEG_data     jdata;
    uint8_t            *ptr, *line[16];
-   uint32_t           *ptr2;
+   uint32_t           *imdata;
    int                 x, y, l, scans, inc;
    ExifInfo            ei = { 0 };
 
@@ -135,8 +135,8 @@ _load(ImlibImage * im, int load_data)
       QUIT_WITH_RC(LOAD_OOM);
 
    /* must set the im->data member before callign progress function */
-   ptr2 = __imlib_AllocateData(im);
-   if (!ptr2)
+   imdata = __imlib_AllocateData(im);
+   if (!imdata)
       QUIT_WITH_RC(LOAD_OOM);
 
    for (y = 0; y < jds.rec_outbuf_height; y++)
@@ -158,40 +158,40 @@ _load(ImlibImage * im, int load_data)
                {
                default:
                case ORIENT_TOPLEFT:
-                  ptr2 = im->data + (l + y) * w;
+                  imdata = im->data + (l + y) * w;
                   inc = 1;
                   break;
                case ORIENT_TOPRIGHT:
-                  ptr2 = im->data + (l + y) * w + w - 1;
+                  imdata = im->data + (l + y) * w + w - 1;
                   inc = -1;
                   break;
                case ORIENT_BOTRIGHT:
-                  ptr2 = im->data + (h - 1 - (l + y)) * w + w - 1;
+                  imdata = im->data + (h - 1 - (l + y)) * w + w - 1;
                   inc = -1;
                   break;
                case ORIENT_BOTLEFT:
-                  ptr2 = im->data + (h - 1 - (l + y)) * w;
+                  imdata = im->data + (h - 1 - (l + y)) * w;
                   inc = 1;
                   break;
                case ORIENT_LEFTTOP:
-                  ptr2 = im->data + (l + y);
+                  imdata = im->data + (l + y);
                   inc = h;
                   break;
                case ORIENT_RIGHTTOP:
-                  ptr2 = im->data + (h - 1 - (l + y));
+                  imdata = im->data + (h - 1 - (l + y));
                   inc = h;
                   break;
                case ORIENT_RIGHTBOT:
-                  ptr2 = im->data + (h - 1 - (l + y)) + (w - 1) * h;
+                  imdata = im->data + (h - 1 - (l + y)) + (w - 1) * h;
                   inc = -h;
                   break;
                case ORIENT_LEFTBOT:
-                  ptr2 = im->data + (l + y) + (w - 1) * h;
+                  imdata = im->data + (l + y) + (w - 1) * h;
                   inc = -h;
                   break;
                }
              DL("l,s,y=%d,%d, %d - x,y=%4ld,%4ld\n", l, y, l + y,
-                (ptr2 - im->data) % im->w, (ptr2 - im->data) / im->w);
+                (imdata - im->data) % im->w, (imdata - im->data) / im->w);
 
              switch (jds.out_color_space)
                {
@@ -200,27 +200,27 @@ _load(ImlibImage * im, int load_data)
                case JCS_GRAYSCALE:
                   for (x = 0; x < w; x++)
                     {
-                       *ptr2 = PIXEL_ARGB(0xff, ptr[0], ptr[0], ptr[0]);
+                       *imdata = PIXEL_ARGB(0xff, ptr[0], ptr[0], ptr[0]);
                        ptr++;
-                       ptr2 += inc;
+                       imdata += inc;
                     }
                   break;
                case JCS_RGB:
                   for (x = 0; x < w; x++)
                     {
-                       *ptr2 = PIXEL_ARGB(0xff, ptr[0], ptr[1], ptr[2]);
+                       *imdata = PIXEL_ARGB(0xff, ptr[0], ptr[1], ptr[2]);
                        ptr += jds.output_components;
-                       ptr2 += inc;
+                       imdata += inc;
                     }
                   break;
                case JCS_CMYK:
                   for (x = 0; x < w; x++)
                     {
-                       *ptr2 = PIXEL_ARGB(0xff, ptr[0] * ptr[3] / 255,
-                                          ptr[1] * ptr[3] / 255,
-                                          ptr[2] * ptr[3] / 255);
+                       *imdata = PIXEL_ARGB(0xff, ptr[0] * ptr[3] / 255,
+                                            ptr[1] * ptr[3] / 255,
+                                            ptr[2] * ptr[3] / 255);
                        ptr += jds.output_components;
-                       ptr2 += inc;
+                       imdata += inc;
                     }
                   break;
                }
@@ -258,7 +258,7 @@ _save(ImlibImage * im)
    ImLib_JPEG_data     jdata;
    FILE               *f = im->fi->fp;
    uint8_t            *buf;
-   uint32_t           *ptr;
+   const uint32_t     *imdata;
    JSAMPROW           *jbuf;
    int                 y, quality, compression;
    ImlibImageTag      *tag;
@@ -321,14 +321,14 @@ _save(ImlibImage * im)
 
    jpeg_start_compress(&jcs, TRUE);
    /* get the start pointer */
-   ptr = im->data;
+   imdata = im->data;
    /* go one scanline at a time... and save */
    for (y = 0; jcs.next_scanline < jcs.image_height; y++)
      {
         /* convcert scaline from ARGB to RGB packed */
         for (j = 0, i = 0; i < im->w; i++)
           {
-             uint32_t            pixel = *ptr++;
+             uint32_t            pixel = *imdata++;
 
              buf[j++] = PIXEL_R(pixel);
              buf[j++] = PIXEL_G(pixel);

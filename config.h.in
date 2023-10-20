@@ -46,6 +46,9 @@
 #undef BUILD_X11
 
 /* Build NMUP loader */
+#undef BUILD_Y4M_LOADER
+
+/* Build NMUP loader */
 #undef BUILD_ZLIB_LOADER
 
 /* enabling AMD64 Assembly */

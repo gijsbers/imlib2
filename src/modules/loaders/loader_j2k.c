@@ -103,7 +103,7 @@ _load(ImlibImage * im, int load_data)
    opj_image_t        *jimage;
    OPJ_CODEC_FORMAT    jfmt;
    int                 i, j;
-   uint32_t           *dst;
+   uint32_t           *imdata;
    OPJ_INT32          *pa, *pr, *pg, *pb;
    unsigned char       a, r, g, b;
 
@@ -207,7 +207,7 @@ _load(ImlibImage * im, int load_data)
 
    /* Ignoring color_space and data format details... */
 
-   dst = im->data;
+   imdata = im->data;
    pa = jimage->comps[0].data;  /* Avoid compiler warning */
 
    switch (jimage->numcomps)
@@ -231,7 +231,7 @@ _load(ImlibImage * im, int load_data)
                   b = *pb++;
                   a = (jimage->numcomps == 4) ? *pa++ : 0xff;
 
-                  *dst++ = PIXEL_ARGB(a, r, g, b);
+                  *imdata++ = PIXEL_ARGB(a, r, g, b);
                }
 
              if (im->lc && __imlib_LoadProgressRows(im, i, 1))
@@ -251,7 +251,7 @@ _load(ImlibImage * im, int load_data)
                   g = *pg++;
                   a = (jimage->numcomps == 2) ? *pa++ : 0xff;
 
-                  *dst++ = PIXEL_ARGB(a, g, g, g);
+                  *imdata++ = PIXEL_ARGB(a, g, g, g);
                }
 
              if (im->lc && __imlib_LoadProgressRows(im, i, 1))

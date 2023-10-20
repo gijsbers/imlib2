@@ -270,7 +270,7 @@ _load(ImlibImage * im, int load_data)
    uint32_t           *cmap;
    uint8_t            *pxls, *mask, *psrc;
    ie_t               *ie;
-   uint32_t           *pdst;
+   uint32_t           *imdata;
    uint32_t            pixel;
    ImlibImageFrame    *pf;
 
@@ -361,12 +361,12 @@ _load(ImlibImage * im, int load_data)
    pxls = ie->pxls;
    mask = ie->mask;
 
-   pdst = im->data + (h - 1) * w;       /* Start in lower left corner */
+   imdata = im->data + (h - 1) * w;     /* Start in lower left corner */
 
    switch (ie->bih.bpp)
      {
      case 1:
-        for (y = 0; y < h; y++, pdst -= 2 * w)
+        for (y = 0; y < h; y++, imdata -= 2 * w)
           {
              for (x = 0; x < w; x++)
                {
@@ -374,13 +374,13 @@ _load(ImlibImage * im, int load_data)
                   if (ico_data_get_bit(mask, w, x, y) == 0)
                      pixel |= 0xff000000;
 
-                  *pdst++ = pixel;
+                  *imdata++ = pixel;
                }
           }
         break;
 
      case 4:
-        for (y = 0; y < h; y++, pdst -= 2 * w)
+        for (y = 0; y < h; y++, imdata -= 2 * w)
           {
              for (x = 0; x < w; x++)
                {
@@ -388,13 +388,13 @@ _load(ImlibImage * im, int load_data)
                   if (ico_data_get_bit(mask, w, x, y) == 0)
                      pixel |= 0xff000000;
 
-                  *pdst++ = pixel;
+                  *imdata++ = pixel;
                }
           }
         break;
 
      case 8:
-        for (y = 0; y < h; y++, pdst -= 2 * w)
+        for (y = 0; y < h; y++, imdata -= 2 * w)
           {
              for (x = 0; x < w; x++)
                {
@@ -402,13 +402,13 @@ _load(ImlibImage * im, int load_data)
                   if (ico_data_get_bit(mask, w, x, y) == 0)
                      pixel |= 0xff000000;
 
-                  *pdst++ = pixel;
+                  *imdata++ = pixel;
                }
           }
         break;
 
      default:
-        for (y = 0; y < h; y++, pdst -= 2 * w)
+        for (y = 0; y < h; y++, imdata -= 2 * w)
           {
              for (x = 0; x < w; x++)
                {
@@ -421,7 +421,7 @@ _load(ImlibImage * im, int load_data)
                      i = 0xff;
                   pixel = PIXEL_ARGB(i, psrc[2], psrc[1], psrc[0]);
 
-                  *pdst++ = pixel;
+                  *imdata++ = pixel;
                }
           }
         break;

@@ -617,7 +617,7 @@ _save(ImlibImage * im)
    int                 rc;
    FILE               *f = im->fi->fp;
    uint8_t            *buf, *bptr;
-   uint32_t           *ptr;
+   const uint32_t     *imdata;
    int                 x, y;
 
    rc = LOAD_FAIL;
@@ -627,7 +627,7 @@ _save(ImlibImage * im)
    if (!buf)
       goto quit;
 
-   ptr = im->data;
+   imdata = im->data;
 
    /* if the image has a useful alpha channel */
    if (im->has_alpha)
@@ -638,7 +638,7 @@ _save(ImlibImage * im)
              bptr = buf;
              for (x = 0; x < im->w; x++)
                {
-                  uint32_t            pixel = *ptr++;
+                  uint32_t            pixel = *imdata++;
 
                   bptr[0] = PIXEL_R(pixel);
                   bptr[1] = PIXEL_G(pixel);
@@ -660,7 +660,7 @@ _save(ImlibImage * im)
              bptr = buf;
              for (x = 0; x < im->w; x++)
                {
-                  uint32_t            pixel = *ptr++;
+                  uint32_t            pixel = *imdata++;
 
                   bptr[0] = PIXEL_R(pixel);
                   bptr[1] = PIXEL_G(pixel);

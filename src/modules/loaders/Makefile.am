@@ -1,5 +1,6 @@
 AM_CFLAGS            = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
-AM_CPPFLAGS          = -I$(top_builddir) -I$(top_srcdir)/src/lib
+AM_CPPFLAGS          = -I$(top_builddir) -I$(top_srcdir)/src/lib \
+		       -D PACKAGE_DATA_DIR=\"$(pkgdatadir)\"
 
 pkgdir               = $(libdir)/imlib2/loaders
 
@@ -45,6 +46,9 @@ endif
 if BUILD_WEBP_LOADER
 pkg_LTLIBRARIES += webp.la
 endif
+if BUILD_Y4M_LOADER
+pkg_LTLIBRARIES += y4m.la
+endif
 
 if BUILD_BZ2_LOADER
 pkg_LTLIBRARIES += bz2.la
@@ -87,7 +91,7 @@ gif_la_LIBTOOLFLAGS  = --tag=disable-static
 
 heif_la_SOURCES      = loader_heif.c
 heif_la_CPPFLAGS     = $(HEIF_CFLAGS) $(AM_CPPFLAGS)
-heif_la_LDFLAGS      = -module -avoid-version -Wl,-z,nodelete
+heif_la_LDFLAGS      = -module -avoid-version
 heif_la_LIBADD       = $(HEIF_LIBS) $(top_builddir)/src/lib/libImlib2.la
 heif_la_LIBTOOLFLAGS = --tag=disable-static
 
@@ -138,7 +142,7 @@ ps_la_LIBTOOLFLAGS  = --tag=disable-static
 
 svg_la_SOURCES       = loader_svg.c
 svg_la_CPPFLAGS      = $(SVG_CFLAGS) $(AM_CPPFLAGS)
-svg_la_LDFLAGS       = -module -avoid-version -Wl,-z,nodelete
+svg_la_LDFLAGS       = -module -avoid-version
 svg_la_LIBADD        = $(SVG_LIBS) $(top_builddir)/src/lib/libImlib2.la
 svg_la_LIBTOOLFLAGS  = --tag=disable-static
 
@@ -168,6 +172,12 @@ xpm_la_SOURCES       = loader_xpm.c
 xpm_la_LDFLAGS       = -module -avoid-version
 xpm_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
 xpm_la_LIBTOOLFLAGS  = --tag=disable-static
+
+y4m_la_SOURCES       = loader_y4m.c
+y4m_la_CPPFLAGS      = $(Y4M_CFLAGS) $(AM_CPPFLAGS)
+y4m_la_LDFLAGS       = -module -avoid-version
+y4m_la_LIBADD        = $(Y4M_LIBS) $(top_builddir)/src/lib/libImlib2.la
+y4m_la_LIBTOOLFLAGS  = --tag=disable-static
 
 bz2_la_SOURCES       = loader_bz2.c decompress_load.c compression.h
 bz2_la_CPPFLAGS      = $(BZ2_CFLAGS) $(AM_CPPFLAGS)

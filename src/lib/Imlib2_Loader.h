@@ -65,6 +65,18 @@ typedef struct _ImlibImage ImlibImage;
 #define PIXEL_G(argb)  (((argb) >>  8) & 0xff)
 #define PIXEL_B(argb)  (((argb)      ) & 0xff)
 
+#ifndef WORDS_BIGENDIAN
+#define A_VAL(p) ((uint8_t *)(p))[3]
+#define R_VAL(p) ((uint8_t *)(p))[2]
+#define G_VAL(p) ((uint8_t *)(p))[1]
+#define B_VAL(p) ((uint8_t *)(p))[0]
+#else
+#define A_VAL(p) ((uint8_t *)(p))[0]
+#define R_VAL(p) ((uint8_t *)(p))[1]
+#define G_VAL(p) ((uint8_t *)(p))[2]
+#define B_VAL(p) ((uint8_t *)(p))[3]
+#endif
+
 /* debug.h */
 
 #if IMLIB2_DEBUG
@@ -197,23 +209,32 @@ int                 __imlib_LoadProgressRows(ImlibImage * im,
 
 #define IMLIB2_LOADER_VERSION 2
 
+#define LDR_FLAG_KEEP   0x01    /* Don't unload loader */
+
 typedef struct {
    unsigned char       ldr_version;     /* Module ABI version */
-   unsigned char       rsvd;
+   unsigned char       ldr_flags;       /* LDR_FLAG_... */
    unsigned short      num_formats;     /* Length og known extension list */
    const char         *const *formats;  /* Known extension list */
    int                 (*load)(ImlibImage * im, int load_data);
    int                 (*save)(ImlibImage * im);
 } ImlibLoaderModule;
 
-#define IMLIB_LOADER(_fmts, _ldr, _svr) \
+#define IMLIB_LOADER_(_fmts, _ldr, _svr, _flags) \
     __EXPORT__ ImlibLoaderModule loader = { \
         .ldr_version = IMLIB2_LOADER_VERSION, \
+        .ldr_flags = _flags, \
         .num_formats = ARRAY_SIZE(_fmts), \
         .formats = _fmts, \
         .load = _ldr, \
         .save = _svr, \
     }
+
+#define IMLIB_LOADER(_fmts, _ldr, _svr) \
+    IMLIB_LOADER_(_fmts, _ldr, _svr, 0)
+
+#define IMLIB_LOADER_KEEP(_fmts, _ldr, _svr) \
+    IMLIB_LOADER_(_fmts, _ldr, _svr, LDR_FLAG_KEEP)
 
 #define QUIT_WITH_RC(_err) { rc = _err; goto quit; }
 

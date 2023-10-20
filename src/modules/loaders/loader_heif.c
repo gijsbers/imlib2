@@ -7,7 +7,10 @@
 #include "config.h"
 #include "Imlib2_Loader.h"
 
+#include <stdbool.h>
 #include <libheif/heif.h>
+
+#define DBG_PFX "LDR-heif"
 
 static const char  *const _formats[] =
    { "heif", "heifs", "heic", "heics", "avci", "avcs", "avif", "avifs" };
@@ -15,6 +18,22 @@ static const char  *const _formats[] =
 #define HEIF_BYTES_TO_CHECK 12L
 #define HEIF_8BIT_TO_PIXEL_ARGB(plane, has_alpha) \
    PIXEL_ARGB((has_alpha) ? (plane)[3] : 0xff, (plane)[0], (plane)[1], (plane)[2])
+
+#if IMLIB2_DEBUG
+static bool
+_is_error(const struct heif_error *err)
+{
+   if (err->code == heif_error_Ok)
+      return false;
+
+   D("%s: error=%d:%d: %s\n", "libheif", err->code, err->subcode, err->message);
+
+   return true;
+}
+#define IS_ERROR(err) _is_error(&err)
+#else
+#define IS_ERROR(err) (err.code != heif_error_Ok)
+#endif
 
 static int
 _load(ImlibImage * im, int load_data)
@@ -58,11 +77,11 @@ _load(ImlibImage * im, int load_data)
 
    error = heif_context_read_from_memory_without_copy(ctx, im->fi->fdata,
                                                       im->fi->fsize, NULL);
-   if (error.code != heif_error_Ok)
+   if (IS_ERROR(error))
       goto quit;
 
    error = heif_context_get_primary_image_handle(ctx, &img_handle);
-   if (error.code != heif_error_Ok)
+   if (IS_ERROR(error))
       goto quit;
 
    rc = LOAD_BADIMAGE;          /* Format accepted */
@@ -100,7 +119,7 @@ _load(ImlibImage * im, int load_data)
                         heif_chroma_interleaved_RGB, decode_opts);
    heif_decoding_options_free(decode_opts);
    decode_opts = NULL;
-   if (error.code != heif_error_Ok)
+   if (IS_ERROR(error))
       goto quit;
 
    im->w = heif_image_get_width(img_data, heif_channel_interleaved);
@@ -153,4 +172,4 @@ _load(ImlibImage * im, int load_data)
    return rc;
 }
 
-IMLIB_LOADER(_formats, _load, NULL);
+IMLIB_LOADER_KEEP(_formats, _load, NULL);

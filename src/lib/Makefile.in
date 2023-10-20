@@ -431,6 +431,8 @@ X_LIBS = @X_LIBS@
 X_PRE_LIBS = @X_PRE_LIBS@
 X_SHM_FD_CFLAGS = @X_SHM_FD_CFLAGS@
 X_SHM_FD_LIBS = @X_SHM_FD_LIBS@
+Y4M_CFLAGS = @Y4M_CFLAGS@
+Y4M_LIBS = @Y4M_LIBS@
 ZLIB_CFLAGS = @ZLIB_CFLAGS@
 ZLIB_LIBS = @ZLIB_LIBS@
 abs_builddir = @abs_builddir@
@@ -490,7 +492,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = 1.4 foreign
 AM_CFLAGS = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
-AM_CPPFLAGS = -DPACKAGE_LIB_DIR=\"$(libdir)\" \
+AM_CPPFLAGS = -D PACKAGE_LIB_DIR=\"$(pkglibdir)\" \
                        -I$(top_builddir) \
                        $(X_CFLAGS) \
                        $(FREETYPE_CFLAGS)

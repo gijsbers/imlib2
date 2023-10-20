@@ -15,6 +15,7 @@
 #define DP(fmt...) DC(DBG_LOAD, fmt)
 
 static ImlibLoader *loaders = NULL;
+static ImlibLoader *loaders_unloaded = NULL;
 static char         loaders_loaded = 0;
 
 typedef struct {
@@ -64,6 +65,9 @@ static const char  *const ext_webp[] = { "webp", NULL };
 #endif
 static const char  *const ext_xbm[] = { "xbm", NULL };
 static const char  *const ext_xpm[] = { "xpm", NULL };
+#ifdef BUILD_Y4M_LOADER
+static const char  *const ext_y4m[] = { "y4m", NULL };
+#endif
 
 #ifdef BUILD_BZ2_LOADER
 static const char  *const ext_bz2[] = { "bz2", NULL };
@@ -120,6 +124,10 @@ static const KnownLoader loaders_known[] = {
 #endif
    {"xbm", ext_xbm},
    {"xpm", ext_xpm},
+#ifdef BUILD_Y4M_LOADER
+   {"y4m", ext_y4m},
+#endif
+
 #ifdef BUILD_BZ2_LOADER
    {"bz2", ext_bz2},
 #endif
@@ -129,23 +137,24 @@ static const KnownLoader loaders_known[] = {
 #ifdef BUILD_ZLIB_LOADER
    {"zlib", ext_zlib},
 #endif
+
 #ifdef BUILD_ID3_LOADER
    {"id3", ext_id3},
 #endif
 };
 
-static int
-__imlib_IsLoaderLoaded(const char *file)
+static ImlibLoader *
+__imlib_LookupLoaderByModulePath(const char *file)
 {
    ImlibLoader        *l;
 
    for (l = loaders; l; l = l->next)
      {
         if (strcmp(file, l->file) == 0)
-           return 1;
+           return l;
      }
 
-   return 0;
+   return NULL;
 }
 
 /* try dlopen()ing the file if we succeed finish filling out the malloced */
@@ -153,10 +162,23 @@ __imlib_IsLoaderLoaded(const char *file)
 static ImlibLoader *
 __imlib_ProduceLoader(const char *file)
 {
-   ImlibLoader        *l;
+   ImlibLoader        *l, *l_prev;
    ImlibLoaderModule  *m;
 
    DP("%s: %s\n", __func__, file);
+
+   /* Check unloaded loaders */
+   for (l = loaders_unloaded, l_prev = NULL; l; l_prev = l, l = l->next)
+     {
+        if (strcmp(file, l->file) != 0)
+           continue;
+
+        if (l == loaders_unloaded)
+           loaders_unloaded = l->next;
+        else
+           l_prev->next = l->next;
+        goto found;
+     }
 
    l = malloc(sizeof(ImlibLoader));
 
@@ -179,6 +201,7 @@ __imlib_ProduceLoader(const char *file)
    l->file = strdup(file);
    l->name = m->formats[0];
 
+ found:
    l->next = loaders;
    loaders = l;
 
@@ -193,9 +216,18 @@ __imlib_ProduceLoader(const char *file)
 static void
 __imlib_ConsumeLoader(ImlibLoader * l)
 {
-   free(l->file);
+   if (l->module->ldr_flags & LDR_FLAG_KEEP)
+     {
+        /* Not un/re-loadable - Move to unloaded loaders list */
+        l->next = loaders_unloaded;
+        loaders_unloaded = l;
+        return;
+     }
+
    if (l->handle)
       dlclose(l->handle);
+
+   free(l->file);
    free(l);
 }
 
@@ -220,7 +252,7 @@ static void
 __imlib_LoadAllLoaders(void)
 {
    int                 i, num;
-   char              **list;
+   char              **list, *dso;
 
    DP("%s\n", __func__);
 
@@ -234,9 +266,10 @@ __imlib_LoadAllLoaders(void)
    /* (or try) and if it succeeds, append to our loader list */
    for (i = num - 1; i >= 0; i--)
      {
-        if (!__imlib_IsLoaderLoaded(list[i]))
-           __imlib_ProduceLoader(list[i]);
-        free(list[i]);
+        dso = list[i];
+        if (!__imlib_LookupLoaderByModulePath(dso))
+           __imlib_ProduceLoader(dso);
+        free(dso);
      }
    free(list);
 
@@ -277,7 +310,9 @@ __imlib_LookupKnownLoader(const char *format)
    if (kl)
      {
         dso = __imlib_ModuleFind(__imlib_PathToLoaders(), kl->dso);
-        l = __imlib_ProduceLoader(dso);
+        l = __imlib_LookupLoaderByModulePath(dso);
+        if (!l)
+           l = __imlib_ProduceLoader(dso);
         free(dso);
      }
    DP("%s: '%s' -> '%s': %p\n", __func__, format, kl ? kl->dso : "-", l);

@@ -87,7 +87,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-subdir = /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.11.0/test
+subdir = /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.11.1/test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ec_asan.m4 \
 	$(top_srcdir)/m4/ec_packing.m4 \
@@ -245,6 +245,8 @@ X_LIBS = @X_LIBS@
 X_PRE_LIBS = @X_PRE_LIBS@
 X_SHM_FD_CFLAGS = @X_SHM_FD_CFLAGS@
 X_SHM_FD_LIBS = @X_SHM_FD_LIBS@
+Y4M_CFLAGS = @Y4M_CFLAGS@
+Y4M_LIBS = @Y4M_LIBS@
 ZLIB_CFLAGS = @ZLIB_CFLAGS@
 ZLIB_LIBS = @ZLIB_LIBS@
 abs_builddir = @abs_builddir@
@@ -314,9 +316,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.11.0/test/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.11.1/test/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.11.0/test/Makefile
+	  $(AUTOMAKE) --foreign /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.11.1/test/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \

@@ -7,23 +7,6 @@
 #include "file.h"
 #include "strutils.h"
 
-static const char  *
-__imlib_PathToModules(void)
-{
-#if 0
-   static const char  *path = NULL;
-
-   if (path)
-      return path;
-
-   path = getenv("IMLIB2_MODULE_PATH");
-   if (path && __imlib_FileIsDir(path))
-      return path;
-#endif
-
-   return PACKAGE_LIB_DIR "/imlib2";
-}
-
 static char       **
 _module_paths(const char *env, const char *mdir)
 {
@@ -43,8 +26,7 @@ _module_paths(const char *env, const char *mdir)
                {
                   /* Substitute default path */
                   free(*pp);
-                  snprintf(buf, sizeof(buf), "%s/%s",
-                           __imlib_PathToModules(), mdir);
+                  snprintf(buf, sizeof(buf), "%s/%s", PACKAGE_LIB_DIR, mdir);
                   *pp = strdup(buf);
                }
           }
@@ -55,7 +37,7 @@ _module_paths(const char *env, const char *mdir)
         ppaths = malloc(2 * sizeof(char *));
         if (!ppaths)
            goto done;
-        snprintf(buf, sizeof(buf), "%s/%s", __imlib_PathToModules(), mdir);
+        snprintf(buf, sizeof(buf), "%s/%s", PACKAGE_LIB_DIR, mdir);
         ppaths[0] = strdup(buf);
         ppaths[1] = NULL;
      }

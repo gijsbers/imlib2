@@ -10,7 +10,7 @@ if BUILD_TEST
 SUBDIRS += test
 endif
 
-CLEANFILES = $(PACKAGE).spec
+CLEANFILES = $(PACKAGE).pc $(PACKAGE).spec
 
 MAINTAINERCLEANFILES = aclocal.m4 compile \
 		       config.guess config.h.in config.sub configure \

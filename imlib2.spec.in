@@ -59,15 +59,17 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/%{name}/filters
 %dir %{_libdir}/%{name}/loaders
 %{_libdir}/lib*.so.*
-%{_libdir}/imlib2/filters/*.so
-%{_libdir}/imlib2/loaders/*.so
+%{_libdir}/%{name}/filters/*.so
+%{_libdir}/%{name}/loaders/*.so
+%dir %{_datadir}/%{name}
+%{_datadir}/%{name}/rgb.txt
 
 %files devel
 %{_libdir}/*.so
 %{_libdir}/*.a
 %{_libdir}/pkgconfig/*
 %{_includedir}/*
-%{_datadir}/%{name}
+%{_datadir}/%{name}/*/*
 %{_bindir}/imlib2_*
 
 %changelog

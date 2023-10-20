@@ -1,4 +1,4 @@
-AC_INIT([imlib2],[1.11.0],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.11.1],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -21,7 +21,7 @@ define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
 VERSION_CUR=12
-VERSION_REV=0
+VERSION_REV=1
 VERSION_AGE=11
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
@@ -181,6 +181,7 @@ if test "x$have_clock_gettime" != xno; then
 fi
 
 
+# Regular image loaders
 loader_check_gif() {
   AC_CHECK_LIB(gif, DGifOpenFileName, gif_libs="-lgif" gif_ok=yes, gif_ok=no)
   if test "$gif_ok" = yes; then
@@ -202,7 +203,9 @@ EC_LOADER_CHECK(PS,   auto, libspectre)
 EC_LOADER_CHECK(SVG,  auto, librsvg-2.0 >= 2.46)
 EC_LOADER_CHECK(TIFF, auto, libtiff-4)
 EC_LOADER_CHECK(WEBP, auto, libwebpdemux)
+EC_LOADER_CHECK(Y4M,  auto, liby4m libyuv)
 
+# Decompressors
 loader_check_bz2() {
   AC_CHECK_LIB(bz2, BZ2_bzRead, bz2_ok=yes, bz2_ok=no)
   if test "$bz2_ok" = yes; then
@@ -217,6 +220,7 @@ EC_LOADER_CHECK(BZ2,  auto, bzip2, loader_check_bz2)
 EC_LOADER_CHECK(LZMA, auto, liblzma)
 EC_LOADER_CHECK(ZLIB, auto, zlib)
 
+# Containers
 EC_LOADER_CHECK(ID3,  auto, id3tag)
 
 
@@ -313,6 +317,7 @@ echo "  PS......................: $ps_ok"
 echo "  SVG.....................: $svg_ok"
 echo "  TIFF....................: $tiff_ok"
 echo "  WEBP....................: $webp_ok"
+echo "  Y4M.....................: $y4m_ok"
 echo " Decompressors"
 echo "  BZIP2...................: $bz2_ok"
 echo "  LZMA(XZ)................: $lzma_ok"

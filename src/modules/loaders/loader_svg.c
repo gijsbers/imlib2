@@ -238,4 +238,4 @@ _load(ImlibImage * im, int load_data)
    return rc;
 }
 
-IMLIB_LOADER(_formats, _load, NULL);
+IMLIB_LOADER_KEEP(_formats, _load, NULL);

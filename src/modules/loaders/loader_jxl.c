@@ -4,6 +4,7 @@
 #define MAX_RUNNERS 4           /* Maybe set to Ncpu/2? */
 
 #include <jxl/decode.h>
+#include <jxl/encode.h>
 #if MAX_RUNNERS > 0
 #include <jxl/thread_parallel_runner.h>
 #endif
@@ -18,16 +19,16 @@ _scanline_cb(void *opaque, size_t x, size_t y,
 {
    ImlibImage         *im = opaque;
    const uint8_t      *pix = pixels;
-   uint32_t           *ptr;
+   uint32_t           *imdata;
    size_t              i;
 
    DL("%s: x,y=%ld,%ld len=%lu\n", __func__, x, y, num_pixels);
 
-   ptr = im->data + (im->w * y) + x;
+   imdata = im->data + (im->w * y) + x;
 
    /* libjxl outputs ABGR pixels (stream order RGBA) - convert to ARGB */
    for (i = 0; i < num_pixels; i++, pix += 4)
-      *ptr++ = PIXEL_ARGB(pix[3], pix[0], pix[1], pix[2]);
+      *imdata++ = PIXEL_ARGB(pix[3], pix[0], pix[1], pix[2]);
 
    /* Due to possible multithreading it's probably best not do do
     * progress calbacks here. */
@@ -215,4 +216,181 @@ _load(ImlibImage * im, int load_data)
    return rc;
 }
 
-IMLIB_LOADER(_formats, _load, NULL);
+static int
+_save(ImlibImage * im)
+{
+   int                 rc;
+   JxlEncoderStatus    jst;
+   JxlEncoder         *enc;
+   JxlBasicInfo        info;
+   JxlEncoderFrameSettings *opts;
+
+   JxlPixelFormat      pbuf_fmt = {
+      .data_type = JXL_TYPE_UINT8,
+      .endianness = JXL_NATIVE_ENDIAN,
+   };
+   ImlibImageTag      *tag;
+   const uint32_t     *imdata;
+   uint8_t            *buffer = NULL, *buf_ptr;
+   size_t              buf_len, i, npix;
+
+#if MAX_RUNNERS > 0
+   size_t              n_runners;
+   JxlParallelRunner  *runner = NULL;
+#endif
+
+   rc = LOAD_FAIL;
+
+   enc = JxlEncoderCreate(NULL);
+   if (!enc)
+      goto quit;
+
+#if MAX_RUNNERS > 0
+   n_runners = JxlThreadParallelRunnerDefaultNumWorkerThreads();
+   if (n_runners > MAX_RUNNERS)
+      n_runners = MAX_RUNNERS;
+   D("n_runners = %ld\n", n_runners);
+   runner = JxlThreadParallelRunnerCreate(NULL, n_runners);
+   if (!runner)
+      goto quit;
+
+   jst = JxlEncoderSetParallelRunner(enc, JxlThreadParallelRunner, runner);
+   if (jst != JXL_ENC_SUCCESS)
+      goto quit;
+#endif /* MAX_RUNNERS */
+
+   JxlEncoderInitBasicInfo(&info);
+   info.xsize = im->w;
+   info.ysize = im->h;
+   if (im->has_alpha)
+     {
+        info.alpha_bits = 8;
+        info.num_extra_channels = 1;
+     }
+
+   jst = JxlEncoderSetBasicInfo(enc, &info);
+   if (jst != JXL_ENC_SUCCESS)
+      goto quit;
+
+   opts = JxlEncoderFrameSettingsCreate(enc, NULL);
+   if (!opts)
+      goto quit;
+
+   tag = __imlib_GetTag(im, "quality");
+   if (tag)
+     {
+        int                 quality;
+        float               distance;
+
+        quality = (tag->val) >= 0 ? tag->val : 0;
+        if (quality >= 100)
+          {
+             D("Quality=%d: Lossless\n", quality);
+             JxlEncoderSetFrameDistance(opts, 0.f);
+             JxlEncoderSetFrameLossless(opts, JXL_TRUE);
+          }
+        else
+          {
+             distance = 15.f * (1.f - .01 * quality);   // 0 - 100 -> 15 - 0
+             D("Quality=%d: Distance=%.1f\n", quality, distance);
+             JxlEncoderSetFrameLossless(opts, JXL_FALSE);
+             JxlEncoderSetFrameDistance(opts, distance);
+          }
+     }
+
+   tag = __imlib_GetTag(im, "compression");
+   if (tag)
+     {
+        int                 compression;
+
+        compression = (tag->val < 1) ? 1 : (tag->val > 9) ? 9 : tag->val;
+        D("Compression=%d\n", compression);
+        JxlEncoderFrameSettingsSetOption(opts, JXL_ENC_FRAME_SETTING_EFFORT,
+                                         compression);
+     }
+
+   // Create buffer for format conversion and output
+   pbuf_fmt.num_channels = (im->has_alpha) ? 4 : 3;
+   npix = im->w * im->h;
+   buf_len = pbuf_fmt.num_channels * npix;
+   if (buf_len < 4096)
+      buf_len = 4096;           // Not too small for output
+
+   buffer = malloc(buf_len);
+   if (!buffer)
+      QUIT_WITH_RC(LOAD_OOM);
+
+   // Convert format for libjxl
+   imdata = im->data;
+   buf_ptr = buffer;
+   if (pbuf_fmt.num_channels == 3)
+     {
+        for (i = 0; i < npix; i++, imdata++, buf_ptr += 3)
+          {
+             buf_ptr[0] = R_VAL(imdata);
+             buf_ptr[1] = G_VAL(imdata);
+             buf_ptr[2] = B_VAL(imdata);
+          }
+     }
+   else
+     {
+        for (i = 0; i < npix; i++, imdata++, buf_ptr += 4)
+          {
+             buf_ptr[0] = R_VAL(imdata);
+             buf_ptr[1] = G_VAL(imdata);
+             buf_ptr[2] = B_VAL(imdata);
+             buf_ptr[3] = A_VAL(imdata);
+          }
+     }
+
+   jst = JxlEncoderAddImageFrame(opts, &pbuf_fmt, buffer, buf_len);
+   if (jst != JXL_ENC_SUCCESS)
+      goto quit;
+
+   JxlEncoderCloseInput(enc);
+
+   for (;;)
+     {
+        uint8_t            *next_out;
+        size_t              avail_out;
+
+        next_out = buffer;
+        avail_out = buf_len;
+        jst = JxlEncoderProcessOutput(enc, &next_out, &avail_out);
+        switch (jst)
+          {
+          default:
+             goto quit;
+          case JXL_ENC_SUCCESS:
+          case JXL_ENC_NEED_MORE_OUTPUT:
+             D("Write: jst=%d %d\n", jst, (int)(buf_len - avail_out));
+             if (next_out == buffer)
+                goto quit;
+
+             if (fwrite(buffer, 1, buf_len - avail_out, im->fi->fp) !=
+                 buf_len - avail_out)
+                goto quit;
+
+             if (jst == JXL_ENC_SUCCESS)
+                goto done;
+
+             break;
+          }
+     }
+ done:
+
+   rc = LOAD_SUCCESS;
+
+ quit:
+   free(buffer);
+#if MAX_RUNNERS > 0
+   if (runner)
+      JxlThreadParallelRunnerDestroy(runner);
+#endif
+   if (enc)
+      JxlEncoderDestroy(enc);
+
+   return rc;
+}
+
+IMLIB_LOADER(_formats, _load, _save);

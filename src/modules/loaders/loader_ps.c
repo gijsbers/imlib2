@@ -20,7 +20,7 @@ _load(ImlibImage * im, int load_data)
    unsigned char      *pdata;
    int                 rowlen;
    unsigned char      *src;
-   uint32_t           *dst;
+   uint32_t           *imdata;
    int                 i, j;
    ImlibImageFrame    *pf;
 
@@ -114,7 +114,7 @@ _load(ImlibImage * im, int load_data)
      }
 
    src = pdata;
-   dst = im->data;
+   imdata = im->data;
 
    D("rowlen=%d (%d)\n", rowlen, 4 * im->w);
 
@@ -122,7 +122,7 @@ _load(ImlibImage * im, int load_data)
      {
         src = pdata + i * rowlen;
         for (j = 0; j < im->w; j++, src += 4)
-           *dst++ = PIXEL_ARGB(0xff, src[2], src[1], src[0]);
+           *imdata++ = PIXEL_ARGB(0xff, src[2], src[1], src[0]);
 
         if (im->lc && __imlib_LoadProgressRows(im, i, 1))
            QUIT_WITH_RC(LOAD_BREAK);

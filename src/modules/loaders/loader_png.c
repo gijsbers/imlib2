@@ -222,7 +222,7 @@ row_callback(png_struct * png_ptr, png_byte * new_row,
 {
    ctx_t              *ctx = png_get_progressive_ptr(png_ptr);
    ImlibImage         *im = ctx->im;
-   uint32_t           *dptr;
+   uint32_t           *imdata;
    const uint32_t     *sptr;
    int                 x, y, x0, dx, y0, dy;
 
@@ -246,16 +246,16 @@ row_callback(png_struct * png_ptr, png_byte * new_row,
 
         sptr = PCAST(const uint32_t *, new_row);        /* Assuming aligned */
 
-        dptr = im->data + y * im->w;
+        imdata = im->data + y * im->w;
         for (x = x0; x < im->w; x += dx)
           {
 #if 0
-             dptr[x] = PIXEL_ARGB(new_row[ii + 3], new_row[ii + 2],
-                                  new_row[ii + 1], new_row[ii + 0]);
+             imdata[x] = PIXEL_ARGB(new_row[ii + 3], new_row[ii + 2],
+                                    new_row[ii + 1], new_row[ii + 0]);
              D("x,y = %d,%d (i,j, ii=%d,%d %d): %08x\n", x, y,
-               ii / 4, row_num, ii, dptr[x]);
+               ii / 4, row_num, ii, imdata[x]);
 #else
-             dptr[x] = *sptr++;
+             imdata[x] = *sptr++;
 #endif
           }
      }
@@ -263,8 +263,8 @@ row_callback(png_struct * png_ptr, png_byte * new_row,
      {
         y = row_num;
 
-        dptr = im->data + y * im->w;
-        memcpy(dptr, new_row, sizeof(uint32_t) * im->w);
+        imdata = im->data + y * im->w;
+        memcpy(imdata, new_row, sizeof(uint32_t) * im->w);
 
         if (im->lc && im->frame == 0)
           {
@@ -603,7 +603,7 @@ _save(ImlibImage * im)
    png_structp         png_ptr;
    png_infop           info_ptr;
    misc_data_t         misc;
-   uint32_t           *ptr;
+   const uint32_t     *imdata;
    int                 x, y, j, interlace;
    png_bytep           row_ptr;
    png_color_8         sig_bit;
@@ -710,20 +710,22 @@ _save(ImlibImage * im)
 
    for (pass = 0; pass < n_passes; pass++)
      {
-        ptr = im->data;
+        imdata = im->data;
 
         if (im->lc)
            __imlib_LoadProgressSetPass(im, pass, n_passes);
 
-        for (y = 0; y < im->h; y++)
+        for (y = 0; y < im->h; y++, imdata += im->w)
           {
              if (has_alpha)
-                row_ptr = (png_bytep) ptr;
+               {
+                  row_ptr = (png_bytep) imdata;
+               }
              else
                {
                   for (j = 0, x = 0; x < im->w; x++)
                     {
-                       uint32_t            pixel = ptr[x];
+                       uint32_t            pixel = imdata[x];
 
                        misc.data[j++] = PIXEL_R(pixel);
                        misc.data[j++] = PIXEL_G(pixel);
@@ -735,8 +737,6 @@ _save(ImlibImage * im)
 
              if (im->lc && __imlib_LoadProgressRows(im, y, 1))
                 QUIT_WITH_RC(LOAD_BREAK);
-
-             ptr += im->w;
           }
      }
 

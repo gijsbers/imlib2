@@ -457,7 +457,8 @@ _save(ImlibImage * im)
    int                 rc;
    TIFF               *tif = NULL;
    uint8_t            *buf = NULL;
-   uint32_t            pixel, *data = im->data;
+   const uint32_t     *imdata;
+   uint32_t            pixel;
    double              alpha_factor;
    int                 x, y;
    uint8_t             r, g, b, a = 0;
@@ -541,12 +542,13 @@ _save(ImlibImage * im)
    if (!buf)
       goto quit;
 
+   imdata = im->data;
    for (y = 0; y < im->h; y++)
      {
         i = 0;
         for (x = 0; x < im->w; x++)
           {
-             pixel = data[(y * im->w) + x];
+             pixel = imdata[(y * im->w) + x];
 
              r = PIXEL_R(pixel);
              g = PIXEL_G(pixel);

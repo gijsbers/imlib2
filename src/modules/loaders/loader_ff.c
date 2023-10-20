@@ -20,7 +20,7 @@ _load(ImlibImage * im, int load_data)
    int                 rowlen, i, j;
    const ff_hdr_t     *hdr;
    const uint16_t     *row;
-   uint8_t            *dat;
+   uint8_t            *imdata;
 
    rc = LOAD_FAIL;
 
@@ -51,9 +51,9 @@ _load(ImlibImage * im, int load_data)
 
    rowlen = 4 * im->w;          /* RGBA */
 
-   dat = (uint8_t *) im->data;
+   imdata = (uint8_t *) im->data;
    row = (uint16_t *) (hdr + 1);
-   for (i = 0; i < im->h; i++, dat += rowlen, row += rowlen)
+   for (i = 0; i < im->h; i++, imdata += rowlen, row += rowlen)
      {
         if (!mm_check(row + rowlen))
            goto quit;
@@ -64,10 +64,10 @@ _load(ImlibImage * im, int load_data)
               * 16-Bit to 8-Bit (RGBA -> BGRA)
               * 255 * 257 = 65535 = 2^16-1 = UINT16_MAX
               */
-             dat[j + 2] = ntohs(row[j + 0]) / 257;
-             dat[j + 1] = ntohs(row[j + 1]) / 257;
-             dat[j + 0] = ntohs(row[j + 2]) / 257;
-             dat[j + 3] = ntohs(row[j + 3]) / 257;
+             imdata[j + 2] = ntohs(row[j + 0]) / 257;
+             imdata[j + 1] = ntohs(row[j + 1]) / 257;
+             imdata[j + 0] = ntohs(row[j + 2]) / 257;
+             imdata[j + 3] = ntohs(row[j + 3]) / 257;
           }
 
         if (im->lc && __imlib_LoadProgressRows(im, i, 1))
@@ -88,7 +88,7 @@ _save(ImlibImage * im)
    size_t              rowlen, i, j;
    uint32_t            tmp32;
    uint16_t           *row;
-   uint8_t            *dat;
+   const uint8_t      *imdata;
 
    rc = LOAD_FAIL;
    row = NULL;
@@ -110,8 +110,8 @@ _save(ImlibImage * im)
    if (!row)
       goto quit;
 
-   dat = (uint8_t *) im->data;
-   for (i = 0; i < (uint32_t) im->h; ++i, dat += rowlen)
+   imdata = (uint8_t *) im->data;
+   for (i = 0; i < (uint32_t) im->h; ++i, imdata += rowlen)
      {
         for (j = 0; j < rowlen; j += 4)
           {
@@ -119,10 +119,10 @@ _save(ImlibImage * im)
               * 8-Bit to 16-Bit
               * 255 * 257 = 65535 = 2^16-1 = UINT16_MAX
               */
-             row[j + 0] = htons(dat[j + 2] * 257);
-             row[j + 1] = htons(dat[j + 1] * 257);
-             row[j + 2] = htons(dat[j + 0] * 257);
-             row[j + 3] = htons(dat[j + 3] * 257);
+             row[j + 0] = htons(imdata[j + 2] * 257);
+             row[j + 1] = htons(imdata[j + 1] * 257);
+             row[j + 2] = htons(imdata[j + 0] * 257);
+             row[j + 3] = htons(imdata[j + 3] * 257);
           }
         if (fwrite(row, sizeof(uint16_t), rowlen, f) != rowlen)
            goto quit;

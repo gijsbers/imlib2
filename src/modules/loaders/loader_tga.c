@@ -78,7 +78,7 @@ _load(ImlibImage * im, int load_data)
    int                 rle, bpp, hasa, hasc, fliph, flipv;
    unsigned long       datasize;
    const unsigned char *bufptr, *bufend, *palette;
-   uint32_t           *dataptr;
+   uint32_t           *imdata;
    int                 palcnt = 0, palbpp = 0;
    unsigned char       a, r, g, b;
    unsigned int        pix16;
@@ -225,8 +225,8 @@ _load(ImlibImage * im, int load_data)
    if (!__imlib_AllocateData(im))
       QUIT_WITH_RC(LOAD_OOM);
 
-   /* dataptr is the next 32-bit pixel to be filled in */
-   dataptr = im->data;
+   /* imdata is the next 32-bit pixel to be filled in */
+   imdata = im->data;
 
    if (!rle)
      {
@@ -235,12 +235,12 @@ _load(ImlibImage * im, int load_data)
         /* decode uncompressed BGRA data */
         for (y = 0; y < im->h; y++)     /* for each row */
           {
-             /* point dataptr at the beginning of the row */
+             /* point imdata at the beginning of the row */
              if (flipv)
                 /* some TGA's are stored upside-down! */
-                dataptr = im->data + ((im->h - y - 1) * im->w);
+                imdata = im->data + ((im->h - y - 1) * im->w);
              else
-                dataptr = im->data + (y * im->w);
+                imdata = im->data + (y * im->w);
 
              for (x = 0; (x < im->w); x++)      /* for each pixel in the row */
                {
@@ -254,7 +254,7 @@ _load(ImlibImage * im, int load_data)
                        g = *bufptr++;
                        r = *bufptr++;
                        a = *bufptr++;
-                       *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       *imdata++ = PIXEL_ARGB(a, r, g, b);
                        break;
 
                     case 24:   /* 24-bit BGR pixels */
@@ -262,7 +262,7 @@ _load(ImlibImage * im, int load_data)
                        g = *bufptr++;
                        r = *bufptr++;
                        a = 0xff;
-                       *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       *imdata++ = PIXEL_ARGB(a, r, g, b);
                        break;
 
                     case 16:
@@ -280,7 +280,7 @@ _load(ImlibImage * im, int load_data)
                          {
                             r = g = b;
                          }
-                       *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       *imdata++ = PIXEL_ARGB(a, r, g, b);
                        break;
 
                     case 8:    /* 8-bit grayscale or palette */
@@ -298,7 +298,7 @@ _load(ImlibImage * im, int load_data)
                          {
                             r = g = b;
                          }
-                       *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       *imdata++ = PIXEL_ARGB(a, r, g, b);
                        break;
                     }
 
@@ -311,10 +311,10 @@ _load(ImlibImage * im, int load_data)
    else
      {
         /* decode RLE compressed data */
-        uint32_t           *final_pixel = dataptr + im->w * im->h;
+        uint32_t           *final_pixel = imdata + im->w * im->h;
 
         /* loop until we've got all the pixels or run out of input */
-        while ((dataptr < final_pixel))
+        while ((imdata < final_pixel))
           {
              int                 i, count;
              unsigned char       curbyte;
@@ -334,8 +334,8 @@ _load(ImlibImage * im, int load_data)
                        g = *bufptr++;
                        r = *bufptr++;
                        a = *bufptr++;
-                       for (i = 0; (i < count) && (dataptr < final_pixel); i++)
-                          *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       for (i = 0; (i < count) && (imdata < final_pixel); i++)
+                          *imdata++ = PIXEL_ARGB(a, r, g, b);
                        break;
 
                     case 24:
@@ -343,8 +343,8 @@ _load(ImlibImage * im, int load_data)
                        g = *bufptr++;
                        r = *bufptr++;
                        a = 0xff;
-                       for (i = 0; (i < count) && (dataptr < final_pixel); i++)
-                          *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       for (i = 0; (i < count) && (imdata < final_pixel); i++)
+                          *imdata++ = PIXEL_ARGB(a, r, g, b);
                        break;
 
                     case 16:
@@ -362,8 +362,8 @@ _load(ImlibImage * im, int load_data)
                          {
                             r = g = b;
                          }
-                       for (i = 0; (i < count) && (dataptr < final_pixel); i++)
-                          *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       for (i = 0; (i < count) && (imdata < final_pixel); i++)
+                          *imdata++ = PIXEL_ARGB(a, r, g, b);
                        break;
 
                     case 8:
@@ -381,14 +381,14 @@ _load(ImlibImage * im, int load_data)
                          {
                             r = g = b;
                          }
-                       for (i = 0; (i < count) && (dataptr < final_pixel); i++)
-                          *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       for (i = 0; (i < count) && (imdata < final_pixel); i++)
+                          *imdata++ = PIXEL_ARGB(a, r, g, b);
                        break;
                     }
                }                /* end if (RLE packet) */
              else               /* raw packet */
                {
-                  for (i = 0; (i < count) && (dataptr < final_pixel); i++)
+                  for (i = 0; (i < count) && (imdata < final_pixel); i++)
                     {
                        if ((bufptr + bpp / 8) > bufend)
                           goto quit;
@@ -400,7 +400,7 @@ _load(ImlibImage * im, int load_data)
                             g = *bufptr++;
                             r = *bufptr++;
                             a = *bufptr++;
-                            *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                            *imdata++ = PIXEL_ARGB(a, r, g, b);
                             break;
 
                          case 24:      /* 24-bit BGR pixels */
@@ -408,7 +408,7 @@ _load(ImlibImage * im, int load_data)
                             g = *bufptr++;
                             r = *bufptr++;
                             a = 0xff;
-                            *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                            *imdata++ = PIXEL_ARGB(a, r, g, b);
                             break;
 
                          case 16:
@@ -426,7 +426,7 @@ _load(ImlibImage * im, int load_data)
                               {
                                  r = g = b;
                               }
-                            *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                            *imdata++ = PIXEL_ARGB(a, r, g, b);
                             break;
 
                          case 8:       /* 8-bit grayscale or palette */
@@ -444,7 +444,7 @@ _load(ImlibImage * im, int load_data)
                               {
                                  r = g = b;
                               }
-                            *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                            *imdata++ = PIXEL_ARGB(a, r, g, b);
                             break;
                          }
                     }
@@ -499,7 +499,7 @@ _save(ImlibImage * im)
 {
    int                 rc;
    FILE               *f = im->fi->fp;
-   uint32_t           *dataptr;
+   const uint32_t     *imdata;
    unsigned char      *buf, *bufptr;
    int                 y;
    tga_header          header;
@@ -538,7 +538,7 @@ _save(ImlibImage * im)
       goto quit;
 
    /* now we have to read from im->data into buf, swapping RGBA to BGRA */
-   dataptr = im->data;
+   imdata = im->data;
    bufptr = buf;
 
    /* for each row */
@@ -549,7 +549,7 @@ _save(ImlibImage * im)
         /* for each pixel in the row */
         for (x = 0; x < im->w; x++)
           {
-             uint32_t            pixel = *dataptr++;
+             uint32_t            pixel = *imdata++;
 
              *bufptr++ = PIXEL_B(pixel);
              *bufptr++ = PIXEL_G(pixel);

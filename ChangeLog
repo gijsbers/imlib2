@@ -1,3 +1,25 @@
+v1.11.1 - 2023-05-01
+--------------------
+Chema Gonzalez (2):
+      imlib2: added loader for y4m files (uses liby4m and libyuv)
+      imlib2: add y4m test examples
+
+Kim Woelders (14):
+      autofoo: More CLEANFILES
+      HEIF loader: Add some debug
+      Y4M loader: Various minor changes
+      test_load: Add some missing ifdefs
+      test_load: Add some y4m checks
+      test: Print some progress info in a couple of tests
+      modules: Drop some disabled code
+      autofoo: Tweak PACKAGE_DATA_DIR definition
+      XPM loader: Add rgb.txt
+      loaders: Fix loaders potentially being loaded more than once
+      loaders: Change method used to not unload loaders
+      Add JXL saver
+      loaders: Cosmetics
+      v1.11.1
+
 v1.11.0 - 2023-03-09
 --------------------
 Guilherme Janczak (1):

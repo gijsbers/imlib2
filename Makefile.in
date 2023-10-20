@@ -194,7 +194,7 @@ am__define_uniq_tagged_files = \
 DIST_SUBDIRS = src data doc test
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/README.in \
 	$(srcdir)/config.h.in $(srcdir)/imlib2.pc.in AUTHORS COPYING \
-	ChangeLog INSTALL TODO compile config.guess config.sub \
+	ChangeLog INSTALL TODO compile config.guess config.sub depcomp \
 	install-sh ltmain.sh missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
@@ -360,6 +360,8 @@ X_LIBS = @X_LIBS@
 X_PRE_LIBS = @X_PRE_LIBS@
 X_SHM_FD_CFLAGS = @X_SHM_FD_CFLAGS@
 X_SHM_FD_LIBS = @X_SHM_FD_LIBS@
+Y4M_CFLAGS = @Y4M_CFLAGS@
+Y4M_LIBS = @Y4M_LIBS@
 ZLIB_CFLAGS = @ZLIB_CFLAGS@
 ZLIB_LIBS = @ZLIB_LIBS@
 abs_builddir = @abs_builddir@
@@ -420,7 +422,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src data $(am__append_1) $(am__append_2)
-CLEANFILES = $(PACKAGE).spec
+CLEANFILES = $(PACKAGE).pc $(PACKAGE).spec
 MAINTAINERCLEANFILES = aclocal.m4 compile \
 		       config.guess config.h.in config.sub configure \
 		       depcomp install-sh ltmain.sh missing \

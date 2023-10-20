@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS     = 1.4 foreign
 AM_CFLAGS            = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
-AM_CPPFLAGS          = -DPACKAGE_LIB_DIR=\"$(libdir)\" \
+AM_CPPFLAGS          = -D PACKAGE_LIB_DIR=\"$(pkglibdir)\" \
                        -I$(top_builddir) \
                        $(X_CFLAGS) \
                        $(FREETYPE_CFLAGS)

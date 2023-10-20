@@ -38,7 +38,7 @@ _load(ImlibImage * im, int load_data)
 {
    int                 rc;
    int                 alpha;
-   uint32_t           *ptr;
+   uint32_t           *imdata;
    int                 y;
    const char         *fptr, *row;
    unsigned int        size;
@@ -78,22 +78,22 @@ _load(ImlibImage * im, int load_data)
 
    /* Load data */
 
-   ptr = __imlib_AllocateData(im);
-   if (!ptr)
+   imdata = __imlib_AllocateData(im);
+   if (!imdata)
       QUIT_WITH_RC(LOAD_OOM);
 
    mm_seek(row - fptr);
 
    for (y = 0; y < im->h; y++)
      {
-        if (mm_read(ptr, 4 * im->w))
+        if (mm_read(imdata, 4 * im->w))
            goto quit;
 
 #ifdef WORDS_BIGENDIAN
         for (l = 0; l < im->w; l++)
-           SWAP_LE_32_INPLACE(ptr[l]);
+           SWAP_LE_32_INPLACE(imdata[l]);
 #endif
-        ptr += im->w;
+        imdata += im->w;
 
         if (im->lc && __imlib_LoadProgressRows(im, y, 1))
            QUIT_WITH_RC(LOAD_BREAK);
@@ -110,7 +110,7 @@ _save(ImlibImage * im)
 {
    int                 rc;
    FILE               *f = im->fi->fp;
-   uint32_t           *ptr;
+   const uint32_t     *imdata;
    int                 y, alpha = 0;
 
 #ifdef WORDS_BIGENDIAN
@@ -121,22 +121,21 @@ _save(ImlibImage * im)
 
    fprintf(f, "ARGB %i %i %i\n", im->w, im->h, alpha);
 
-   ptr = im->data;
-   for (y = 0; y < im->h; y++)
+   imdata = im->data;
+   for (y = 0; y < im->h; y++, imdata += im->w)
      {
 #ifdef WORDS_BIGENDIAN
         {
            int                 x;
 
-           memcpy(buf, ptr, im->w * 4);
+           memcpy(buf, imdata, im->w * 4);
            for (x = 0; x < im->w; x++)
               SWAP_LE_32_INPLACE(buf[x]);
            fwrite(buf, im->w, 4, f);
         }
 #else
-        fwrite(ptr, im->w, 4, f);
+        fwrite(imdata, im->w, 4, f);
 #endif
-        ptr += im->w;
 
         if (im->lc && __imlib_LoadProgressRows(im, y, 1))
            QUIT_WITH_RC(LOAD_BREAK);

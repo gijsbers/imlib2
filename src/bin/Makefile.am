@@ -1,6 +1,6 @@
 AM_CFLAGS   = $(CFLAGS_WARNINGS) $(CFLAGS_ASAN)
 AM_CPPFLAGS = \
--DPACKAGE_DATA_DIR=\"$(datadir)/$(PACKAGE)\" \
+-D PACKAGE_DATA_DIR=\"$(pkgdatadir)\" \
 -I$(top_builddir)/src/lib \
 $(X_CFLAGS)
 

@@ -167,7 +167,7 @@ _load(ImlibImage * im, int load_data)
    unsigned char       byte = 0, byte1, byte2;
    unsigned int        i, k;
    int                 w, h, x, y, j, l;
-   uint32_t           *ptr, pixel;
+   uint32_t           *imdata, pixel;
    const unsigned char *buffer_ptr, *buffer_end, *buffer_end_safe;
    RGBQUAD             rgbQuads[256];
    uint32_t            argbCmap[256];
@@ -407,7 +407,7 @@ _load(ImlibImage * im, int load_data)
    buffer_ptr = fptr;
    buffer_end = fptr + imgsize;
 
-   ptr = im->data + ((h - 1) * w);
+   imdata = im->data + ((h - 1) * w);
 
    switch (bitcount)
      {
@@ -429,11 +429,11 @@ _load(ImlibImage * im, int load_data)
                        if ((x & 7) == 0)
                           byte = *buffer_ptr++;
                        k = (byte >> 7) & 1;
-                       *ptr++ = argbCmap[k];
+                       *imdata++ = argbCmap[k];
                        byte <<= 1;
                     }
                   buffer_ptr += skip;
-                  ptr -= w * 2;
+                  imdata -= w * 2;
 
                   if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
                      QUIT_WITH_RC(LOAD_BREAK);
@@ -474,9 +474,9 @@ _load(ImlibImage * im, int load_data)
                        t2 = argbCmap[byte2 & 0xF];
                        for (j = 0; j < l; j++)
                          {
-                            *ptr++ = t1;
+                            *imdata++ = t1;
                             if (++j < l)
-                               *ptr++ = t2;
+                               *imdata++ = t2;
                          }
                        x += l;
                     }
@@ -488,7 +488,7 @@ _load(ImlibImage * im, int load_data)
                             x = 0;
                             if (++y >= h)
                                goto bail_bc4;
-                            ptr = im->data + (h - y - 1) * w;
+                            imdata = im->data + (h - y - 1) * w;
                             break;
                          case RLE_END:
                             x = 0;
@@ -507,7 +507,7 @@ _load(ImlibImage * im, int load_data)
                                goto bail_bc4;
                             if (y >= h)
                                goto bail_bc4;
-                            ptr = im->data + (h - y - 1) * w + x;
+                            imdata = im->data + (h - y - 1) * w + x;
                             break;
                          default:
                             l = byte2;
@@ -522,9 +522,9 @@ _load(ImlibImage * im, int load_data)
                                  byte = *buffer_ptr++;
                                  DD("%3d %3d:   %d/%d: %2d %2d\n",
                                     x, y, j, l, byte >> 4, byte & 0xf);
-                                 *ptr++ = argbCmap[byte >> 4];
+                                 *imdata++ = argbCmap[byte >> 4];
                                  if (++j < l)
-                                    *ptr++ = argbCmap[byte & 0xF];
+                                    *imdata++ = argbCmap[byte & 0xF];
                               }
                             x += l;
 
@@ -554,11 +554,11 @@ _load(ImlibImage * im, int load_data)
                        if ((x & 1) == 0)
                           byte = *buffer_ptr++;
                        k = (byte & 0xF0) >> 4;
-                       *ptr++ = argbCmap[k];
+                       *imdata++ = argbCmap[k];
                        byte <<= 4;
                     }
                   buffer_ptr += skip;
-                  ptr -= w * 2;
+                  imdata -= w * 2;
 
                   if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
                      QUIT_WITH_RC(LOAD_BREAK);
@@ -591,7 +591,7 @@ _load(ImlibImage * im, int load_data)
                        if (x + l > w)
                           goto bail_bc8;
                        for (j = l; j; j--)
-                          *ptr++ = pixel;
+                          *imdata++ = pixel;
                        x += l;
                     }
                   else
@@ -602,7 +602,7 @@ _load(ImlibImage * im, int load_data)
                             x = 0;
                             if (++y >= h)
                                goto bail_bc8;
-                            ptr = im->data + ((h - y - 1) * w) + x;
+                            imdata = im->data + ((h - y - 1) * w) + x;
                             break;
                          case RLE_END:
                             x = 0;
@@ -621,7 +621,7 @@ _load(ImlibImage * im, int load_data)
                                goto bail_bc8;
                             if (y >= h)
                                goto bail_bc8;
-                            ptr = im->data + ((h - y - 1) * w) + x;
+                            imdata = im->data + ((h - y - 1) * w) + x;
                             break;
                          default:
                             l = byte2;
@@ -634,7 +634,7 @@ _load(ImlibImage * im, int load_data)
                                  byte = *buffer_ptr++;
                                  DD("%3d %3d:   %d/%d: %2d\n",
                                     x, y, j, l, byte);
-                                 *ptr++ = argbCmap[byte];
+                                 *imdata++ = argbCmap[byte];
                               }
                             x += l;
                             if (l & 1)
@@ -661,9 +661,9 @@ _load(ImlibImage * im, int load_data)
                   for (x = 0; x < w && buffer_ptr < buffer_end; x++)
                     {
                        byte = *buffer_ptr++;
-                       *ptr++ = argbCmap[byte];
+                       *imdata++ = argbCmap[byte];
                     }
-                  ptr -= w * 2;
+                  imdata -= w * 2;
                   buffer_ptr += skip;
 
                   if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
@@ -690,10 +690,10 @@ _load(ImlibImage * im, int load_data)
                   r = SCALE(r, pixel);
                   g = SCALE(g, pixel);
                   b = SCALE(b, pixel);
-                  *ptr++ = PIXEL_ARGB(a, r, g, b);
+                  *imdata++ = PIXEL_ARGB(a, r, g, b);
                   buffer_ptr += 2;
                }
-             ptr -= w * 2;
+             imdata -= w * 2;
              buffer_ptr += skip;
 
              if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
@@ -712,9 +712,9 @@ _load(ImlibImage * im, int load_data)
                   b = *buffer_ptr++;
                   g = *buffer_ptr++;
                   r = *buffer_ptr++;
-                  *ptr++ = PIXEL_ARGB(0xff, r, g, b);
+                  *imdata++ = PIXEL_ARGB(0xff, r, g, b);
                }
-             ptr -= w * 2;
+             imdata -= w * 2;
              buffer_ptr += skip;
 
              if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
@@ -739,10 +739,10 @@ _load(ImlibImage * im, int load_data)
                   r = SCALE(r, pixel);
                   g = SCALE(g, pixel);
                   b = SCALE(b, pixel);
-                  *ptr++ = PIXEL_ARGB(a, r, g, b);
+                  *imdata++ = PIXEL_ARGB(a, r, g, b);
                   buffer_ptr += 4;
                }
-             ptr -= w * 2;
+             imdata -= w * 2;
              buffer_ptr += skip;
 
              if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))

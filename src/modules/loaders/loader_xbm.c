@@ -216,7 +216,7 @@ _save(ImlibImage * im)
    const char         *s, *name;
    char               *bname;
    int                 i, k, x, y, bits, nval, val;
-   uint32_t           *ptr;
+   const uint32_t     *imdata;
 
    rc = LOAD_SUCCESS;
 
@@ -233,14 +233,14 @@ _save(ImlibImage * im)
    free(bname);
 
    nval = ((im->w + 7) / 8) * im->h;
-   ptr = im->data;
+   imdata = im->data;
    x = k = 0;
    for (y = 0; y < im->h;)
      {
         bits = 0;
         for (i = 0; i < 8 && x < im->w; i++, x++)
           {
-             val = _bitmap_dither(x, y, *ptr++);
+             val = _bitmap_dither(x, y, *imdata++);
              if (val)
                 bits |= 1 << i;
           }
