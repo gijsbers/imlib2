@@ -89,7 +89,20 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@BUILD_X11_TRUE@am__append_1 = -lXext -lX11 @X_SHM_FD_LIBS@
+@BUILD_X11_TRUE@am__append_1 = \
+@BUILD_X11_TRUE@x11_color.c	x11_color.h	\
+@BUILD_X11_TRUE@x11_context.c	x11_context.h	\
+@BUILD_X11_TRUE@x11_draw.c	x11_draw.h	\
+@BUILD_X11_TRUE@x11_grab.c	x11_grab.h	\
+@BUILD_X11_TRUE@x11_pixmap.c	x11_pixmap.h	\
+@BUILD_X11_TRUE@x11_rend.c	x11_rend.h	\
+@BUILD_X11_TRUE@x11_rgba.c	x11_rgba.h	\
+@BUILD_X11_TRUE@x11_ximage.c	x11_ximage.h
+
+@BUILD_X11_TRUE@am__append_2 = -lXext -lX11 @X_SHM_FD_LIBS@
+@BUILD_DEBUG_TRUE@am__append_3 = $(CLOCK_LIBS)
+@BUILD_MMX_TRUE@am__append_4 = $(MMX_SRCS)
+@BUILD_AMD64_TRUE@am__append_5 = $(AMD64_SRCS)
 subdir = src/lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ec_asan.m4 \
@@ -104,7 +117,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(include_HEADERS) \
 	$(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = Imlib2.h
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -136,23 +149,39 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = amd64_blend.lo amd64_blend_cmod.lo
-am__DEPENDENCIES_4 = $(am__DEPENDENCIES_3)
-am__DEPENDENCIES_5 = asm_blend.lo asm_blend_cmod.lo asm_rgba.lo \
+@BUILD_DEBUG_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
+libImlib2_la_DEPENDENCIES = $(am__DEPENDENCIES_3)
+am__libImlib2_la_SOURCES_DIST = api.c asm.h asm_c.c asm_c.h blend.c \
+	blend.h color_helpers.c color_helpers.h colormod.c colormod.h \
+	common.h debug.c debug.h dynamic_filters.c dynamic_filters.h \
+	ellipse.c file.c file.h filter.c filter.h font.h font_draw.c \
+	font_load.c font_main.c font_query.c grad.c grad.h image.c \
+	image.h image_tags.c line.c loaders.c loaders.h modules.c \
+	polygon.c rectangle.c rgbadraw.c rgbadraw.h rotate.c rotate.h \
+	scale.c scale.h script.c script.h span.c span.h updates.c \
+	updates.h x11_color.c x11_color.h x11_context.c x11_context.h \
+	x11_draw.c x11_draw.h x11_grab.c x11_grab.h x11_pixmap.c \
+	x11_pixmap.h x11_rend.c x11_rend.h x11_rgba.c x11_rgba.h \
+	x11_ximage.c x11_ximage.h asm_blend.S asm_blend_cmod.S \
+	asm_rgba.S asm_rotate.S asm_scale.S amd64_blend.S \
+	amd64_blend_cmod.S
+@BUILD_X11_TRUE@am__objects_1 = x11_color.lo x11_context.lo \
+@BUILD_X11_TRUE@	x11_draw.lo x11_grab.lo x11_pixmap.lo \
+@BUILD_X11_TRUE@	x11_rend.lo x11_rgba.lo x11_ximage.lo
+am__objects_2 = asm_blend.lo asm_blend_cmod.lo asm_rgba.lo \
 	asm_rotate.lo asm_scale.lo
-am__DEPENDENCIES_6 = $(am__DEPENDENCIES_5)
-am_libImlib2_la_OBJECTS = api.lo blend.lo color.lo color_helpers.lo \
-	colormod.lo context.lo draw.lo dynamic_filters.lo ellipse.lo \
-	file.lo filter.lo font_draw.lo font_load.lo font_main.lo \
-	font_query.lo grab.lo grad.lo image.lo image_tags.lo line.lo \
-	loaders.lo modules.lo polygon.lo rectangle.lo rend.lo rgba.lo \
-	rgbadraw.lo rotate.lo scale.lo script.lo span.lo updates.lo \
-	ximage.lo
-am__EXTRA_libImlib2_la_SOURCES_DIST = amd64_blend.S amd64_blend_cmod.S \
-	asm_blend.S asm_blend_cmod.S asm_rgba.S asm_rotate.S \
-	asm_scale.S
+@BUILD_MMX_TRUE@am__objects_3 = $(am__objects_2)
+am__objects_4 = amd64_blend.lo amd64_blend_cmod.lo
+@BUILD_AMD64_TRUE@am__objects_5 = $(am__objects_4)
+am_libImlib2_la_OBJECTS = api.lo asm_c.lo blend.lo color_helpers.lo \
+	colormod.lo debug.lo dynamic_filters.lo ellipse.lo file.lo \
+	filter.lo font_draw.lo font_load.lo font_main.lo font_query.lo \
+	grad.lo image.lo image_tags.lo line.lo loaders.lo modules.lo \
+	polygon.lo rectangle.lo rgbadraw.lo rotate.lo scale.lo \
+	script.lo span.lo updates.lo $(am__objects_1) $(am__objects_3) \
+	$(am__objects_5)
 libImlib2_la_OBJECTS = $(am_libImlib2_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -179,24 +208,25 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/amd64_blend.Plo \
 	./$(DEPDIR)/amd64_blend_cmod.Plo ./$(DEPDIR)/api.Plo \
 	./$(DEPDIR)/asm_blend.Plo ./$(DEPDIR)/asm_blend_cmod.Plo \
-	./$(DEPDIR)/asm_rgba.Plo ./$(DEPDIR)/asm_rotate.Plo \
-	./$(DEPDIR)/asm_scale.Plo ./$(DEPDIR)/blend.Plo \
-	./$(DEPDIR)/color.Plo ./$(DEPDIR)/color_helpers.Plo \
-	./$(DEPDIR)/colormod.Plo ./$(DEPDIR)/context.Plo \
-	./$(DEPDIR)/draw.Plo ./$(DEPDIR)/dynamic_filters.Plo \
-	./$(DEPDIR)/ellipse.Plo ./$(DEPDIR)/file.Plo \
-	./$(DEPDIR)/filter.Plo ./$(DEPDIR)/font_draw.Plo \
-	./$(DEPDIR)/font_load.Plo ./$(DEPDIR)/font_main.Plo \
-	./$(DEPDIR)/font_query.Plo ./$(DEPDIR)/grab.Plo \
+	./$(DEPDIR)/asm_c.Plo ./$(DEPDIR)/asm_rgba.Plo \
+	./$(DEPDIR)/asm_rotate.Plo ./$(DEPDIR)/asm_scale.Plo \
+	./$(DEPDIR)/blend.Plo ./$(DEPDIR)/color_helpers.Plo \
+	./$(DEPDIR)/colormod.Plo ./$(DEPDIR)/debug.Plo \
+	./$(DEPDIR)/dynamic_filters.Plo ./$(DEPDIR)/ellipse.Plo \
+	./$(DEPDIR)/file.Plo ./$(DEPDIR)/filter.Plo \
+	./$(DEPDIR)/font_draw.Plo ./$(DEPDIR)/font_load.Plo \
+	./$(DEPDIR)/font_main.Plo ./$(DEPDIR)/font_query.Plo \
 	./$(DEPDIR)/grad.Plo ./$(DEPDIR)/image.Plo \
 	./$(DEPDIR)/image_tags.Plo ./$(DEPDIR)/line.Plo \
 	./$(DEPDIR)/loaders.Plo ./$(DEPDIR)/modules.Plo \
 	./$(DEPDIR)/polygon.Plo ./$(DEPDIR)/rectangle.Plo \
-	./$(DEPDIR)/rend.Plo ./$(DEPDIR)/rgba.Plo \
 	./$(DEPDIR)/rgbadraw.Plo ./$(DEPDIR)/rotate.Plo \
 	./$(DEPDIR)/scale.Plo ./$(DEPDIR)/script.Plo \
 	./$(DEPDIR)/span.Plo ./$(DEPDIR)/updates.Plo \
-	./$(DEPDIR)/ximage.Plo
+	./$(DEPDIR)/x11_color.Plo ./$(DEPDIR)/x11_context.Plo \
+	./$(DEPDIR)/x11_draw.Plo ./$(DEPDIR)/x11_grab.Plo \
+	./$(DEPDIR)/x11_pixmap.Plo ./$(DEPDIR)/x11_rend.Plo \
+	./$(DEPDIR)/x11_rgba.Plo ./$(DEPDIR)/x11_ximage.Plo
 am__mv = mv -f
 CPPASCOMPILE = $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
@@ -226,9 +256,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libImlib2_la_SOURCES) $(EXTRA_libImlib2_la_SOURCES)
-DIST_SOURCES = $(libImlib2_la_SOURCES) \
-	$(am__EXTRA_libImlib2_la_SOURCES_DIST)
+SOURCES = $(libImlib2_la_SOURCES)
+DIST_SOURCES = $(am__libImlib2_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -254,7 +283,8 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/depcomp
+am__DIST_COMMON = $(srcdir)/Imlib2.h.in $(srcdir)/Makefile.in \
+	$(top_srcdir)/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -275,8 +305,13 @@ CFLAGS = @CFLAGS@
 CFLAGS_ASAN = @CFLAGS_ASAN@
 CFLAGS_VISIBILITY = @CFLAGS_VISIBILITY@
 CFLAGS_WARNINGS = @CFLAGS_WARNINGS@
+CLOCK_LIBS = @CLOCK_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+CXXDEPMODE = @CXXDEPMODE@
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -292,7 +327,7 @@ EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 FREETYPE_CFLAGS = @FREETYPE_CFLAGS@
 FREETYPE_LIBS = @FREETYPE_LIBS@
-GIFLIBS = @GIFLIBS@
+GIF_LIBS = @GIF_LIBS@
 GREP = @GREP@
 HAVE_VISIBILITY = @HAVE_VISIBILITY@
 ID3_CFLAGS = @ID3_CFLAGS@
@@ -343,6 +378,9 @@ STRIP = @STRIP@
 TIFF_CFLAGS = @TIFF_CFLAGS@
 TIFF_LIBS = @TIFF_LIBS@
 VERSION = @VERSION@
+VERSION_MAJOR = @VERSION_MAJOR@
+VERSION_MICRO = @VERSION_MICRO@
+VERSION_MINOR = @VERSION_MINOR@
 WEBP_CFLAGS = @WEBP_CFLAGS@
 WEBP_LIBS = @WEBP_LIBS@
 XMKMF = @XMKMF@
@@ -360,6 +398,7 @@ abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
@@ -409,7 +448,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = 1.4 foreign
-MAINTAINERCLEANFILES = Makefile.in
 AM_CFLAGS = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
 AM_CPPFLAGS = -DPACKAGE_LIB_DIR=\"$(libdir)\" \
                        -I$(top_builddir) \
@@ -421,66 +459,15 @@ AM_CPPFLAGS = -DPACKAGE_LIB_DIR=\"$(libdir)\" \
 AM_CCASFLAGS = -I$(top_builddir)
 lib_LTLIBRARIES = libImlib2.la
 include_HEADERS = Imlib2.h
-libImlib2_la_SOURCES = \
-api.c \
-asm.h \
-blend.c \
-blend.h \
-color.c \
-color.h \
-color_helpers.c \
-color_helpers.h \
-colormod.c \
-colormod.h \
-common.h \
-context.c \
-context.h \
-draw.c \
-draw.h \
-dynamic_filters.c \
-dynamic_filters.h \
-ellipse.c \
-file.c \
-file.h \
-filter.c \
-filter.h \
-font.h \
-font_draw.c \
-font_load.c \
-font_main.c \
-font_query.c \
-grab.c \
-grab.h \
-grad.c \
-grad.h \
-image.c \
-image.h \
-image_tags.c \
-line.c \
-loaders.c \
-loaders.h \
-modules.c \
-polygon.c \
-rectangle.c \
-rend.c \
-rend.h \
-rgba.c \
-rgba.h \
-rgbadraw.c \
-rgbadraw.h \
-rotate.c \
-rotate.h \
-scale.c \
-scale.h \
-script.c \
-script.h \
-span.c \
-span.h \
-updates.c \
-updates.h \
-ximage.c \
-ximage.h
-
+libImlib2_la_SOURCES = api.c asm.h asm_c.c asm_c.h blend.c blend.h \
+	color_helpers.c color_helpers.h colormod.c colormod.h common.h \
+	debug.c debug.h dynamic_filters.c dynamic_filters.h ellipse.c \
+	file.c file.h filter.c filter.h font.h font_draw.c font_load.c \
+	font_main.c font_query.c grad.c grad.h image.c image.h \
+	image_tags.c line.c loaders.c loaders.h modules.c polygon.c \
+	rectangle.c rgbadraw.c rgbadraw.h rotate.c rotate.h scale.c \
+	scale.h script.c script.h span.c span.h updates.c updates.h \
+	$(am__append_1) $(am__append_4) $(am__append_5)
 MMX_SRCS = \
 asm_blend.S \
 asm_blend_cmod.S \
@@ -492,18 +479,10 @@ AMD64_SRCS = \
 amd64_blend.S \
 amd64_blend_cmod.S
 
-MMX_OBJS = $(MMX_SRCS:.S=.lo)
-AMD64_OBJS = $(AMD64_SRCS:.S=.lo)
 EXTRA_DIST = $(MMX_SRCS) $(AMD64_SRCS) asm_loadimmq.S
-MY_LIBS = $(FREETYPE_LIBS) $(DLOPEN_LIBS) -lm $(am__append_1)
-@BUILD_AMD64_FALSE@@BUILD_MMX_FALSE@libImlib2_la_LIBADD = $(MY_LIBS)
-@BUILD_AMD64_TRUE@@BUILD_MMX_FALSE@libImlib2_la_LIBADD = $(AMD64_OBJS) $(MY_LIBS)
-@BUILD_MMX_TRUE@libImlib2_la_LIBADD = $(MMX_OBJS) $(MY_LIBS)
-@BUILD_AMD64_FALSE@@BUILD_MMX_FALSE@libImlib2_la_DEPENDENCIES = $(top_builddir)/config.h
-@BUILD_AMD64_TRUE@@BUILD_MMX_FALSE@libImlib2_la_DEPENDENCIES = $(top_builddir)/config.h $(AMD64_OBJS)
-@BUILD_MMX_TRUE@libImlib2_la_DEPENDENCIES = $(top_builddir)/config.h $(MMX_OBJS)
-@BUILD_AMD64_TRUE@@BUILD_MMX_FALSE@EXTRA_libImlib2_la_SOURCES = $(AMD64_SRCS)
-@BUILD_MMX_TRUE@EXTRA_libImlib2_la_SOURCES = $(MMX_SRCS) 
+MY_LIBS = $(FREETYPE_LIBS) $(DLOPEN_LIBS) -lm $(am__append_2) \
+	$(am__append_3)
+libImlib2_la_LIBADD = $(MY_LIBS)
 libImlib2_la_LDFLAGS = -version-info @lt_version@
 all: all-am
 
@@ -538,6 +517,8 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
+Imlib2.h: $(top_builddir)/config.status $(srcdir)/Imlib2.h.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 
 install-libLTLIBRARIES: $(lib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
@@ -588,15 +569,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/api.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asm_blend.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asm_blend_cmod.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asm_c.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asm_rgba.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asm_rotate.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asm_scale.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blend.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/color.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/color_helpers.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colormod.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/context.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/draw.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/debug.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dynamic_filters.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ellipse.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file.Plo@am__quote@ # am--include-marker
@@ -605,7 +585,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/font_load.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/font_main.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/font_query.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grab.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grad.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/image.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/image_tags.Plo@am__quote@ # am--include-marker
@@ -614,15 +593,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/modules.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polygon.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rectangle.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rend.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rgba.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rgbadraw.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rotate.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scale.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/script.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/span.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/updates.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ximage.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_color.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_context.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_draw.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_grab.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_pixmap.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_rend.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_rgba.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_ximage.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -821,7 +805,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
@@ -833,15 +816,14 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/api.Plo
 	-rm -f ./$(DEPDIR)/asm_blend.Plo
 	-rm -f ./$(DEPDIR)/asm_blend_cmod.Plo
+	-rm -f ./$(DEPDIR)/asm_c.Plo
 	-rm -f ./$(DEPDIR)/asm_rgba.Plo
 	-rm -f ./$(DEPDIR)/asm_rotate.Plo
 	-rm -f ./$(DEPDIR)/asm_scale.Plo
 	-rm -f ./$(DEPDIR)/blend.Plo
-	-rm -f ./$(DEPDIR)/color.Plo
 	-rm -f ./$(DEPDIR)/color_helpers.Plo
 	-rm -f ./$(DEPDIR)/colormod.Plo
-	-rm -f ./$(DEPDIR)/context.Plo
-	-rm -f ./$(DEPDIR)/draw.Plo
+	-rm -f ./$(DEPDIR)/debug.Plo
 	-rm -f ./$(DEPDIR)/dynamic_filters.Plo
 	-rm -f ./$(DEPDIR)/ellipse.Plo
 	-rm -f ./$(DEPDIR)/file.Plo
@@ -850,7 +832,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/font_load.Plo
 	-rm -f ./$(DEPDIR)/font_main.Plo
 	-rm -f ./$(DEPDIR)/font_query.Plo
-	-rm -f ./$(DEPDIR)/grab.Plo
 	-rm -f ./$(DEPDIR)/grad.Plo
 	-rm -f ./$(DEPDIR)/image.Plo
 	-rm -f ./$(DEPDIR)/image_tags.Plo
@@ -859,15 +840,20 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/modules.Plo
 	-rm -f ./$(DEPDIR)/polygon.Plo
 	-rm -f ./$(DEPDIR)/rectangle.Plo
-	-rm -f ./$(DEPDIR)/rend.Plo
-	-rm -f ./$(DEPDIR)/rgba.Plo
 	-rm -f ./$(DEPDIR)/rgbadraw.Plo
 	-rm -f ./$(DEPDIR)/rotate.Plo
 	-rm -f ./$(DEPDIR)/scale.Plo
 	-rm -f ./$(DEPDIR)/script.Plo
 	-rm -f ./$(DEPDIR)/span.Plo
 	-rm -f ./$(DEPDIR)/updates.Plo
-	-rm -f ./$(DEPDIR)/ximage.Plo
+	-rm -f ./$(DEPDIR)/x11_color.Plo
+	-rm -f ./$(DEPDIR)/x11_context.Plo
+	-rm -f ./$(DEPDIR)/x11_draw.Plo
+	-rm -f ./$(DEPDIR)/x11_grab.Plo
+	-rm -f ./$(DEPDIR)/x11_pixmap.Plo
+	-rm -f ./$(DEPDIR)/x11_rend.Plo
+	-rm -f ./$(DEPDIR)/x11_rgba.Plo
+	-rm -f ./$(DEPDIR)/x11_ximage.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -918,15 +904,14 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/api.Plo
 	-rm -f ./$(DEPDIR)/asm_blend.Plo
 	-rm -f ./$(DEPDIR)/asm_blend_cmod.Plo
+	-rm -f ./$(DEPDIR)/asm_c.Plo
 	-rm -f ./$(DEPDIR)/asm_rgba.Plo
 	-rm -f ./$(DEPDIR)/asm_rotate.Plo
 	-rm -f ./$(DEPDIR)/asm_scale.Plo
 	-rm -f ./$(DEPDIR)/blend.Plo
-	-rm -f ./$(DEPDIR)/color.Plo
 	-rm -f ./$(DEPDIR)/color_helpers.Plo
 	-rm -f ./$(DEPDIR)/colormod.Plo
-	-rm -f ./$(DEPDIR)/context.Plo
-	-rm -f ./$(DEPDIR)/draw.Plo
+	-rm -f ./$(DEPDIR)/debug.Plo
 	-rm -f ./$(DEPDIR)/dynamic_filters.Plo
 	-rm -f ./$(DEPDIR)/ellipse.Plo
 	-rm -f ./$(DEPDIR)/file.Plo
@@ -935,7 +920,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/font_load.Plo
 	-rm -f ./$(DEPDIR)/font_main.Plo
 	-rm -f ./$(DEPDIR)/font_query.Plo
-	-rm -f ./$(DEPDIR)/grab.Plo
 	-rm -f ./$(DEPDIR)/grad.Plo
 	-rm -f ./$(DEPDIR)/image.Plo
 	-rm -f ./$(DEPDIR)/image_tags.Plo
@@ -944,15 +928,20 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/modules.Plo
 	-rm -f ./$(DEPDIR)/polygon.Plo
 	-rm -f ./$(DEPDIR)/rectangle.Plo
-	-rm -f ./$(DEPDIR)/rend.Plo
-	-rm -f ./$(DEPDIR)/rgba.Plo
 	-rm -f ./$(DEPDIR)/rgbadraw.Plo
 	-rm -f ./$(DEPDIR)/rotate.Plo
 	-rm -f ./$(DEPDIR)/scale.Plo
 	-rm -f ./$(DEPDIR)/script.Plo
 	-rm -f ./$(DEPDIR)/span.Plo
 	-rm -f ./$(DEPDIR)/updates.Plo
-	-rm -f ./$(DEPDIR)/ximage.Plo
+	-rm -f ./$(DEPDIR)/x11_color.Plo
+	-rm -f ./$(DEPDIR)/x11_context.Plo
+	-rm -f ./$(DEPDIR)/x11_draw.Plo
+	-rm -f ./$(DEPDIR)/x11_grab.Plo
+	-rm -f ./$(DEPDIR)/x11_pixmap.Plo
+	-rm -f ./$(DEPDIR)/x11_rend.Plo
+	-rm -f ./$(DEPDIR)/x11_rgba.Plo
+	-rm -f ./$(DEPDIR)/x11_ximage.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

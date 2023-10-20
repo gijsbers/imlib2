@@ -61,8 +61,7 @@ __imlib_polygon_add_point(ImlibPoly poly, int x, int y)
 void
 __imlib_polygon_free(ImlibPoly poly)
 {
-   if (poly->points)
-      free(poly->points);
+   free(poly->points);
    free(poly);
 }
 

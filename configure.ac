@@ -1,10 +1,10 @@
-AC_INIT([imlib2],[1.7.4],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.7.5],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(1.6 dist-bzip2)
+AM_INIT_AUTOMAKE(1.6 dist-xz -Wno-portability)
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 AM_CONDITIONAL(SRC_IS_GIT, test -d $srcdir/.git)
@@ -12,6 +12,7 @@ AM_CONDITIONAL(SRC_IS_GIT, test -d $srcdir/.git)
 AC_C_BIGENDIAN
 AC_PROG_CC
 AM_PROG_AS
+AC_PROG_CXX
 
 AC_C_CONST
 
@@ -21,12 +22,19 @@ define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
 VERSION_CUR=8
-VERSION_REV=4
+VERSION_REV=5
 VERSION_AGE=7
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
 
 PKG_PROG_PKG_CONFIG
+
+AC_DEFUN([EC_LOADER], [
+  if test "$2" = "yes"; then
+    AC_DEFINE([$1], [ 1 ], [ Build $3 loader ])
+  fi
+  AM_CONDITIONAL([$1], [ test "$2" = "yes" ])
+])
 
 
 mmx=no
@@ -128,6 +136,16 @@ AM_CONDITIONAL(BUILD_X11, test "x$have_x" = "xyes")
 AC_CHECK_LIB(dl, dlopen, DLOPEN_LIBS=-ldl)
 AC_SUBST(DLOPEN_LIBS)
 
+AC_CHECK_FUNCS([clock_gettime], [have_clock_gettime=yes],
+  [AC_CHECK_LIB([rt], [clock_gettime], [have_clock_gettime=-lrt],
+     [have_clock_gettime=no])])
+if test "x$have_clock_gettime" != xno; then
+  AC_DEFINE(USE_MONOTONIC_CLOCK, 1, [Use monotonic clock from clock_gettime()])
+  if test "x$have_clock_gettime" != xyes; then
+    AC_SUBST(CLOCK_LIBS, [$have_clock_gettime])
+  fi
+fi
+
 
 AC_MSG_CHECKING(whether to enable jpeg support)
 AC_ARG_WITH([jpeg],
@@ -155,7 +173,7 @@ if test "$jpeg_loader" != no ; then
 else
   jpeg_ok=no
 fi
-AM_CONDITIONAL(BUILD_JPEG_LOADER, test "$jpeg_ok" = yes)
+EC_LOADER(BUILD_JPEG_LOADER, $jpeg_ok, JPEG)
 
 
 AC_MSG_CHECKING(whether to enable png support)
@@ -181,7 +199,8 @@ if test "$png_loader" != no ; then
 else
   png_ok="no"
 fi
-AM_CONDITIONAL(BUILD_PNG_LOADER, test "$png_ok" = yes)
+EC_LOADER(BUILD_PNG_LOADER, $png_ok, PNG)
+
 
 AC_MSG_CHECKING(whether to enable webp support)
 AC_ARG_WITH([webp],
@@ -198,11 +217,11 @@ AC_ARG_WITH([webp],
 AC_MSG_RESULT($webp_loader)
 
 if test "$webp_loader" != no ; then
-  PKG_CHECK_MODULES(WEBP, libwebp, [ webp_ok="yes" ], [ webp_ok="no" ])
+  PKG_CHECK_MODULES(WEBP, libwebpdemux, [ webp_ok="yes" ], [ webp_ok="no" ])
 else
   webp_ok="no"
 fi
-AM_CONDITIONAL(BUILD_WEBP_LOADER, test "$webp_ok" = yes)
+EC_LOADER(BUILD_WEBP_LOADER, $webp_ok, WEBP)
 
 
 AC_MSG_CHECKING(whether to enable tiff support)
@@ -231,11 +250,10 @@ if test "$tiff_loader" != no ; then
 else
   tiff_ok=no
 fi
-AM_CONDITIONAL(BUILD_TIFF_LOADER, test "$tiff_ok" = yes)
+EC_LOADER(BUILD_TIFF_LOADER, $tiff_ok, TIFF)
 
 
 AC_MSG_CHECKING(whether to enable gif support)
-gif_lib=any
 AC_ARG_WITH([gif],
   [AS_HELP_STRING([--without-gif], [Disable GIF image loader])],
   [
@@ -243,10 +261,6 @@ AC_ARG_WITH([gif],
      gif_loader=no
    else
      gif_loader=yes
-     case "$withval" in
-       giflib)   gif_lib=giflib;;
-       libungif) gif_lib=libungif;;
-     esac
    fi
   ],
   [ gif_loader=auto ]
@@ -254,28 +268,12 @@ AC_ARG_WITH([gif],
 AC_MSG_RESULT($gif_loader)
 
 if test "$gif_loader" != no ; then
-  AC_MSG_CHECKING(for preferred gif provider)
-  AC_MSG_RESULT($gif_lib)
-
-  if test "$gif_lib" != libungif ; then
-    AC_CHECK_LIB(gif, DGifOpenFileName, gif_libs="-lgif" gif_ok=yes, gif_ok=no)
+  AC_CHECK_LIB(gif, DGifOpenFileName, gif_libs="-lgif" gif_ok=yes, gif_ok=no)
+  if test "$gif_ok" = yes; then
+    AC_CHECK_HEADER([gif_lib.h], , gif_ok=no)
     if test "$gif_ok" = yes; then
-      AC_CHECK_HEADER([gif_lib.h], , gif_ok=no)
-      if test "$gif_ok" = yes; then
-        GIFLIBS=$gif_libs
-        gif_lib=giflib
-      fi
-    fi
-  fi
-
-  if test "$gif_lib" != giflib ; then
-    AC_CHECK_LIB(ungif, DGifOpenFileName, gif_libs="-lungif" gif_ok=yes, gif_ok=no)
-    if test "$gif_ok" = yes; then
-      AC_CHECK_HEADER([gif_lib.h], , gif_ok=no)
-      if test "$gif_ok" = yes; then
-        GIFLIBS=$gif_libs
-        gif_lib=libungif
-      fi
+      GIF_LIBS=$gif_libs
+      AC_SUBST(GIF_LIBS)
     fi
   fi
 
@@ -289,8 +287,7 @@ if test "$gif_loader" != no ; then
 else
   gif_ok=no
 fi
-AM_CONDITIONAL(BUILD_GIF_LOADER, test "$gif_ok" = yes)
-AC_SUBST(GIFLIBS)
+EC_LOADER(BUILD_GIF_LOADER, $gif_ok, GIF)
 
 
 AC_MSG_CHECKING(whether to enable zlib support)
@@ -319,7 +316,7 @@ if test "$zlib_loader" != no ; then
 else
   zlib_ok=no
 fi
-AM_CONDITIONAL(BUILD_ZLIB_LOADER, test "$zlib_ok" = yes)
+EC_LOADER(BUILD_ZLIB_LOADER, $zlib_ok, ZLIB)
 
 
 AC_MSG_CHECKING(whether to enable bzip2 support)
@@ -357,7 +354,7 @@ if test "$bz2_loader" != no ; then
 else
   bz2_ok=no
 fi
-AM_CONDITIONAL(BUILD_BZ2_LOADER, test "$bz2_ok" = yes)
+EC_LOADER(BUILD_BZ2_LOADER, $bz2_ok, BZ2)
 
 
 AC_MSG_CHECKING(whether to enable id3 support)
@@ -386,12 +383,31 @@ if test "$id3_loader" != no ; then
 else
   id3_ok=no
 fi
-AM_CONDITIONAL(BUILD_ID3_LOADER, test "$id3_ok" = yes)
+EC_LOADER(BUILD_ID3_LOADER, $id3_ok, ID3)
 
+
+AM_CONDITIONAL(BUILD_TEST, false)
+
+AC_ARG_ENABLE([debug],
+  [AS_HELP_STRING([--enable-debug], [Enable debug features @<:@default=no@:>@])],
+  [
+    if test x$enableval = xyes; then
+      AC_DEFINE(IMLIB2_DEBUG, 1, [Enable debug features])
+    fi
+  ]
+)
+AM_CONDITIONAL(BUILD_DEBUG, test "$enable_debug" = "yes")
 
 EC_C_WARNINGS()
 EC_C_VISIBILITY(yes)
 EC_C_ASAN()
+
+VERSION_MAJOR=`echo $VERSION | awk -F. '{print $1}'`
+VERSION_MINOR=`echo $VERSION | awk -F. '{print $2}'`
+VERSION_MICRO=`echo $VERSION | awk -F. '{print $3}'`
+AC_SUBST(VERSION_MAJOR)
+AC_SUBST(VERSION_MINOR)
+AC_SUBST(VERSION_MICRO)
 
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([
@@ -399,6 +415,7 @@ Makefile
 imlib2.pc
 src/Makefile
 src/lib/Makefile
+src/lib/Imlib2.h
 src/bin/Makefile
 src/modules/Makefile
 src/modules/filters/Makefile
@@ -407,12 +424,9 @@ data/Makefile
 data/fonts/Makefile
 data/images/Makefile
 doc/Makefile
-imlib2-config
+test/Makefile
 README
 ])
-AC_CONFIG_COMMANDS([default],[
-chmod +x imlib2-config
-],[])
 AC_OUTPUT
 
 #####################################################################

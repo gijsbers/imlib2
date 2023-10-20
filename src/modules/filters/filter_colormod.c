@@ -228,7 +228,7 @@ void
 init(struct imlib_filter_info *info)
 {
    static const char  *const filters[] = { "colormod" };
-   int                 i = (sizeof(filters) / sizeof(*filters));
+   int                 i = ARRAY_SIZE(filters);
 
    info->name = strdup("Tinting");
    info->author = strdup("Willem Monsuwe (willem@stack.nl)");

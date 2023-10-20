@@ -1,14 +1,50 @@
 /*
  * XBM loader
  */
+#define _GNU_SOURCE             /* memmem() */
 #include "loader_common.h"
 
-#define DEBUG 0
-#if DEBUG
-#define D(fmt...) fprintf(stdout, "XBM loader: " fmt)
-#else
-#define D(fmt...)
-#endif
+#include <sys/mman.h>
+
+#define DBG_PFX "LDR-xbm"
+
+static struct {
+   const char         *data, *dptr;
+   unsigned int        size;
+} mdata;
+
+static void
+mm_init(void *src, unsigned int size)
+{
+   mdata.data = mdata.dptr = src;
+   mdata.size = size;
+}
+
+static const char  *
+mm_gets(char *dst, unsigned int len)
+{
+   int                 left = mdata.data + mdata.size - mdata.dptr;
+   int                 cnt;
+   const char         *ptr;
+
+   if (left <= 0)
+      return NULL;              /* Out of data */
+
+   ptr = memchr(mdata.dptr, '\n', left);
+
+   cnt = (ptr) ? ptr - mdata.dptr : left;
+   if (cnt >= (int)len)
+      cnt = len - 1;
+
+   memcpy(dst, mdata.dptr, cnt);
+   dst[cnt] = '\0';
+
+   if (ptr)
+      cnt += 1;
+   mdata.dptr += cnt;
+
+   return dst;
+}
 
 static const DATA32 _bitmap_colors[2] = { 0xffffffff, 0xff000000 };
 
@@ -48,23 +84,42 @@ int
 load2(ImlibImage * im, int load_data)
 {
    int                 rc;
+   void               *fdata;
    char                buf[4096], tok1[1024], tok2[1024];
    DATA32             *ptr, pixel;
    int                 i, x, y, bit;
-   char               *s;
+   const char         *s;
    int                 header, val, nlen;
 
    rc = LOAD_FAIL;
+
+   if (im->fsize < 64)
+      return rc;                /* Not XBM */
+
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return rc;
+
+   /* Signature check ("#define") allow longish initial comment */
+   s = fdata;
+   nlen = s[0] == '/' && s[1] == '*' ? 4096 : 256;
+   nlen = im->fsize > nlen ? nlen : im->fsize;
+   if (!memmem(s, nlen, "#define", 7))
+      goto quit;
+
+   mm_init(fdata, im->fsize);
+
    ptr = NULL;
    x = y = 0;
 
    header = 1;
    for (;;)
      {
-        s = fgets(buf, sizeof(buf), im->fp);
-        D(">>>%s", buf);
+        s = mm_gets(buf, sizeof(buf));
         if (!s)
            break;
+
+        D(">>>%s\n", buf);
 
         if (header)
           {
@@ -90,7 +145,7 @@ load2(ImlibImage * im, int load_data)
                        im->h = val;
                     }
                }
-             else if (strcmp(tok1, "static") == 0)
+             else if (strcmp(tok1, "static") == 0 && strstr(buf + 6, "_bits"))
                {
                   if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
                      goto quit;
@@ -111,7 +166,7 @@ load2(ImlibImage * im, int load_data)
                }
              else
                {
-                  goto quit;
+                  continue;
                }
           }
         else
@@ -121,7 +176,7 @@ load2(ImlibImage * im, int load_data)
                {
                   nlen = -1;
                   sscanf(s, "%i%n", &val, &nlen);
-                  D("Data %02x (%d)\n", val, nlen);
+                  D("Data '%s': %02x (%d)\n", s, val, nlen);
                   if (nlen < 0)
                      break;
                   s += nlen;
@@ -146,16 +201,21 @@ load2(ImlibImage * im, int load_data)
 
                        x = 0;
                        y += 1;
+                       if (y >= im->h)
+                          goto done;
                     }
                }
           }
      }
 
+ done:
    rc = LOAD_SUCCESS;
 
  quit:
    if (rc <= 0)
       __imlib_FreeData(im);
+   if (fdata != MAP_FAILED)
+      munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -223,6 +283,5 @@ formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "xbm" };
 
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }

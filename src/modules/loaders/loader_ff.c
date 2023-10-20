@@ -1,30 +1,43 @@
 /* Farbfeld (http://tools.suckless.org/farbfeld) */
-#include <arpa/inet.h>
-#include <stdint.h>
-
 #include "loader_common.h"
 
-#define LEN(x) (sizeof((x)) / sizeof(*(x)))
+#include <stdint.h>
+#include <arpa/inet.h>
+#include <sys/mman.h>
+
+#define mm_check(p) ((const char *)(p) <= (const char *)fdata + im->fsize)
+
+typedef struct {
+   unsigned char       magic[8];
+   uint32_t            w, h;
+} ff_hdr_t;
 
 int
 load2(ImlibImage * im, int load_data)
 {
    int                 rc;
-   size_t              rowlen, i, j;
-   uint32_t            hdr[2 + 1 + 1], w, h;
-   uint16_t           *row;
+   void               *fdata;
+   int                 rowlen, i, j;
+   const ff_hdr_t     *hdr;
+   const uint16_t     *row;
    uint8_t            *dat;
 
    rc = LOAD_FAIL;
-   row = NULL;
+
+   if (im->fsize < (long)sizeof(ff_hdr_t))
+      return rc;
+
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return rc;
 
    /* read and check the header */
-   if (fread(hdr, sizeof(uint32_t), LEN(hdr), im->fp) != LEN(hdr) ||
-       memcmp("farbfeld", hdr, sizeof("farbfeld") - 1))
+   hdr = fdata;
+   if (memcmp("farbfeld", hdr->magic, sizeof(hdr->magic)))
       goto quit;
 
-   im->w = ntohl(hdr[2]);
-   im->h = ntohl(hdr[3]);
+   im->w = ntohl(hdr->w);
+   im->h = ntohl(hdr->h);
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
@@ -38,21 +51,16 @@ load2(ImlibImage * im, int load_data)
 
    /* Load data */
 
-   w = im->w;
-   h = im->h;
-   rowlen = w * (sizeof("RGBA") - 1);
-
    if (!__imlib_AllocateData(im))
       goto quit;
 
-   row = malloc(rowlen * sizeof(uint16_t));
-   if (!row)
-      goto quit;
+   rowlen = 4 * im->w;          /* RGBA */
 
    dat = (uint8_t *) im->data;
-   for (i = 0; i < h; i++, dat += rowlen)
+   row = (uint16_t *) (hdr + 1);
+   for (i = 0; i < im->h; i++, dat += rowlen, row += rowlen)
      {
-        if (fread(row, sizeof(uint16_t), rowlen, im->fp) != (size_t)rowlen)
+        if (!mm_check(row + rowlen))
            goto quit;
 
         for (j = 0; j < rowlen; j += 4)
@@ -77,9 +85,10 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   free(row);
    if (rc <= 0)
       __imlib_FreeData(im);
+   if (fdata != MAP_FAILED)
+      munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -155,6 +164,5 @@ void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "ff" };
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }

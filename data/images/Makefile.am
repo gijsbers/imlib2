@@ -1,5 +1,3 @@
-MAINTAINERCLEANFILES = Makefile.in
-
 FILES = \
 audio.png \
 bg.png \

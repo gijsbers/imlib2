@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 }</font></tt></pre>
 Now to compile this
 <br>
-<tt><font color="#000099">cc imlib2_convert.c -o imlib2_convert `imlib2-config --cflags` `imlib2-config --libs`</font></tt>
+<tt><font color="#000099">cc imlib2_convert.c -o imlib2_convert `pkg-config --cflags --libs imlib2`</font></tt>
 <br>
 You now have a program that if used as follows:
 <br>
@@ -1068,6 +1068,17 @@ an image handle on success or NULL on failure.</blockquote>
 <blockquote>This loads an image at the path file on disk. If it succeeds
 it returns a valid image handle, if not NULL is returned and the error_return
 pointed to is set to the detail of the error.</blockquote>
+
+<b><tt><font color="#660000"><font size=+2>Imlib_Image imlib_load_image_fd(int fd, const char *file);</font></font></tt></b>
+
+<blockquote>Reads image from file descriptor.
+The image is loaded without deferred image data decoding (i.e. it is
+decoded straight away) and without looking in the cache.
+The file name is only used to guess the file format.
+fd must be mmap&apos;able (so it cannot be a pipe).
+fd will be closed after calling this function.
+Returns an image handle on success or NULL on failure.
+</blockquote>
 
 <b><tt><font color="#660000"><font size=+2>void imlib_free_image(void);</font></font></tt></b>
 

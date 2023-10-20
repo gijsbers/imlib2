@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "common.h"
+#include "debug.h"
 #include "image.h"
 
 __EXPORT__ char     load(ImlibImage * im, ImlibProgressFunction progress,

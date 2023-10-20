@@ -43,7 +43,6 @@ make install DESTDIR=$RPM_BUILD_ROOT
 rm -f $RPM_BUILD_ROOT%{_libdir}/libImlib2.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/%{name}/filters/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/%{name}/loaders/*.la
-rm -f $RPM_BUILD_ROOT%{_bindir}/imlib2-config
 
 %clean
 rm -rf $RPM_BUILD_ROOT

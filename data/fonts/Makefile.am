@@ -1,5 +1,3 @@
-MAINTAINERCLEANFILES = Makefile.in
-
 FILES = \
 cinema.ttf \
 grunge.ttf \

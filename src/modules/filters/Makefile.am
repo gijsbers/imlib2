@@ -1,5 +1,3 @@
-MAINTAINERCLEANFILES = Makefile.in
-
 AM_CFLAGS            = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
 AM_CPPFLAGS          = -I$(top_builddir) -I$(top_srcdir)/src/lib
 

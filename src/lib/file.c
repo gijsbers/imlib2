@@ -10,12 +10,18 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "debug.h"
 #include "file.h"
+
+#define DBG_PFX "FILE"
+#define DP(fmt...) DC(DBG_FILE, fmt)
 
 int
 __imlib_IsRealFile(const char *s)
 {
    struct stat         st;
+
+   DP("%s: '%s'\n", __func__, s);
 
    return (stat(s, &st) != -1) && (S_ISREG(st.st_mode));
 }
@@ -63,6 +69,8 @@ __imlib_FileRealFile(const char *file)
 {
    char               *newfile;
 
+   DP("%s: '%s'\n", __func__, file);
+
    newfile = malloc(strlen(file) + 1);
    if (!newfile)
       return NULL;
@@ -106,6 +114,8 @@ __imlib_FileExtension(const char *file)
    const char         *p, *s;
    int                 ch;
 
+   DP("%s: '%s'\n", __func__, file);
+
    if (!file)
       return NULL;
 
@@ -120,6 +130,8 @@ __imlib_FileExtension(const char *file)
 int
 __imlib_FileStat(const char *file, struct stat *st)
 {
+   DP("%s: '%s'\n", __func__, file);
+
    if ((!file) || (!*file))
       return -1;
 
@@ -131,6 +143,8 @@ __imlib_FileExists(const char *s)
 {
    struct stat         st;
 
+   DP("%s: '%s'\n", __func__, s);
+
    return __imlib_FileStat(s, &st) == 0;
 }
 
@@ -138,6 +152,8 @@ int
 __imlib_FileIsFile(const char *s)
 {
    struct stat         st;
+
+   DP("%s: '%s'\n", __func__, s);
 
    if (__imlib_FileStat(s, &st))
       return 0;
@@ -150,6 +166,8 @@ __imlib_FileIsDir(const char *s)
 {
    struct stat         st;
 
+   DP("%s: '%s'\n", __func__, s);
+
    if (__imlib_FileStat(s, &st))
       return 0;
 
@@ -160,6 +178,8 @@ time_t
 __imlib_FileModDate(const char *s)
 {
    struct stat         st;
+
+   DP("%s: '%s'\n", __func__, s);
 
    if (__imlib_FileStat(s, &st))
       return 0;
@@ -182,6 +202,8 @@ int
 __imlib_FileCanRead(const char *s)
 {
    struct stat         st;
+
+   DP("%s: '%s'\n", __func__, s);
 
    if (__imlib_FileStat(s, &st))
       return 0;
@@ -266,8 +288,7 @@ __imlib_FileFreeDirList(char **l, int num)
    if (!l)
       return;
    while (num--)
-      if (l[num])
-         free(l[num]);
+      free(l[num]);
    free(l);
 }
 

@@ -6,14 +6,41 @@
  * https://en.wikipedia.org/wiki/BMP_file_format
  */
 #include "loader_common.h"
-#include <limits.h>
 
-#define DEBUG 0
-#if DEBUG
-#define D(fmt...) fprintf(stdout, "ICO loader: " fmt)
-#else
-#define D(fmt...)
-#endif
+#include <limits.h>
+#include <sys/mman.h>
+
+#define DBG_PFX "LDR-ico"
+
+static struct {
+   const unsigned char *data, *dptr;
+   unsigned int        size;
+} mdata;
+
+static void
+mm_init(void *src, unsigned int size)
+{
+   mdata.data = mdata.dptr = src;
+   mdata.size = size;
+}
+
+static void
+mm_seek(unsigned int offs)
+{
+   mdata.dptr = mdata.data + offs;
+}
+
+static int
+mm_read(void *dst, unsigned int len)
+{
+   if (mdata.dptr + len > mdata.data + mdata.size)
+      return 1;                 /* Out of data */
+
+   memcpy(dst, mdata.dptr, len);
+   mdata.dptr += len;
+
+   return 0;
+}
 
 /* The ICONDIR */
 typedef struct {
@@ -90,13 +117,11 @@ static void
 ico_read_idir(ico_t * ico, int ino)
 {
    ie_t               *ie;
-   unsigned int        nr;
 
    ie = &ico->ie[ino];
 
-   fseek(ico->fp, sizeof(idir_t) + ino * sizeof(ide_t), SEEK_SET);
-   nr = fread(&ie->ide, 1, sizeof(ie->ide), ico->fp);
-   if (nr != sizeof(ie->ide))
+   mm_seek(sizeof(idir_t) + ino * sizeof(ide_t));
+   if (mm_read(&ie->ide, sizeof(ie->ide)))
       return;
 
    ie->w = (ie->ide.width > 0) ? ie->ide.width : 256;
@@ -116,13 +141,12 @@ static void
 ico_read_icon(ico_t * ico, int ino)
 {
    ie_t               *ie;
-   unsigned int        nr, size;
+   unsigned int        size;
 
    ie = &ico->ie[ino];
 
-   fseek(ico->fp, ie->ide.offs, SEEK_SET);
-   nr = fread(&ie->bih, 1, sizeof(ie->bih), ico->fp);
-   if (nr != sizeof(ie->bih))
+   mm_seek(ie->ide.offs);
+   if (mm_read(&ie->bih, sizeof(ie->bih)))
       goto bail;
 
    SWAP_LE_32_INPLACE(ie->bih.header_size);
@@ -170,8 +194,7 @@ ico_read_icon(ico_t * ico, int ino)
         ie->cmap = malloc(size);
         if (ie->cmap == NULL)
            goto bail;
-        nr = fread(ie->cmap, 1, size, ico->fp);
-        if (nr != size)
+        if (mm_read(ie->cmap, size))
            goto bail;
 #ifdef WORDS_BIGENDIAN
         for (nr = 0; nr < ie->bih.colors; nr++)
@@ -190,8 +213,7 @@ ico_read_icon(ico_t * ico, int ino)
    ie->pxls = malloc(size);
    if (ie->pxls == NULL)
       goto bail;
-   nr = fread(ie->pxls, 1, size, ico->fp);
-   if (nr != size)
+   if (mm_read(ie->pxls, size))
       goto bail;
    D("Pixel data size: %u\n", size);
 
@@ -199,8 +221,7 @@ ico_read_icon(ico_t * ico, int ino)
    ie->mask = malloc(size);
    if (ie->mask == NULL)
       goto bail;
-   nr = fread(ie->mask, 1, size, ico->fp);
-   if (nr != size)
+   if (mm_read(ie->mask, size))
       goto bail;
    D("Mask  data size: %u\n", size);
 
@@ -211,10 +232,10 @@ ico_read_icon(ico_t * ico, int ino)
 }
 
 static ico_t       *
-ico_read(ImlibImage * im)
+ico_read(ImlibImage * im, void *data, unsigned int size)
 {
    ico_t              *ico;
-   unsigned int        nr, i;
+   unsigned int        i;
 
    ico = calloc(1, sizeof(ico_t));
    if (!ico)
@@ -222,8 +243,7 @@ ico_read(ImlibImage * im)
 
    ico->fp = im->fp;
 
-   nr = fread(&ico->idir, 1, sizeof(ico->idir), ico->fp);
-   if (nr != sizeof(ico->idir))
+   if (mm_read(&ico->idir, sizeof(ico->idir)))
       goto bail;
 
    SWAP_LE_16_INPLACE(ico->idir.rsvd);
@@ -413,29 +433,42 @@ ico_load(ico_t * ico, ImlibImage * im, int load_data)
 int
 load2(ImlibImage * im, int load_data)
 {
+   int                 rc;
+   void               *fdata;
    ico_t              *ico;
-   int                 ok;
 
-   ico = ico_read(im);
+   rc = LOAD_FAIL;
+
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return rc;
+
+   mm_init(fdata, im->fsize);
+
+   ico = ico_read(im, fdata, im->fsize);
    if (!ico)
-      return 0;
+      goto quit;
 
-   ok = ico_load(ico, im, load_data);
-   if (ok)
+   if (ico_load(ico, im, load_data))
      {
         if (im->lc)
            __imlib_LoadProgressRows(im, 0, im->h);
+        rc = LOAD_SUCCESS;
      }
 
    ico_delete(ico);
 
-   return ok;
+ quit:
+   if (rc <= 0)
+      __imlib_FreeData(im);
+   if (fdata != MAP_FAILED)
+      munmap(fdata, im->fsize);
+   return rc;
 }
 
 void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "ico" };
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }

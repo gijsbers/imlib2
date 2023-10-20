@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include "asm_c.h"
 #include "blend.h"
 #include "rotate.h"
 
@@ -210,6 +211,15 @@ __imlib_RotateAA(DATA32 * src, DATA32 * dest, int sow, int sw, int sh,
    if ((dw < 1) || (dh < 1))
       return;
 
+#ifdef DO_MMX_ASM
+   if (__imlib_do_asm())
+     {
+        __imlib_mmx_RotateAA(src, dest, sow, sw, sh, dow, dw, dh, x, y,
+                             dxh, dyh, dxv, dyv);
+        return;
+     }
+#endif
+
    if (__check_inside_coords(x, y, dxh, dyh, dxv, dyv, dw, dh, sw - 1, sh - 1))
      {
         __imlib_RotateAAInside(src, dest, sow, dow, dw, dh, x, y,
@@ -344,10 +354,6 @@ __imlib_BlendImageToImageSkewed(ImlibImage * im_src, ImlibImage * im_dst,
    double              xy2;
    DATA32             *data, *src;
 
-#ifdef DO_MMX_ASM
-   int                 do_mmx;
-#endif
-
    if ((ssw < 0) || (ssh < 0))
       return;
 
@@ -405,15 +411,14 @@ __imlib_BlendImageToImageSkewed(ImlibImage * im_src, ImlibImage * im_dst,
    data = malloc(im_dst->w * LINESIZE * sizeof(DATA32));
    if (!data)
       return;
+
    if (aa)
      {
         /*\ Account for virtual transparent border \ */
         x += _ROTATE_PREC_MAX;
         y += _ROTATE_PREC_MAX;
      }
-#ifdef DO_MMX_ASM
-   do_mmx = __imlib_get_cpuid() & CPUID_MMX;
-#endif
+
    for (i = 0; i < im_dst->h; i += LINESIZE)
      {
         int                 x2, y2, w, h, l, r;
@@ -519,14 +524,8 @@ __imlib_BlendImageToImageSkewed(ImlibImage * im_src, ImlibImage * im_dst,
           {
              x -= _ROTATE_PREC_MAX;
              y -= _ROTATE_PREC_MAX;
-#ifdef DO_MMX_ASM
-             if (do_mmx)
-                __imlib_mmx_RotateAA(src, data, im_src->w, ssw, ssh, w, w, h,
-                                     x, y, dxh, dyh, dxv, dyv);
-             else
-#endif
-                __imlib_RotateAA(src, data, im_src->w, ssw, ssh, w, w, h,
-                                 x, y, dxh, dyh, dxv, dyv);
+             __imlib_RotateAA(src, data, im_src->w, ssw, ssh, w, w, h,
+                              x, y, dxh, dyh, dxv, dyv);
 
           }
         else

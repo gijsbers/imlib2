@@ -3,14 +3,41 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* Build BZ2 loader */
+#undef BUILD_BZ2_LOADER
+
+/* Build GIF loader */
+#undef BUILD_GIF_LOADER
+
+/* Build ID3 loader */
+#undef BUILD_ID3_LOADER
+
+/* Build JPEG loader */
+#undef BUILD_JPEG_LOADER
+
+/* Build PNG loader */
+#undef BUILD_PNG_LOADER
+
+/* Build TIFF loader */
+#undef BUILD_TIFF_LOADER
+
+/* Build WEBP loader */
+#undef BUILD_WEBP_LOADER
+
 /* enabling X11 support */
 #undef BUILD_X11
+
+/* Build ZLIB loader */
+#undef BUILD_ZLIB_LOADER
 
 /* enabling AMD64 Assembly */
 #undef DO_AMD64_ASM
 
 /* enabling MMX Assembly */
 #undef DO_MMX_ASM
+
+/* Define to 1 if you have the `clock_gettime' function. */
+#undef HAVE_CLOCK_GETTIME
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
@@ -49,6 +76,9 @@
 /* enabling X11 MIT-SHM FD-passing support */
 #undef HAVE_X11_SHM_FD
 
+/* Enable debug features */
+#undef IMLIB2_DEBUG
+
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 
@@ -75,6 +105,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* Use monotonic clock from clock_gettime() */
+#undef USE_MONOTONIC_CLOCK
 
 /* Version number of package */
 #undef VERSION

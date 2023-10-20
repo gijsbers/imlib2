@@ -7,14 +7,18 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifdef BUILD_X11
-#include <X11/Xlib.h>
-#endif
 
 #include "Imlib2.h"
+#include "debug.h"
 #include "file.h"
 #include "image.h"
 #include "loaders.h"
+#ifdef BUILD_X11
+#include "x11_pixmap.h"
+#endif
+
+#define DBG_PFX "IMG"
+#define DP(fmt...) DC(DBG_LOAD, fmt)
 
 /* Imlib loader context */
 struct _imlibldctx {
@@ -26,9 +30,6 @@ struct _imlibldctx {
 
 static ImlibImage  *images = NULL;
 
-#ifdef BUILD_X11
-static ImlibImagePixmap *pixmaps = NULL;
-#endif
 static int          cache_size = 4096 * 1024;
 
 __EXPORT__ DATA32  *
@@ -94,33 +95,20 @@ __imlib_ProduceImage(void)
 static void
 __imlib_ConsumeImage(ImlibImage * im)
 {
-#ifdef BUILD_X11
-   ImlibImagePixmap   *ip;
-#endif
-
    __imlib_FreeAllTags(im);
 
    if (im->real_file && im->real_file != im->file)
       free(im->real_file);
-   if (im->file)
-      free(im->file);
-   if (im->key)
-      free(im->key);
+   free(im->file);
+   free(im->key);
    if ((IMAGE_FREE_DATA(im)) && (im->data))
       __imlib_FreeData(im);
-   if (im->format)
-      free(im->format);
+   free(im->format);
+
    free(im);
 
 #ifdef BUILD_X11
-   for (ip = pixmaps; ip; ip = ip->next)
-     {
-        if (ip->image == im)
-          {
-             ip->image = NULL;
-             ip->dirty = 1;
-          }
-     }
+   __imlib_PixmapUnrefImage(im);
 #endif
 }
 
@@ -180,10 +168,6 @@ int
 __imlib_CurrentCacheSize(void)
 {
    ImlibImage         *im, *im_next;
-
-#ifdef BUILD_X11
-   ImlibImagePixmap   *ip, *ip_next;
-#endif
    int                 current_cache = 0;
 
    for (im = images; im; im = im_next)
@@ -205,40 +189,9 @@ __imlib_CurrentCacheSize(void)
      }
 
 #ifdef BUILD_X11
-   for (ip = pixmaps; ip; ip = ip_next)
-     {
-        ip_next = ip->next;
-
-        /* if the pixmap has 0 references */
-        if (ip->references == 0)
-          {
-             /* if the image is invalid */
-             if ((ip->dirty) || ((ip->image) && (!(IMAGE_IS_VALID(ip->image)))))
-               {
-                  __imlib_RemoveImagePixmapFromCache(ip);
-                  __imlib_ConsumeImagePixmap(ip);
-               }
-             else
-               {
-                  /* add the pixmap data size to the cache size */
-                  if (ip->pixmap)
-                    {
-                       if (ip->depth < 8)
-                          current_cache += ip->w * ip->h * (ip->depth / 8);
-                       else if (ip->depth == 8)
-                          current_cache += ip->w * ip->h;
-                       else if (ip->depth <= 16)
-                          current_cache += ip->w * ip->h * 2;
-                       else if (ip->depth <= 32)
-                          current_cache += ip->w * ip->h * 4;
-                    }
-                  /* if theres a mask add it too */
-                  if (ip->mask)
-                     current_cache += ip->w * ip->h / 8;
-               }
-          }
-     }
+   current_cache += __imlib_PixmapCacheSize();
 #endif
+
    return current_cache;
 }
 
@@ -299,152 +252,6 @@ __imlib_GetCacheSize(void)
    return cache_size;
 }
 
-#ifdef BUILD_X11
-/* create a pixmap cache data struct */
-ImlibImagePixmap   *
-__imlib_ProduceImagePixmap(void)
-{
-   ImlibImagePixmap   *ip;
-
-   ip = calloc(1, sizeof(ImlibImagePixmap));
-
-   return ip;
-}
-
-/* free a pixmap cache data struct and the pixmaps in it */
-void
-__imlib_ConsumeImagePixmap(ImlibImagePixmap * ip)
-{
-#ifdef DEBUG_CACHE
-   fprintf(stderr,
-           "[Imlib2]  Deleting pixmap.  Reference count is %d, pixmap 0x%08lx, mask 0x%08lx\n",
-           ip->references, ip->pixmap, ip->mask);
-#endif
-   if (ip->pixmap)
-      XFreePixmap(ip->display, ip->pixmap);
-   if (ip->mask)
-      XFreePixmap(ip->display, ip->mask);
-   if (ip->file)
-      free(ip->file);
-   free(ip);
-}
-
-ImlibImagePixmap   *
-__imlib_FindCachedImagePixmap(ImlibImage * im, int w, int h, Display * d,
-                              Visual * v, int depth, int sx, int sy, int sw,
-                              int sh, Colormap cm, char aa, char hiq,
-                              char dmask, DATABIG modification_count)
-{
-   ImlibImagePixmap   *ip, *ip_prev;
-
-   for (ip = pixmaps, ip_prev = NULL; ip; ip_prev = ip, ip = ip->next)
-     {
-        /* if all the pixmap attributes match */
-        if ((ip->w == w) && (ip->h == h) && (ip->depth == depth) && (!ip->dirty)
-            && (ip->visual == v) && (ip->display == d)
-            && (ip->source_x == sx) && (ip->source_x == sy)
-            && (ip->source_w == sw) && (ip->source_h == sh)
-            && (ip->colormap == cm) && (ip->antialias == aa)
-            && (ip->modification_count == modification_count)
-            && (ip->dither_mask == dmask)
-            && (ip->border.left == im->border.left)
-            && (ip->border.right == im->border.right)
-            && (ip->border.top == im->border.top)
-            && (ip->border.bottom == im->border.bottom) &&
-            (((im->file) && (ip->file) && !strcmp(im->file, ip->file)) ||
-             ((!im->file) && (!ip->file) && (im == ip->image))))
-          {
-             /* move the pixmap to the head of the pixmap list */
-             if (ip_prev)
-               {
-                  ip_prev->next = ip->next;
-                  ip->next = pixmaps;
-                  pixmaps = ip;
-               }
-             return ip;
-          }
-     }
-   return NULL;
-}
-
-ImlibImagePixmap   *
-__imlib_FindCachedImagePixmapByID(Display * d, Pixmap p)
-{
-   ImlibImagePixmap   *ip;
-
-   for (ip = pixmaps; ip; ip = ip->next)
-     {
-        /* if all the pixmap attributes match */
-        if ((ip->pixmap == p) && (ip->display == d))
-           return ip;
-     }
-   return NULL;
-}
-
-/* add a pixmap cahce struct to the pixmap cache (at the start of course */
-void
-__imlib_AddImagePixmapToCache(ImlibImagePixmap * ip)
-{
-   ip->next = pixmaps;
-   pixmaps = ip;
-}
-
-/* remove a pixmap cache struct from the pixmap cache */
-void
-__imlib_RemoveImagePixmapFromCache(ImlibImagePixmap * ip_del)
-{
-   ImlibImagePixmap   *ip, *ip_prev;
-
-   for (ip = pixmaps, ip_prev = NULL; ip; ip_prev = ip, ip = ip->next)
-     {
-        if (ip == ip_del)
-          {
-             if (ip_prev)
-                ip_prev->next = ip->next;
-             else
-                pixmaps = ip->next;
-             return;
-          }
-     }
-}
-
-/* clean out 0 reference count & dirty pixmaps from the cache */
-void
-__imlib_CleanupImagePixmapCache(void)
-{
-   ImlibImagePixmap   *ip, *ip_next, *ip_del;
-   int                 current_cache;
-
-   current_cache = __imlib_CurrentCacheSize();
-
-   for (ip = pixmaps; ip; ip = ip_next)
-     {
-        ip_next = ip->next;
-        if ((ip->references <= 0) && (ip->dirty))
-          {
-             __imlib_RemoveImagePixmapFromCache(ip);
-             __imlib_ConsumeImagePixmap(ip);
-          }
-     }
-
-   while (current_cache > cache_size)
-     {
-        for (ip = pixmaps, ip_del = NULL; ip; ip = ip->next)
-          {
-             if (ip->references <= 0)
-                ip_del = ip;
-          }
-        if (!ip_del)
-           break;
-
-        __imlib_RemoveImagePixmapFromCache(ip_del);
-        __imlib_ConsumeImagePixmap(ip_del);
-
-        current_cache = __imlib_CurrentCacheSize();
-     }
-}
-#endif
-
 static int
 __imlib_ErrorFromErrno(int err, int save)
 {
@@ -503,6 +310,13 @@ __imlib_LoadImageWrapper(const ImlibLoader * l, ImlibImage * im, int load_data)
 {
    int                 rc;
 
+   DP("%s: fmt='%s' file='%s'(%s), imm=%d\n", __func__,
+      l->formats[0], im->file, im->real_file, load_data);
+
+#if IMLIB2_DEBUG
+   unsigned int        t0 = __imlib_time_us();
+#endif
+
    if (l->load2)
      {
         FILE               *fp = NULL;
@@ -530,19 +344,28 @@ __imlib_LoadImageWrapper(const ImlibLoader * l, ImlibImage * im, int load_data)
         return LOAD_FAIL;
      }
 
+   DP("%s: %-4s: %s: Elapsed time: %.3f ms\n", __func__,
+      l->formats[0], im->file, 1e-3 * (__imlib_time_us() - t0));
+
    if (rc <= LOAD_FAIL)
      {
         /* Failed - clean up */
+        DP("%s: Failed\n", __func__);
+
         if (im->w != 0 || im->h != 0)
           {
+             DP("%s: Loader %s: Didn't clear w/h=%d/%d\n", __func__,
+                l->formats[0], im->w, im->h);
              im->w = im->h = 0;
           }
         if (im->data)
           {
+             DP("%s: Loader %s: Free im->data\n", __func__, l->formats[0]);
              __imlib_FreeData(im);
           }
         if (im->format)
           {
+             DP("%s: Loader %s: Free im->format\n", __func__, l->formats[0]);
              free(im->format);
              im->format = NULL;
           }
@@ -574,8 +397,10 @@ __imlib_LoadEmbedded(ImlibLoader * l, ImlibImage * im, const char *file,
                      int load_data)
 {
    int                 rc;
+   struct stat         st;
    char               *file_save;
    FILE               *fp_save;
+   off_t               fsize_save;
 
    if (!l || !im)
       return 0;
@@ -585,12 +410,16 @@ __imlib_LoadEmbedded(ImlibLoader * l, ImlibImage * im, const char *file,
    im->real_file = strdup(file);
    fp_save = im->fp;
    im->fp = NULL;
+   fsize_save = im->fsize;
+   __imlib_FileStat(file, &st);
+   im->fsize = st.st_size;
 
    rc = __imlib_LoadImageWrapper(l, im, load_data);
 
    im->fp = fp_save;
    free(im->real_file);
    im->real_file = file_save;
+   im->fsize = fsize_save;
 
    return rc;
 }
@@ -683,6 +512,7 @@ __imlib_LoadImage(const char *file, FILE * fp, ImlibProgressFunction progress,
    /* so produce a new one and load an image into that */
    im = __imlib_ProduceImage();
    im->file = strdup(file);
+   im->fsize = st.st_size;
    im->real_file = im_file ? im_file : im->file;
    im->key = im_key;
 
@@ -708,8 +538,6 @@ __imlib_LoadImage(const char *file, FILE * fp, ImlibProgressFunction progress,
         __imlib_LoadCtxInit(im, &ilc, progress, progress_granularity);
         immediate_load = 1;
      }
-
-   __imlib_LoadAllLoaders();
 
    loader_ret = LOAD_FAIL;
 
@@ -852,30 +680,6 @@ __imlib_LoadProgressRows(ImlibImage * im, int row, int nrows)
    return rc;
 }
 
-#ifdef BUILD_X11
-/* find an imagepixmap cache entry by the display and pixmap id */
-ImlibImagePixmap   *
-__imlib_FindImlibImagePixmapByID(Display * d, Pixmap p)
-{
-   ImlibImagePixmap   *ip;
-
-   for (ip = pixmaps; ip; ip = ip->next)
-     {
-        /* if all the pixmap ID & Display match */
-        if ((ip->pixmap == p) && (ip->display == d))
-          {
-#ifdef DEBUG_CACHE
-             fprintf(stderr,
-                     "[Imlib2]  Match found.  Reference count is %d, pixmap 0x%08lx, mask 0x%08lx\n",
-                     ip->references, ip->pixmap, ip->mask);
-#endif
-             return ip;
-          }
-     }
-   return NULL;
-}
-#endif
-
 /* free and image - if its uncachable and refcoutn is 0 - free it in reality */
 void
 __imlib_FreeImage(ImlibImage * im)
@@ -897,59 +701,6 @@ __imlib_FreeImage(ImlibImage * im)
            __imlib_CleanupImageCache();
      }
 }
-
-#ifdef BUILD_X11
-/* free a cached pixmap */
-void
-__imlib_FreePixmap(Display * d, Pixmap p)
-{
-   ImlibImagePixmap   *ip;
-
-   /* find the pixmap in the cache by display and id */
-   ip = __imlib_FindImlibImagePixmapByID(d, p);
-   if (ip)
-     {
-        /* if tis positive reference count */
-        if (ip->references > 0)
-          {
-             /* dereference it by one */
-             ip->references--;
-#ifdef DEBUG_CACHE
-             fprintf(stderr,
-                     "[Imlib2]  Reference count is now %d for pixmap 0x%08lx\n",
-                     ip->references, ip->pixmap);
-#endif
-             /* if it becaume 0 reference count - clean the cache up */
-             if (ip->references == 0)
-                __imlib_CleanupImagePixmapCache();
-          }
-     }
-   else
-     {
-#ifdef DEBUG_CACHE
-        fprintf(stderr, "[Imlib2]  Pixmap 0x%08lx not found.  Freeing.\n", p);
-#endif
-        XFreePixmap(d, p);
-     }
-}
-
-/* mark all pixmaps generated from this image as dirty so the cache code */
-/* wont pick up on them again since they are now invalid since the original */
-/* data they were generated from has changed */
-void
-__imlib_DirtyPixmapsForImage(ImlibImage * im)
-{
-   ImlibImagePixmap   *ip;
-
-   for (ip = pixmaps; ip; ip = ip->next)
-     {
-        /* if image matches */
-        if (ip->image == im)
-           ip->dirty = 1;
-     }
-   __imlib_CleanupImagePixmapCache();
-}
-#endif
 
 /* dirty and image by settings its invalid flag */
 void
@@ -977,8 +728,6 @@ __imlib_SaveImage(ImlibImage * im, const char *file,
            *er = IMLIB_LOAD_ERROR_FILE_DOES_NOT_EXIST;
         return;
      }
-
-   __imlib_LoadAllLoaders();
 
    /* find the laoder for the format - if its null use the extension */
    l = __imlib_FindBestLoaderForFileFormat(file, im->format, 1);

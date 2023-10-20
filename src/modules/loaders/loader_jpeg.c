@@ -1,6 +1,10 @@
 #include "loader_common.h"
+
 #include <jpeglib.h>
 #include <setjmp.h>
+#include "exif.h"
+
+#define DBG_PFX "LDR-jpg"
 
 typedef struct {
    struct jpeg_error_mgr jem;
@@ -9,34 +13,34 @@ typedef struct {
 } ImLib_JPEG_data;
 
 static void
-_JPEGFatalErrorHandler(j_common_ptr cinfo)
+_JPEGFatalErrorHandler(j_common_ptr jcp)
 {
-   ImLib_JPEG_data    *jd = (ImLib_JPEG_data *) cinfo->err;
+   ImLib_JPEG_data    *jd = (ImLib_JPEG_data *) jcp->err;
 
 #if 0
-   cinfo->err->output_message(cinfo);
+   jcp->err->output_message(jcp);
 #endif
    siglongjmp(jd->setjmp_buffer, 1);
 }
 
 static void
-_JPEGErrorHandler(j_common_ptr cinfo)
+_JPEGErrorHandler(j_common_ptr jcp)
 {
 #if 0
-   ImLib_JPEG_data    *jd = (ImLib_JPEG_data *) cinfo->err;
+   ImLib_JPEG_data    *jd = (ImLib_JPEG_data *) jcp->err;
 
-   cinfo->err->output_message(cinfo);
+   jcp->err->output_message(jcp);
    siglongjmp(jd->setjmp_buffer, 1);
 #endif
 }
 
 static void
-_JPEGErrorHandler2(j_common_ptr cinfo, int msg_level)
+_JPEGErrorHandler2(j_common_ptr jcp, int msg_level)
 {
 #if 0
-   ImLib_JPEG_data    *jd = (ImLib_JPEG_data *) cinfo->err;
+   ImLib_JPEG_data    *jd = (ImLib_JPEG_data *) jcp->err;
 
-   cinfo->err->output_message(cinfo);
+   jcp->err->output_message(jcp);
    siglongjmp(jd->setjmp_buffer, 1);
 #endif
 }
@@ -61,14 +65,15 @@ int
 load2(ImlibImage * im, int load_data)
 {
    int                 w, h, rc;
-   struct jpeg_decompress_struct cinfo;
+   struct jpeg_decompress_struct jds;
    ImLib_JPEG_data     jdata;
    DATA8              *ptr, *line[16];
    DATA32             *ptr2;
-   int                 x, y, l, i, scans;
+   int                 x, y, l, scans, inc;
+   ExifInfo            ei = { 0 };
 
    /* set up error handling */
-   cinfo.err = _jdata_init(&jdata);
+   jds.err = _jdata_init(&jdata);
    if (sigsetjmp(jdata.setjmp_buffer, 1))
      {
         rc = LOAD_FAIL;
@@ -77,14 +82,39 @@ load2(ImlibImage * im, int load_data)
 
    rc = LOAD_FAIL;
 
-   jpeg_create_decompress(&cinfo);
-   jpeg_stdio_src(&cinfo, im->fp);
-   jpeg_read_header(&cinfo, TRUE);
+   jpeg_create_decompress(&jds);
+   jpeg_stdio_src(&jds, im->fp);
+   jpeg_save_markers(&jds, JPEG_APP0 + 1, 256);
+   jpeg_read_header(&jds, TRUE);
 
-   im->w = w = cinfo.image_width;
-   im->h = h = cinfo.image_height;
+   /* Get orientation */
+   ei.orientation = ORIENT_TOPLEFT;
+
+   if (jds.marker_list)
+     {
+        jpeg_saved_marker_ptr m = jds.marker_list;
+
+        D("Markers: %p: m=%02x len=%d/%d\n", m,
+          m->marker, m->original_length, m->data_length);
+
+        exif_parse(m->data, m->data_length, &ei);
+     }
+
+   w = jds.image_width;
+   h = jds.image_height;
    if (!IMAGE_DIMENSIONS_OK(w, h))
       goto quit;
+
+   if (ei.swap_wh)
+     {
+        im->w = h;
+        im->h = w;
+     }
+   else
+     {
+        im->w = w;
+        im->h = h;
+     }
 
    UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
@@ -96,14 +126,14 @@ load2(ImlibImage * im, int load_data)
 
    /* Load data */
 
-   cinfo.do_fancy_upsampling = FALSE;
-   cinfo.do_block_smoothing = FALSE;
-   jpeg_start_decompress(&cinfo);
+   jds.do_fancy_upsampling = FALSE;
+   jds.do_block_smoothing = FALSE;
+   jpeg_start_decompress(&jds);
 
-   if ((cinfo.rec_outbuf_height > 16) || (cinfo.output_components <= 0))
+   if ((jds.rec_outbuf_height > 16) || (jds.output_components <= 0))
       goto quit;
 
-   jdata.data = malloc(w * 16 * cinfo.output_components);
+   jdata.data = malloc(w * 16 * jds.output_components);
    if (!jdata.data)
       goto quit;
 
@@ -112,14 +142,14 @@ load2(ImlibImage * im, int load_data)
    if (!ptr2)
       goto quit;
 
-   for (i = 0; i < cinfo.rec_outbuf_height; i++)
-      line[i] = jdata.data + (i * w * cinfo.output_components);
+   for (y = 0; y < jds.rec_outbuf_height; y++)
+      line[y] = jdata.data + (y * w * jds.output_components);
 
-   for (l = 0; l < h; l += cinfo.rec_outbuf_height)
+   for (l = 0; l < h; l += jds.rec_outbuf_height)
      {
-        jpeg_read_scanlines(&cinfo, line, cinfo.rec_outbuf_height);
+        jpeg_read_scanlines(&jds, line, jds.rec_outbuf_height);
 
-        scans = cinfo.rec_outbuf_height;
+        scans = jds.rec_outbuf_height;
         if ((h - l) < scans)
            scans = h - l;
 
@@ -127,7 +157,46 @@ load2(ImlibImage * im, int load_data)
           {
              ptr = line[y];
 
-             switch (cinfo.out_color_space)
+             switch (ei.orientation)
+               {
+               default:
+               case ORIENT_TOPLEFT:
+                  ptr2 = im->data + (l + y) * w;
+                  inc = 1;
+                  break;
+               case ORIENT_TOPRIGHT:
+                  ptr2 = im->data + (l + y) * w + w - 1;
+                  inc = -1;
+                  break;
+               case ORIENT_BOTRIGHT:
+                  ptr2 = im->data + (h - 1 - (l + y)) * w + w - 1;
+                  inc = -1;
+                  break;
+               case ORIENT_BOTLEFT:
+                  ptr2 = im->data + (h - 1 - (l + y)) * w;
+                  inc = 1;
+                  break;
+               case ORIENT_LEFTTOP:
+                  ptr2 = im->data + (l + y);
+                  inc = h;
+                  break;
+               case ORIENT_RIGHTTOP:
+                  ptr2 = im->data + (h - 1 - (l + y));
+                  inc = h;
+                  break;
+               case ORIENT_RIGHTBOT:
+                  ptr2 = im->data + (h - 1 - (l + y)) + (w - 1) * h;
+                  inc = -h;
+                  break;
+               case ORIENT_LEFTBOT:
+                  ptr2 = im->data + (l + y) + (w - 1) * h;
+                  inc = -h;
+                  break;
+               }
+             D("l,s,y=%d,%d, %d - x,y=%4ld,%4ld\n", l, y, l + y,
+               (ptr2 - im->data) % im->w, (ptr2 - im->data) / im->w);
+
+             switch (jds.out_color_space)
                {
                default:
                   goto quit;
@@ -136,15 +205,15 @@ load2(ImlibImage * im, int load_data)
                     {
                        *ptr2 = PIXEL_ARGB(0xff, ptr[0], ptr[0], ptr[0]);
                        ptr++;
-                       ptr2++;
+                       ptr2 += inc;
                     }
                   break;
                case JCS_RGB:
                   for (x = 0; x < w; x++)
                     {
                        *ptr2 = PIXEL_ARGB(0xff, ptr[0], ptr[1], ptr[2]);
-                       ptr += cinfo.output_components;
-                       ptr2++;
+                       ptr += jds.output_components;
+                       ptr2 += inc;
                     }
                   break;
                case JCS_CMYK:
@@ -153,26 +222,34 @@ load2(ImlibImage * im, int load_data)
                        *ptr2 = PIXEL_ARGB(0xff, ptr[0] * ptr[3] / 255,
                                           ptr[1] * ptr[3] / 255,
                                           ptr[2] * ptr[3] / 255);
-                       ptr += cinfo.output_components;
-                       ptr2++;
+                       ptr += jds.output_components;
+                       ptr2 += inc;
                     }
                   break;
                }
           }
 
+        if (ei.orientation != ORIENT_TOPLEFT &&
+            ei.orientation != ORIENT_TOPRIGHT)
+           continue;
         if (im->lc && __imlib_LoadProgressRows(im, l, scans))
           {
              rc = LOAD_BREAK;
              goto quit;
           }
      }
+   if (ei.orientation != ORIENT_TOPLEFT && ei.orientation != ORIENT_TOPRIGHT)
+     {
+        if (im->lc)
+           __imlib_LoadProgressRows(im, 0, im->h);
+     }
 
-   jpeg_finish_decompress(&cinfo);
+   jpeg_finish_decompress(&jds);
 
    rc = LOAD_SUCCESS;
 
  quit:
-   jpeg_destroy_decompress(&cinfo);
+   jpeg_destroy_decompress(&jds);
    free(jdata.data);
    if (rc <= 0)
       __imlib_FreeData(im);
@@ -184,7 +261,7 @@ char
 save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
    int                 rc;
-   struct jpeg_compress_struct cinfo;
+   struct jpeg_compress_struct jcs;
    ImLib_JPEG_data     jdata;
    FILE               *f;
    DATA8              *buf;
@@ -206,17 +283,17 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
       goto quit;
 
    /* set up error handling */
-   cinfo.err = _jdata_init(&jdata);
+   jcs.err = _jdata_init(&jdata);
    if (sigsetjmp(jdata.setjmp_buffer, 1))
       goto quit;
 
    /* setup compress params */
-   jpeg_create_compress(&cinfo);
-   jpeg_stdio_dest(&cinfo, f);
-   cinfo.image_width = im->w;
-   cinfo.image_height = im->h;
-   cinfo.input_components = 3;
-   cinfo.in_color_space = JCS_RGB;
+   jpeg_create_compress(&jcs);
+   jpeg_stdio_dest(&jcs, f);
+   jcs.image_width = im->w;
+   jcs.image_height = im->h;
+   jcs.input_components = 3;
+   jcs.in_color_space = JCS_RGB;
 
    /* look for tags attached to image to get extra parameters like quality */
    /* settigns etc. - this is the "api" to hint for extra information for */
@@ -246,13 +323,13 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
       quality = 100;
 
    /* set up jepg compression parameters */
-   jpeg_set_defaults(&cinfo);
-   jpeg_set_quality(&cinfo, quality, TRUE);
-   jpeg_start_compress(&cinfo, TRUE);
+   jpeg_set_defaults(&jcs);
+   jpeg_set_quality(&jcs, quality, TRUE);
+   jpeg_start_compress(&jcs, TRUE);
    /* get the start pointer */
    ptr = im->data;
    /* go one scanline at a time... and save */
-   for (y = 0; cinfo.next_scanline < cinfo.image_height; y++)
+   for (y = 0; jcs.next_scanline < jcs.image_height; y++)
      {
         /* convcert scaline from ARGB to RGB packed */
         for (j = 0, i = 0; i < im->w; i++)
@@ -265,7 +342,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
           }
         /* write scanline */
         jbuf = (JSAMPROW *) (&buf);
-        jpeg_write_scanlines(&cinfo, jbuf, 1);
+        jpeg_write_scanlines(&jcs, jbuf, 1);
 
         if (im->lc && __imlib_LoadProgressRows(im, y, 1))
           {
@@ -278,8 +355,8 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 
  quit:
    /* finish off */
-   jpeg_finish_compress(&cinfo);
-   jpeg_destroy_compress(&cinfo);
+   jpeg_finish_compress(&jcs);
+   jpeg_destroy_compress(&jcs);
    free(buf);
    fclose(f);
 
@@ -290,6 +367,5 @@ void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "jpg", "jpeg", "jfif", "jfi" };
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }

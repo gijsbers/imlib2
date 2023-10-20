@@ -3,13 +3,6 @@
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#ifdef BUILD_X11
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/shape.h>
-#endif
 
 #include "Imlib2.h"
 #include "blend.h"
@@ -29,11 +22,12 @@
 #include "span.h"
 #include "updates.h"
 #ifdef BUILD_X11
-#include "color.h"
-#include "draw.h"
-#include "grab.h"
-#include "rend.h"
-#include "ximage.h"
+#include "x11_color.h"
+#include "x11_draw.h"
+#include "x11_grab.h"
+#include "x11_pixmap.h"
+#include "x11_rend.h"
+#include "x11_ximage.h"
 #endif
 
 /* convenience macros */
@@ -1395,10 +1389,13 @@ imlib_load_image_immediately_without_cache(const char *file)
  * @param file Image file.
  * @return An image handle.
  *
- * Loads the image without deferred image data decoding (i.e. it is
- * decoded straight away) and without looking in the cache. Returns an
- * image handle on success or NULL on failure.
- * fd will be closed after calling this function.
+ * Reaasd image from file descriptor.
+ * The file name @file is only used to guess the file format.
+ * The image is loaded without deferred image data decoding (i.e. it is
+ * decoded straight away) and without looking in the cache.
+ * @fd must be mmap'able (so it cannot be a pipe).
+ * @fd will be closed after calling this function.
+ * Returns an image handle on success or NULL on failure.
  */
 EAPI                Imlib_Image
 imlib_load_image_fd(int fd, const char *file)
@@ -1754,14 +1751,7 @@ imlib_image_set_irrelevant_format(char irrelevant)
    CHECK_PARAM_POINTER("imlib_image_set_irrelevant_format", "image",
                        ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (irrelevant)
-     {
-        SET_FLAG(im->flags, F_FORMAT_IRRELEVANT);
-     }
-   else
-     {
-        UNSET_FLAG(im->flags, F_FORMAT_IRRELEVANT);
-     }
+   UPDATE_FLAG(im->flags, F_FORMAT_IRRELEVANT, irrelevant);
 }
 
 /**
@@ -1780,14 +1770,7 @@ imlib_image_set_irrelevant_border(char irrelevant)
    CHECK_PARAM_POINTER("imlib_image_set_irrelevant_border", "image",
                        ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (irrelevant)
-     {
-        SET_FLAG(im->flags, F_BORDER_IRRELEVANT);
-     }
-   else
-     {
-        UNSET_FLAG(im->flags, F_BORDER_IRRELEVANT);
-     }
+   UPDATE_FLAG(im->flags, F_BORDER_IRRELEVANT, irrelevant);
 }
 
 /**
@@ -1806,14 +1789,7 @@ imlib_image_set_irrelevant_alpha(char irrelevant)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_set_irrelevant_alpha", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (irrelevant)
-     {
-        SET_FLAG(im->flags, F_ALPHA_IRRELEVANT);
-     }
-   else
-     {
-        UNSET_FLAG(im->flags, F_ALPHA_IRRELEVANT);
-     }
+   UPDATE_FLAG(im->flags, F_ALPHA_IRRELEVANT, irrelevant);
 }
 
 /**
@@ -1847,10 +1823,7 @@ imlib_image_set_has_alpha(char has_alpha)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_set_has_alpha", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (has_alpha)
-      SET_FLAG(im->flags, F_HAS_ALPHA);
-   else
-      UNSET_FLAG(im->flags, F_HAS_ALPHA);
+   UPDATE_FLAG(im->flags, F_HAS_ALPHA, has_alpha);
 }
 
 #ifdef BUILD_X11
@@ -2265,10 +2238,7 @@ imlib_create_image_from_drawable(Pixmap mask, int x, int y, int width,
                                   ctx->colormap, ctx->depth, x, y, width,
                                   height, &domask, need_to_grab_x))
      {
-        if (domask)
-           SET_FLAG(im->flags, F_HAS_ALPHA);
-        else
-           UNSET_FLAG(im->flags, F_HAS_ALPHA);
+        UPDATE_FLAG(im->flags, F_HAS_ALPHA, domask);
      }
    else
      {
@@ -2343,126 +2313,28 @@ imlib_create_scaled_image_from_drawable(Pixmap mask, int source_x,
                                         char get_mask_from_shape)
 {
    ImlibImage         *im;
-   char                domask = 0, tmpmask = 0;
-   int                 x, xx;
-   XGCValues           gcv;
-   GC                  gc = 0, mgc = 0;
-   Pixmap              p, m;
+   char                domask;
 
    CHECK_CONTEXT(ctx);
    if (!IMAGE_DIMENSIONS_OK(source_width, source_height))
       return NULL;
    if (!IMAGE_DIMENSIONS_OK(destination_width, destination_height))
       return NULL;
-   if ((mask) || (get_mask_from_shape))
-      domask = 1;
 
-   p = XCreatePixmap(ctx->display, ctx->drawable, destination_width,
-                     source_height, ctx->depth);
-
-   gcv.foreground = 0;
-   gcv.subwindow_mode = IncludeInferiors;
-   gcv.graphics_exposures = False;
-   gc = XCreateGC(ctx->display, ctx->drawable,
-                  GCSubwindowMode | GCGraphicsExposures, &gcv);
-
-   if ((domask) && (!mask))
-     {
-        XRectangle         *rect;
-        int                 rect_num, rect_ord;
-
-        rect = XShapeGetRectangles(ctx->display, ctx->drawable, ShapeBounding,
-                                   &rect_num, &rect_ord);
-
-        if (rect && (rect_num == 1 &&
-                     rect[0].x == 0 && rect[0].y == 0 &&
-                     rect[0].width == source_width &&
-                     rect[0].height == source_height))
-          {
-             domask = 0;
-             XFree(rect);
-          }
-        else
-          {
-             tmpmask = 1;
-             mask =
-                XCreatePixmap(ctx->display, ctx->drawable, source_width,
-                              source_height, 1);
-             mgc = XCreateGC(ctx->display, mask,
-                             GCForeground | GCGraphicsExposures, &gcv);
-             XFillRectangle(ctx->display, mask, mgc, 0, 0, source_width,
-                            source_height);
-             if (rect)
-               {
-                  XSetForeground(ctx->display, mgc, 1);
-                  for (x = 0; x < rect_num; x++)
-                     XFillRectangle(ctx->display, mask, mgc, rect[x].x,
-                                    rect[x].y, rect[x].width, rect[x].height);
-                  XFree(rect);
-               }
-          }
-     }
-
-   if ((destination_width == source_width) &&
-       (destination_height == source_height))
-     {
-        XCopyArea(ctx->display, ctx->drawable, p, gc, source_x, source_y,
-                  source_width, source_height, 0, 0);
-        m = mask;
-     }
-   else
-     {
-        if (domask)
-          {
-             m = XCreatePixmap(ctx->display, ctx->drawable, destination_width,
-                               source_height, 1);
-             if (!mgc)
-                mgc = XCreateGC(ctx->display, m,
-                                GCForeground | GCGraphicsExposures, &gcv);
-          }
-        else
-           m = None;
-
-        for (x = 0; x < destination_width; x++)
-          {
-             xx = (source_width * x) / destination_width;
-             XCopyArea(ctx->display, ctx->drawable, p, gc,
-                       source_x + xx, source_y, 1, source_height, x, 0);
-             if (m != None)
-                XCopyArea(ctx->display, mask, m, mgc,
-                          xx, 0, 1, source_height, x, 0);
-          }
-        for (x = 0; x < destination_height; x++)
-          {
-             xx = (source_height * x) / destination_height;
-             XCopyArea(ctx->display, p, p, gc,
-                       0, xx, destination_width, 1, 0, x);
-             if (m != None)
-                XCopyArea(ctx->display, m, m, mgc,
-                          0, xx, destination_width, 1, 0, x);
-          }
-     }
+   domask = mask != 0 || get_mask_from_shape;
 
    im = __imlib_CreateImage(destination_width, destination_height, NULL);
    im->data = malloc(destination_width * destination_height * sizeof(DATA32));
-   __imlib_GrabDrawableToRGBA(im->data, 0, 0, destination_width,
-                              source_height, ctx->display, p, m,
-                              ctx->visual, ctx->colormap, ctx->depth, 0, 0,
-                              destination_width, destination_height, &domask,
-                              need_to_grab_x);
-   if (domask)
-      SET_FLAG(im->flags, F_HAS_ALPHA);
-   else
-      UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
-   if (mgc)
-      XFreeGC(ctx->display, mgc);
-   if (m != None && m != mask)
-      XFreePixmap(ctx->display, m);
-   if (tmpmask)
-      XFreePixmap(ctx->display, mask);
-   XFreeGC(ctx->display, gc);
-   XFreePixmap(ctx->display, p);
+   __imlib_GrabDrawableScaledToRGBA(im->data, 0, 0,
+                                    destination_width, destination_height,
+                                    ctx->display, ctx->drawable, mask,
+                                    ctx->visual, ctx->colormap, ctx->depth,
+                                    source_x, source_y,
+                                    source_width, source_height,
+                                    &domask, need_to_grab_x);
+
+   UPDATE_FLAG(im->flags, F_HAS_ALPHA, domask);
 
    return (Imlib_Image) im;
 }
@@ -4810,15 +4682,8 @@ imlib_create_rotated_image(double angle)
 
    if (ctx->anti_alias)
      {
-#ifdef DO_MMX_ASM
-        if (__imlib_get_cpuid() & CPUID_MMX)
-           __imlib_mmx_RotateAA(im_old->data, im->data, im_old->w, im_old->w,
-                                im_old->h, im->w, sz, sz, x, y, dx, dy, -dy,
-                                dx);
-        else
-#endif
-           __imlib_RotateAA(im_old->data, im->data, im_old->w, im_old->w,
-                            im_old->h, im->w, sz, sz, x, y, dx, dy, -dy, dx);
+        __imlib_RotateAA(im_old->data, im->data, im_old->w, im_old->w,
+                         im_old->h, im->w, sz, sz, x, y, dx, dy, -dy, dx);
      }
    else
      {
@@ -4878,15 +4743,8 @@ imlib_rotate_image_from_buffer(double angle, Imlib_Image source_image)
 
    if (ctx->anti_alias)
      {
-#ifdef DO_MMX_ASM
-        if (__imlib_get_cpuid() & CPUID_MMX)
-           __imlib_mmx_RotateAA(im_old->data, im->data, im_old->w, im_old->w,
-                                im_old->h, im->w, sz, sz, x, y, dx, dy, -dy,
-                                dx);
-        else
-#endif
-           __imlib_RotateAA(im_old->data, im->data, im_old->w, im_old->w,
-                            im_old->h, im->w, sz, sz, x, y, dx, dy, -dy, dx);
+        __imlib_RotateAA(im_old->data, im->data, im_old->w, im_old->w,
+                         im_old->h, im->w, sz, sz, x, y, dx, dy, -dy, dx);
      }
    else
      {

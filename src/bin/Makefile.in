@@ -130,7 +130,9 @@ imlib2_grab_OBJECTS = $(am_imlib2_grab_OBJECTS)
 imlib2_grab_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_imlib2_load_OBJECTS = imlib2_load.$(OBJEXT)
 imlib2_load_OBJECTS = $(am_imlib2_load_OBJECTS)
-imlib2_load_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+am__DEPENDENCIES_1 =
+imlib2_load_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la \
+	$(am__DEPENDENCIES_1)
 am_imlib2_poly_OBJECTS = imlib2_poly.$(OBJEXT)
 imlib2_poly_OBJECTS = $(am_imlib2_poly_OBJECTS)
 imlib2_poly_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
@@ -238,8 +240,13 @@ CFLAGS = @CFLAGS@
 CFLAGS_ASAN = @CFLAGS_ASAN@
 CFLAGS_VISIBILITY = @CFLAGS_VISIBILITY@
 CFLAGS_WARNINGS = @CFLAGS_WARNINGS@
+CLOCK_LIBS = @CLOCK_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+CXXDEPMODE = @CXXDEPMODE@
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -255,7 +262,7 @@ EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 FREETYPE_CFLAGS = @FREETYPE_CFLAGS@
 FREETYPE_LIBS = @FREETYPE_LIBS@
-GIFLIBS = @GIFLIBS@
+GIF_LIBS = @GIF_LIBS@
 GREP = @GREP@
 HAVE_VISIBILITY = @HAVE_VISIBILITY@
 ID3_CFLAGS = @ID3_CFLAGS@
@@ -306,6 +313,9 @@ STRIP = @STRIP@
 TIFF_CFLAGS = @TIFF_CFLAGS@
 TIFF_LIBS = @TIFF_LIBS@
 VERSION = @VERSION@
+VERSION_MAJOR = @VERSION_MAJOR@
+VERSION_MICRO = @VERSION_MICRO@
+VERSION_MINOR = @VERSION_MINOR@
 WEBP_CFLAGS = @WEBP_CFLAGS@
 WEBP_LIBS = @WEBP_LIBS@
 XMKMF = @XMKMF@
@@ -323,6 +333,7 @@ abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
@@ -371,18 +382,17 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-MAINTAINERCLEANFILES = Makefile.in
 AM_CFLAGS = $(CFLAGS_WARNINGS) $(CFLAGS_ASAN)
 AM_CPPFLAGS = \
 -DPACKAGE_DATA_DIR=\"$(datadir)/$(PACKAGE)\" \
--I$(top_srcdir)/src/lib \
+-I$(top_builddir)/src/lib \
 $(X_CFLAGS)
 
 @BUILD_X11_TRUE@X_BASED_PROGS = imlib2_show imlib2_test imlib2_bumpmap imlib2_poly imlib2_colorspace imlib2_view imlib2_grab
 imlib2_conv_SOURCES = imlib2_conv.c
 imlib2_conv_LDADD = $(top_builddir)/src/lib/libImlib2.la
 imlib2_load_SOURCES = imlib2_load.c
-imlib2_load_LDADD = $(top_builddir)/src/lib/libImlib2.la
+imlib2_load_LDADD = $(top_builddir)/src/lib/libImlib2.la $(CLOCK_LIBS)
 imlib2_show_SOURCES = imlib2_show.c
 imlib2_show_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11 -lm
 imlib2_test_SOURCES = imlib2_test.c
@@ -688,7 +698,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am

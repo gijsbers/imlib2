@@ -1,5 +1,5 @@
-#ifndef __RGBA
-#define __RGBA 1
+#ifndef X11_RGBA_H
+#define X11_RGBA_H 1
 
 #include "common.h"
 
@@ -32,4 +32,4 @@ void                __imlib_mmx_bgr565_fast(DATA32 *, int, DATA8 *, int, int,
                                             int, int, int);
 #endif
 
-#endif
+#endif /* X11_RGBA_H */

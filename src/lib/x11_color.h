@@ -1,9 +1,7 @@
-#ifndef __COLOR
-#define __COLOR 1
+#ifndef X11_COLOR_H
+#define X11_COLOR_H 1
 
 #include "common.h"
-
-#ifdef BUILD_X11
 
 extern DATA16       _max_colors;
 
@@ -29,6 +27,4 @@ DATA8              *__imlib_AllocColors111(Display * d, Colormap cmap,
 DATA8              *__imlib_AllocColors1(Display * d, Colormap cmap,
                                          Visual * v);
 
-#endif
-
-#endif
+#endif /* X11_COLOR_H */

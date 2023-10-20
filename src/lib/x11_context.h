@@ -1,5 +1,5 @@
-#ifndef __CONTEXT
-#define __CONTEXT 1
+#ifndef X11_CONTEXT_H
+#define X11_CONTEXT_H 1
 
 #include "common.h"
 
@@ -30,4 +30,4 @@ Context            *__imlib_NewContext(Display * d, Visual * v, Colormap c,
 Context            *__imlib_GetContext(Display * d, Visual * v, Colormap c,
                                        int depth);
 
-#endif
+#endif /* X11_CONTEXT_H */

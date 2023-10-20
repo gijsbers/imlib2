@@ -1,92 +1,64 @@
 #include "loader_common.h"
-#include <sys/stat.h>
+
+#include <sys/mman.h>
 #include <webp/decode.h>
+#include <webp/demux.h>
 #include <webp/encode.h>
 
-static const char  *
-webp_strerror(VP8StatusCode code)
-{
-   switch (code)
-     {
-     case VP8_STATUS_OK:
-        return "No Error";
-     case VP8_STATUS_OUT_OF_MEMORY:
-        return "Out of memory";
-     case VP8_STATUS_INVALID_PARAM:
-        return "Invalid API parameter";
-     case VP8_STATUS_BITSTREAM_ERROR:
-        return "Bitstream Error";
-     case VP8_STATUS_UNSUPPORTED_FEATURE:
-        return "Unsupported Feature";
-     case VP8_STATUS_SUSPENDED:
-        return "Suspended";
-     case VP8_STATUS_USER_ABORT:
-        return "User abort";
-     case VP8_STATUS_NOT_ENOUGH_DATA:
-        return "Not enough data/truncated file";
-     default:
-        return "Unknown error";
-     }
-}
+#define DBG_PFX "LDR-webp"
 
 int
 load2(ImlibImage * im, int load_data)
 {
    int                 rc;
-   uint8_t            *encoded_data;
-   struct stat         stats;
-   int                 fd;
-   WebPBitstreamFeatures features;
-   VP8StatusCode       vp8return;
-   unsigned int        size;
-
-   fd = fileno(im->fp);
-   if (fd < 0)
-      return LOAD_FAIL;
-
-   if (fstat(fd, &stats) < 0)
-      return LOAD_FAIL;
+   void               *fdata;
+   WebPData            webp_data;
+   WebPDemuxer        *demux;
+   WebPIterator        iter;
+   int                 frame;
 
    rc = LOAD_FAIL;
 
-   encoded_data = malloc(stats.st_size);
-   if (!encoded_data)
+   if (im->fsize < 12)
+      return rc;
+
+   fdata = mmap(0, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return rc;
+
+   webp_data.bytes = fdata;
+   webp_data.size = im->fsize;
+
+   /* Init (includes signature check) */
+   demux = WebPDemux(&webp_data);
+   if (!demux)
       goto quit;
 
-   /* Check signature */
-   size = 12;
-   if (read(fd, encoded_data, size) != (long)size)
-      goto quit;
-   if (memcmp(encoded_data + 0, "RIFF", 4) != 0 ||
-       memcmp(encoded_data + 8, "WEBP", 4) != 0)
+   /* Key may select frame other than first */
+   frame = 1;
+   if (im->key)
+     {
+        frame = atoi(im->key);
+        iter.num_frames = WebPDemuxGetI(demux, WEBP_FF_FRAME_COUNT);
+        if (frame > iter.num_frames)
+           frame = 0;           /* Select last */
+     }
+
+   if (!WebPDemuxGetFrame(demux, frame, &iter))
       goto quit;
 
-   size = stats.st_size;
-   if ((long)size != stats.st_size)
-      goto quit;
+   D("Frame=%d/%d X,Y=%d,%d WxH=%dx%d\n", iter.frame_num, iter.num_frames,
+     iter.x_offset, iter.y_offset, iter.width, iter.height);
 
-   size -= 12;
-   if (read(fd, encoded_data + 12, size) != (long)size)
-      goto quit;
+   WebPDemuxReleaseIterator(&iter);
 
-   if (WebPGetInfo(encoded_data, stats.st_size, &im->w, &im->h) == 0)
-      goto quit;
+   im->w = iter.width;
+   im->h = iter.height;
 
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   vp8return = WebPGetFeatures(encoded_data, stats.st_size, &features);
-   if (vp8return != VP8_STATUS_OK)
-     {
-        fprintf(stderr, "%s: Error reading file header: %s\n",
-                im->real_file, webp_strerror(vp8return));
-        goto quit;
-     }
-
-   if (features.has_alpha == 0)
-      UNSET_FLAG(im->flags, F_HAS_ALPHA);
-   else
-      SET_FLAG(im->flags, F_HAS_ALPHA);
+   UPDATE_FLAG(im->flags, F_HAS_ALPHA, iter.has_alpha);
 
    if (!load_data)
      {
@@ -99,8 +71,9 @@ load2(ImlibImage * im, int load_data)
    if (!__imlib_AllocateData(im))
       goto quit;
 
-   if (WebPDecodeBGRAInto(encoded_data, stats.st_size, (uint8_t *) im->data,
-                          sizeof(DATA32) * im->w * im->h, im->w * 4) == NULL)
+   if (WebPDecodeBGRAInto
+       (iter.fragment.bytes, iter.fragment.size, (uint8_t *) im->data,
+        sizeof(DATA32) * im->w * im->h, im->w * 4) == NULL)
       goto quit;
 
    if (im->lc)
@@ -111,7 +84,10 @@ load2(ImlibImage * im, int load_data)
  quit:
    if (rc <= 0)
       __imlib_FreeData(im);
-   free(encoded_data);
+   if (demux)
+      WebPDemuxDelete(demux);
+   if (fdata != MAP_FAILED)
+      munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -123,7 +99,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    int                 rc;
    ImlibImageTag      *quality_tag;
    float               quality;
-   uint8_t            *encoded_data;
+   uint8_t            *fdata;
    size_t              encoded_size;
 
    f = fopen(im->real_file, "wb");
@@ -131,7 +107,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
       return LOAD_FAIL;
 
    rc = LOAD_FAIL;
-   encoded_data = NULL;
+   fdata = NULL;
 
    quality = 75;
    quality_tag = __imlib_GetTag(im, "quality");
@@ -156,16 +132,16 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
      }
 
    encoded_size = WebPEncodeBGRA((uint8_t *) im->data, im->w, im->h,
-                                 im->w * 4, quality, &encoded_data);
+                                 im->w * 4, quality, &fdata);
 
-   if (fwrite(encoded_data, encoded_size, 1, f) != encoded_size)
+   if (fwrite(fdata, encoded_size, 1, f) != encoded_size)
       goto quit;
 
    rc = LOAD_SUCCESS;
 
  quit:
-   if (encoded_data)
-      WebPFree(encoded_data);
+   if (fdata)
+      WebPFree(fdata);
    fclose(f);
 
    return rc;
@@ -175,6 +151,5 @@ void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "webp" };
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }

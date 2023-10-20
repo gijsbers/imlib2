@@ -2,16 +2,10 @@
 #define __IMAGE 1
 
 #include "common.h"
-#ifdef BUILD_X11
-#include <X11/Xlib.h>
-#endif
 
 typedef struct _imlibimage ImlibImage;
 typedef struct _imlibldctx ImlibLdCtx;
 
-#ifdef BUILD_X11
-typedef struct _imlibimagepixmap ImlibImagePixmap;
-#endif
 typedef struct _imlibborder ImlibBorder;
 typedef struct _imlibloader ImlibLoader;
 typedef struct _imlibimagetag ImlibImageTag;
@@ -67,29 +61,9 @@ struct _imlibimage {
    ImlibImageDataMemoryFunction data_memory_func;
    ImlibLdCtx         *lc;
    FILE               *fp;
+   off_t               fsize;
 };
 
-#ifdef BUILD_X11
-struct _imlibimagepixmap {
-   int                 w, h;
-   Pixmap              pixmap, mask;
-   Display            *display;
-   Visual             *visual;
-   int                 depth;
-   int                 source_x, source_y, source_w, source_h;
-   Colormap            colormap;
-   char                antialias, hi_quality, dither_mask;
-   ImlibBorder         border;
-   ImlibImage         *image;
-   char               *file;
-   char                dirty;
-   int                 references;
-   DATABIG             modification_count;
-   ImlibImagePixmap   *next;
-};
-#endif
-
-void                __imlib_LoadAllLoaders(void);
 void                __imlib_RemoveAllLoaders(void);
 ImlibLoader       **__imlib_GetLoaderList(void);
 ImlibLoader        *__imlib_FindBestLoaderForFile(const char *file,
@@ -130,25 +104,6 @@ int                 __imlib_LoadProgress(ImlibImage * im,
 int                 __imlib_LoadProgressRows(ImlibImage * im,
                                              int row, int nrows);
 
-#ifdef BUILD_X11
-ImlibImagePixmap   *__imlib_ProduceImagePixmap(void);
-void                __imlib_ConsumeImagePixmap(ImlibImagePixmap * ip);
-ImlibImagePixmap   *__imlib_FindCachedImagePixmap(ImlibImage * im, int w, int h,
-                                                  Display * d, Visual * v,
-                                                  int depth, int sx, int sy,
-                                                  int sw, int sh, Colormap cm,
-                                                  char aa, char hiq, char dmask,
-                                                  DATABIG modification_count);
-ImlibImagePixmap   *__imlib_FindCachedImagePixmapByID(Display * d, Pixmap p);
-void                __imlib_AddImagePixmapToCache(ImlibImagePixmap * ip);
-void                __imlib_RemoveImagePixmapFromCache(ImlibImagePixmap * ip);
-void                __imlib_CleanupImagePixmapCache(void);
-
-ImlibImagePixmap   *__imlib_FindImlibImagePixmapByID(Display * d, Pixmap p);
-void                __imlib_FreePixmap(Display * d, Pixmap p);
-void                __imlib_DirtyPixmapsForImage(ImlibImage * im);
-#endif
-
 void                __imlib_AttachTag(ImlibImage * im, const char *key,
                                       int val, void *data,
                                       ImlibDataDestructorFunction destructor);
@@ -170,6 +125,8 @@ int                 __imlib_CurrentCacheSize(void);
 
 #define SET_FLAG(flags, f) ((flags) |= (f))
 #define UNSET_FLAG(flags, f) ((flags) &= (~f))
+#define UPDATE_FLAG(flags, f, set) \
+   do { if (set) SET_FLAG(flags, f); else UNSET_FLAG(flags, f); } while(0)
 
 #define LOAD_FAIL       0
 #define LOAD_SUCCESS    1

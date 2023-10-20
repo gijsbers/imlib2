@@ -18,8 +18,12 @@ void                __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest,
 void                __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest,
                                        int dxx, int dyy, int dx, int dy,
                                        int dw, int dh, int dow, int sow);
+
+#ifdef DO_MMX_ASM
 void                __imlib_Scale_mmx_AARGBA(ImlibScaleInfo * isi,
                                              DATA32 * dest,
                                              int dxx, int dyy, int dx, int dy,
                                              int dw, int dh, int dow, int sow);
+#endif
+
 #endif

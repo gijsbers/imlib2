@@ -114,8 +114,7 @@ __imlib_dynamic_filters_init()
                }
           }
         FREESHOW;
-        if (list)
-           free(list);
+        free(list);
      }
 }
 

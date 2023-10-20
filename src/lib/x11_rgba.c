@@ -1,9 +1,10 @@
 #include "common.h"
-#ifdef BUILD_X11
+
 #include <X11/Xlib.h>
 
-#include "context.h"
-#include "rgba.h"
+#include "asm_c.h"
+#include "x11_context.h"
+#include "x11_rgba.h"
 
 #define IS_ALIGNED_128(val) (!((val) & 0x15))
 #define IS_ALIGNED_64(val)  (!((val) & 0x7))
@@ -4824,7 +4825,7 @@ __imlib_GetRGBAFunction(int depth,
         else
           {
 #ifdef DO_MMX_ASM
-             if (__imlib_get_cpuid() && CPUID_MMX)
+             if (__imlib_do_asm())
                {
                   if ((rm == 0xf800) && (gm == 0x7e0) && (bm == 0x1f))
                      return __imlib_mmx_rgb565_fast;
@@ -4911,5 +4912,3 @@ __imlib_GetMaskFunction(char hiq)
 {
    return hiq ? &__imlib_RGBA_to_A1_dither : &__imlib_RGBA_to_A1_fast;
 }
-
-#endif /* BUILD_X11 */

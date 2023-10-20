@@ -341,10 +341,8 @@ __imlib_font_flush_last(void)
    __imlib_hash_foreach(fn->glyphs, font_flush_free_glyph_cb, NULL);
    __imlib_hash_free(fn->glyphs);
 
-   if (fn->file)
-      free(fn->file);
-   if (fn->name)
-      free(fn->name);
+   free(fn->file);
+   free(fn->name);
    FT_Done_Face(fn->ft.face);
    free(fn);
 }
@@ -393,8 +391,7 @@ __imlib_font_del_font_path(const char *path)
      {
         if (!strcmp(path, fpath[i]))
           {
-             if (fpath[i])
-                free(fpath[i]);
+             free(fpath[i]);
              fpath_num--;
              for (j = i; j < fpath_num; j++)
                 fpath[j] = fpath[j + 1];

@@ -1,5 +1,5 @@
-#ifndef __REND
-#define __REND 1
+#ifndef X11_REND_H
+#define X11_REND_H 1
 
 #include "common.h"
 
@@ -30,4 +30,4 @@ void                __imlib_RenderImageSkewed(Display * d, ImlibImage * im,
                                               ImlibColorModifier * cmod,
                                               ImlibOp op);
 
-#endif
+#endif /* X11_REND_H */

@@ -2,16 +2,19 @@ AUTOMAKE_OPTIONS = foreign
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = src data doc
+if BUILD_TEST
+SUBDIRS_TEST = test
+endif
+
+SUBDIRS = src data doc $(SUBDIRS_TEST)
 
 CLEANFILES = $(PACKAGE).spec
 
 MAINTAINERCLEANFILES = aclocal.m4 compile \
 		       config.guess config.h.in config.sub configure \
-		       depcomp install-sh ltmain.sh missing Makefile.in \
+		       depcomp install-sh ltmain.sh missing \
+		       Makefile.in */Makefile.in */*/Makefile.in */*/*/Makefile.in \
 		       imlib2_docs.tar.gz
-
-bin_SCRIPTS = imlib2-config
 
 EXTRA_DIST = AUTHORS COPYING COPYING-PLAIN gendoc \
              Doxyfile \

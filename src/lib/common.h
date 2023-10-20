@@ -10,6 +10,16 @@
 #include <math.h>
 #include <time.h>
 
+#if __GNUC__
+#define __PRINTF_N__(no)  __attribute__((__format__(__printf__, (no), (no)+1)))
+#else
+#define __PRINTF_N__(no)
+#endif
+#define __PRINTF__   __PRINTF_N__(1)
+#define __PRINTF_2__ __PRINTF_N__(2)
+
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+
 #define DATABIG unsigned long long
 #define DATA64  unsigned long long
 #define DATA32  unsigned int
@@ -44,13 +54,6 @@
 #define PIXEL_R(argb)  (((argb) >> 16) & 0xff)
 #define PIXEL_G(argb)  (((argb) >>  8) & 0xff)
 #define PIXEL_B(argb)  (((argb)      ) & 0xff)
-
-#ifdef DO_MMX_ASM
-int                 __imlib_get_cpuid(void);
-
-#define CPUID_MMX (1 << 23)
-#define CPUID_XMM (1 << 25)
-#endif
 
 #define CLIP(x, y, w, h, xx, yy, ww, hh) \
     if (x < (xx)) { w += (x - (xx)); x = (xx); } \

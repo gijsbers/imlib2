@@ -1,41 +1,76 @@
 #include "loader_common.h"
 
+#include <sys/mman.h>
+
+static struct {
+   const unsigned char *data, *dptr;
+   unsigned int        size;
+} mdata;
+
+static void
+mm_init(void *src, unsigned int size)
+{
+   mdata.data = mdata.dptr = src;
+   mdata.size = size;
+}
+
+static void
+mm_seek(unsigned int offs)
+{
+   mdata.dptr = mdata.data + offs;
+}
+
+static int
+mm_read(void *dst, unsigned int len)
+{
+   if (mdata.dptr + len > mdata.data + mdata.size)
+      return 1;                 /* Out of data */
+
+   memcpy(dst, mdata.dptr, len);
+   mdata.dptr += len;
+
+   return 0;
+}
+
 int
 load2(ImlibImage * im, int load_data)
 {
    int                 rc;
-   int                 w = 0, h = 0, alpha = 0;
+   void               *fdata;
+   int                 alpha;
    DATA32             *ptr;
    int                 y;
+   const char         *fptr, *row;
+   unsigned int        size;
+
 #ifdef WORDS_BIGENDIAN
    int                 l;
 #endif
 
    rc = LOAD_FAIL;
 
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return rc;
+
+   mm_init(fdata, im->fsize);
+
    /* header */
-   {
-      char                buf[256], buf2[256];
 
-      buf[0] = '\0';
-      if (!fgets(buf, 255, im->fp))
-         goto quit;
+   fptr = fdata;
+   size = im->fsize > 31 ? 31 : im->fsize;      /* Look for \n in at most 31 byte */
+   row = memchr(fptr, '\n', size);
+   if (!row)
+      goto quit;
+   row += 1;                    /* After LF */
 
-      buf2[0] = '\0';
-      sscanf(buf, "%s %i %i %i", buf2, &w, &h, &alpha);
-      if (strcmp(buf2, "ARGB"))
-         goto quit;
+   im->w = im->h = alpha = 0;
+   sscanf(fptr, "ARGB %i %i %i", &im->w, &im->h, &alpha);
 
-      if (!IMAGE_DIMENSIONS_OK(w, h))
-         goto quit;
+   if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
+      goto quit;
 
-      im->w = w;
-      im->h = h;
-      if (alpha)
-         SET_FLAG(im->flags, F_HAS_ALPHA);
-      else
-         UNSET_FLAG(im->flags, F_HAS_ALPHA);
-   }
+   UPDATE_FLAG(im->flags, F_HAS_ALPHA, alpha);
 
    if (!load_data)
      {
@@ -49,9 +84,11 @@ load2(ImlibImage * im, int load_data)
    if (!ptr)
       goto quit;
 
-   for (y = 0; y < h; y++)
+   mm_seek(row - fptr);
+
+   for (y = 0; y < im->h; y++)
      {
-        if (fread(ptr, im->w, 4, im->fp) != 4)
+        if (mm_read(ptr, 4 * im->w))
            goto quit;
 
 #ifdef WORDS_BIGENDIAN
@@ -72,6 +109,8 @@ load2(ImlibImage * im, int load_data)
  quit:
    if (rc <= 0)
       __imlib_FreeData(im);
+   if (fdata != MAP_FAILED)
+      munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -126,8 +165,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
  quit:
    /* finish off */
 #ifdef WORDS_BIGENDIAN
-   if (buf)
-      free(buf);
+   free(buf);
 #endif
    fclose(f);
 
@@ -138,7 +176,5 @@ void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "argb", "arg" };
-
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }

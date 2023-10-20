@@ -1,5 +1,5 @@
-#ifndef __DRAW
-#define __DRAW 1
+#ifndef X11_DRAW_H
+#define X11_DRAW_H 1
 
 #include "colormod.h"
 #include "common.h"
@@ -14,4 +14,4 @@ char                __imlib_CreatePixmapsForImage(Display * d, Drawable w,
                                                   char dither_mask, int mat,
                                                   ImlibColorModifier * cmod);
 
-#endif
+#endif /* X11_DRAW_H */

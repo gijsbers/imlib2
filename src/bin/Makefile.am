@@ -1,9 +1,7 @@
-MAINTAINERCLEANFILES = Makefile.in
-
 AM_CFLAGS   = $(CFLAGS_WARNINGS) $(CFLAGS_ASAN)
 AM_CPPFLAGS = \
 -DPACKAGE_DATA_DIR=\"$(datadir)/$(PACKAGE)\" \
--I$(top_srcdir)/src/lib \
+-I$(top_builddir)/src/lib \
 $(X_CFLAGS)
 
 if BUILD_X11
@@ -19,7 +17,7 @@ imlib2_conv_SOURCES = imlib2_conv.c
 imlib2_conv_LDADD   = $(top_builddir)/src/lib/libImlib2.la
 
 imlib2_load_SOURCES = imlib2_load.c
-imlib2_load_LDADD   = $(top_builddir)/src/lib/libImlib2.la
+imlib2_load_LDADD   = $(top_builddir)/src/lib/libImlib2.la $(CLOCK_LIBS)
 
 imlib2_show_SOURCES = imlib2_show.c
 imlib2_show_LDADD   = $(top_builddir)/src/lib/libImlib2.la -lX11 -lm

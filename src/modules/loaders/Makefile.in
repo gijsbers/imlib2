@@ -163,7 +163,8 @@ ff_la_OBJECTS = $(am_ff_la_OBJECTS)
 ff_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(ff_la_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(ff_la_LDFLAGS) $(LDFLAGS) -o $@
-gif_la_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+gif_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/lib/libImlib2.la
 am_gif_la_OBJECTS = gif_la-loader_gif.lo
 gif_la_OBJECTS = $(am_gif_la_OBJECTS)
 gif_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(gif_la_LIBTOOLFLAGS) \
@@ -186,7 +187,7 @@ id3_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(id3_la_LIBTOOLFLAGS) \
 @BUILD_ID3_LOADER_TRUE@am_id3_la_rpath = -rpath $(pkgdir)
 jpeg_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/lib/libImlib2.la
-am_jpeg_la_OBJECTS = jpeg_la-loader_jpeg.lo
+am_jpeg_la_OBJECTS = jpeg_la-loader_jpeg.lo jpeg_la-exif.lo
 jpeg_la_OBJECTS = $(am_jpeg_la_OBJECTS)
 jpeg_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(jpeg_la_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -275,7 +276,7 @@ am__depfiles_remade = ./$(DEPDIR)/argb_la-loader_argb.Plo \
 	./$(DEPDIR)/ff_la-loader_ff.Plo \
 	./$(DEPDIR)/gif_la-loader_gif.Plo \
 	./$(DEPDIR)/ico_la-loader_ico.Plo \
-	./$(DEPDIR)/id3_la-loader_id3.Plo \
+	./$(DEPDIR)/id3_la-loader_id3.Plo ./$(DEPDIR)/jpeg_la-exif.Plo \
 	./$(DEPDIR)/jpeg_la-loader_jpeg.Plo \
 	./$(DEPDIR)/lbm_la-loader_lbm.Plo \
 	./$(DEPDIR)/png_la-loader_png.Plo \
@@ -362,8 +363,13 @@ CFLAGS = @CFLAGS@
 CFLAGS_ASAN = @CFLAGS_ASAN@
 CFLAGS_VISIBILITY = @CFLAGS_VISIBILITY@
 CFLAGS_WARNINGS = @CFLAGS_WARNINGS@
+CLOCK_LIBS = @CLOCK_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+CXXDEPMODE = @CXXDEPMODE@
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -379,7 +385,7 @@ EXEEXT = @EXEEXT@
 FGREP = @FGREP@
 FREETYPE_CFLAGS = @FREETYPE_CFLAGS@
 FREETYPE_LIBS = @FREETYPE_LIBS@
-GIFLIBS = @GIFLIBS@
+GIF_LIBS = @GIF_LIBS@
 GREP = @GREP@
 HAVE_VISIBILITY = @HAVE_VISIBILITY@
 ID3_CFLAGS = @ID3_CFLAGS@
@@ -430,6 +436,9 @@ STRIP = @STRIP@
 TIFF_CFLAGS = @TIFF_CFLAGS@
 TIFF_LIBS = @TIFF_LIBS@
 VERSION = @VERSION@
+VERSION_MAJOR = @VERSION_MAJOR@
+VERSION_MICRO = @VERSION_MICRO@
+VERSION_MINOR = @VERSION_MINOR@
 WEBP_CFLAGS = @WEBP_CFLAGS@
 WEBP_LIBS = @WEBP_LIBS@
 XMKMF = @XMKMF@
@@ -447,6 +456,7 @@ abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
@@ -495,7 +505,6 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-MAINTAINERCLEANFILES = Makefile.in
 AM_CFLAGS = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
 AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/src/lib
 pkgdir = $(libdir)/imlib2/loaders
@@ -546,7 +555,7 @@ ff_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
 ff_la_LIBTOOLFLAGS = --tag=disable-static
 gif_la_SOURCES = loader_gif.c
 gif_la_LDFLAGS = -module -avoid-version
-gif_la_LIBADD = @GIFLIBS@ $(top_builddir)/src/lib/libImlib2.la
+gif_la_LIBADD = $(GIF_LIBS) $(top_builddir)/src/lib/libImlib2.la
 gif_la_LIBTOOLFLAGS = --tag=disable-static
 ico_la_SOURCES = loader_ico.c
 ico_la_LDFLAGS = -module -avoid-version
@@ -557,7 +566,7 @@ id3_la_CPPFLAGS = $(ID3_CFLAGS) $(AM_CPPFLAGS)
 id3_la_LDFLAGS = -module -avoid-version
 id3_la_LIBADD = $(ID3_LIBS) $(top_builddir)/src/lib/libImlib2.la
 id3_la_LIBTOOLFLAGS = --tag=disable-static
-jpeg_la_SOURCES = loader_jpeg.c
+jpeg_la_SOURCES = loader_jpeg.c exif.c exif.h
 jpeg_la_CPPFLAGS = $(JPEG_CFLAGS) $(AM_CPPFLAGS)
 jpeg_la_LDFLAGS = -module -avoid-version
 jpeg_la_LIBADD = $(JPEG_LIBS) $(top_builddir)/src/lib/libImlib2.la
@@ -735,6 +744,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gif_la-loader_gif.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ico_la-loader_ico.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/id3_la-loader_id3.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jpeg_la-exif.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jpeg_la-loader_jpeg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lbm_la-loader_lbm.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/png_la-loader_png.Plo@am__quote@ # am--include-marker
@@ -828,6 +838,13 @@ jpeg_la-loader_jpeg.lo: loader_jpeg.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_jpeg.c' object='jpeg_la-loader_jpeg.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(jpeg_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(jpeg_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o jpeg_la-loader_jpeg.lo `test -f 'loader_jpeg.c' || echo '$(srcdir)/'`loader_jpeg.c
+
+jpeg_la-exif.lo: exif.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(jpeg_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(jpeg_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT jpeg_la-exif.lo -MD -MP -MF $(DEPDIR)/jpeg_la-exif.Tpo -c -o jpeg_la-exif.lo `test -f 'exif.c' || echo '$(srcdir)/'`exif.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/jpeg_la-exif.Tpo $(DEPDIR)/jpeg_la-exif.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='exif.c' object='jpeg_la-exif.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(jpeg_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(jpeg_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o jpeg_la-exif.lo `test -f 'exif.c' || echo '$(srcdir)/'`exif.c
 
 lbm_la-loader_lbm.lo: loader_lbm.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(lbm_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lbm_la-loader_lbm.lo -MD -MP -MF $(DEPDIR)/lbm_la-loader_lbm.Tpo -c -o lbm_la-loader_lbm.lo `test -f 'loader_lbm.c' || echo '$(srcdir)/'`loader_lbm.c
@@ -1020,7 +1037,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-pkgLTLIBRARIES \
@@ -1034,6 +1050,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/gif_la-loader_gif.Plo
 	-rm -f ./$(DEPDIR)/ico_la-loader_ico.Plo
 	-rm -f ./$(DEPDIR)/id3_la-loader_id3.Plo
+	-rm -f ./$(DEPDIR)/jpeg_la-exif.Plo
 	-rm -f ./$(DEPDIR)/jpeg_la-loader_jpeg.Plo
 	-rm -f ./$(DEPDIR)/lbm_la-loader_lbm.Plo
 	-rm -f ./$(DEPDIR)/png_la-loader_png.Plo
@@ -1096,6 +1113,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/gif_la-loader_gif.Plo
 	-rm -f ./$(DEPDIR)/ico_la-loader_ico.Plo
 	-rm -f ./$(DEPDIR)/id3_la-loader_id3.Plo
+	-rm -f ./$(DEPDIR)/jpeg_la-exif.Plo
 	-rm -f ./$(DEPDIR)/jpeg_la-loader_jpeg.Plo
 	-rm -f ./$(DEPDIR)/lbm_la-loader_lbm.Plo
 	-rm -f ./$(DEPDIR)/png_la-loader_png.Plo

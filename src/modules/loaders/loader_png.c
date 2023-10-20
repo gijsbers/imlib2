@@ -1,5 +1,7 @@
 #include "loader_common.h"
+
 #include <png.h>
+#include <sys/mman.h>
 
 /* this is a quick sample png loader module... nice and small isn't it? */
 
@@ -7,7 +9,6 @@
 #define PNG_BYTES_TO_CHECK 4
 
 typedef struct {
-   unsigned char       buf[PNG_BYTES_TO_CHECK];
    unsigned char     **lines;
 } ImLib_PNG_data;
 
@@ -20,9 +21,9 @@ comment_free(ImlibImage * im, void *data)
 int
 load2(ImlibImage * im, int load_data)
 {
-   int                 rc;
+   int                 rc, ok;
+   void               *fdata;
    png_uint_32         w32, h32;
-   int                 w, h;
    char                hasa;
    png_structp         png_ptr = NULL;
    png_infop           info_ptr = NULL;
@@ -34,13 +35,20 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_FAIL;
    pdata.lines = NULL;
 
-   if (fread(pdata.buf, 1, PNG_BYTES_TO_CHECK, im->fp) != PNG_BYTES_TO_CHECK)
-      goto quit;
+   if (im->fsize < PNG_BYTES_TO_CHECK)
+      return rc;
 
-   if (png_sig_cmp(pdata.buf, 0, PNG_BYTES_TO_CHECK))
-      goto quit;
+   fdata =
+      mmap(NULL, PNG_BYTES_TO_CHECK, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return rc;
 
-   rewind(im->fp);
+   ok = png_sig_cmp(fdata, 0, PNG_BYTES_TO_CHECK) == 0;
+
+   munmap(fdata, PNG_BYTES_TO_CHECK);
+
+   if (!ok)
+      return rc;
 
    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
    if (!png_ptr)
@@ -74,10 +82,7 @@ load2(ImlibImage * im, int load_data)
       hasa = 1;
    if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
       hasa = 1;
-   if (hasa)
-      SET_FLAG(im->flags, F_HAS_ALPHA);
-   else
-      UNSET_FLAG(im->flags, F_HAS_ALPHA);
+   UPDATE_FLAG(im->flags, F_HAS_ALPHA, hasa);
 
    if (!load_data)
      {
@@ -86,9 +91,6 @@ load2(ImlibImage * im, int load_data)
      }
 
    /* Load data */
-
-   w = im->w;
-   h = im->h;
 
    /* Prep for transformations...  ultimately we want ARGB */
    /* expand palette -> RGB if necessary */
@@ -129,12 +131,12 @@ load2(ImlibImage * im, int load_data)
    if (!__imlib_AllocateData(im))
       goto quit;
 
-   pdata.lines = malloc(h * sizeof(unsigned char *));
+   pdata.lines = malloc(im->h * sizeof(unsigned char *));
    if (!pdata.lines)
       goto quit;
 
-   for (i = 0; i < h; i++)
-      pdata.lines[i] = ((unsigned char *)(im->data)) + (i * w * sizeof(DATA32));
+   for (i = 0; i < im->h; i++)
+      pdata.lines[i] = (unsigned char *)(im->data + i * im->w);
 
    if (im->lc)
      {
@@ -145,7 +147,7 @@ load2(ImlibImage * im, int load_data)
           {
              __imlib_LoadProgressSetPass(im, pass, n_passes);
 
-             for (y = 0; y < h; y += nrows)
+             for (y = 0; y < im->h; y += nrows)
                {
                   png_read_rows(png_ptr, &pdata.lines[y], NULL, nrows);
 
@@ -353,17 +355,9 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    return rc;
 }
 
-/* fills the ImlibLoader struct with a string array of format file */
-/* extensions this loader can load. eg: */
-/* loader->formats = { "jpeg", "jpg"}; */
-/* giving permutations is a good idea. case sensitivity is irrelevant */
-/* your loader CAN load more than one format if it likes - like: */
-/* loader->formats = { "gif", "png", "jpeg", "jpg"} */
-/* if it can load those formats. */
 void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "png" };
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }

@@ -295,8 +295,7 @@ __imlib_hash_add(Imlib_Hash * hash, const char *key, const void *data)
    if (imlib_list_alloc_error())
      {
         _imlib_hash_alloc_error = 1;
-        if (el->key)
-           free(el->key);
+        free(el->key);
         free(el);
         return hash;
      }

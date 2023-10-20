@@ -1,10 +1,82 @@
 #include "loader_common.h"
+
 #include <ctype.h>
+#include <sys/mman.h>
+
+static struct {
+   const unsigned char *data, *dptr;
+   unsigned int        size;
+} mdata;
+
+static void
+mm_init(void *src, unsigned int size)
+{
+   mdata.data = mdata.dptr = src;
+   mdata.size = size;
+}
+
+static int
+mm_read(void *dst, unsigned int len)
+{
+   if (mdata.dptr + len > mdata.data + mdata.size)
+      return 1;                 /* Out of data */
+
+   memcpy(dst, mdata.dptr, len);
+   mdata.dptr += len;
+
+   return 0;
+}
+
+static int
+mm_getc(void)
+{
+   int                 ch;
+
+   if (mdata.dptr + 1 > mdata.data + mdata.size)
+      return -1;                /* Out of data */
+
+   ch = *mdata.dptr++;
+
+   return ch;
+}
+
+static int
+mm_getu(unsigned int *pui)
+{
+   int                 ch;
+   int                 uval;
+
+   for (;;)
+     {
+        ch = mm_getc();
+        if (ch < 0)
+           return ch;
+        if (!isspace(ch))
+           break;
+     }
+
+   if (!isdigit(ch))
+      return -1;
+
+   for (uval = 0;;)
+     {
+        uval = 10 * uval + ch - '0';
+        ch = mm_getc();
+        if (ch < 0)
+           return ch;
+        if (!isdigit(ch))
+           break;
+     }
+
+   *pui = uval;
+   return 0;                    /* Ok */
+}
 
 int
 load2(ImlibImage * im, int load_data)
 {
    int                 rc;
+   void               *fdata;
    char                p = ' ', numbers = 3, count = 0;
    int                 w = 0, h = 0, v = 255, c = 0;
    char                buf[256];
@@ -14,15 +86,23 @@ load2(ImlibImage * im, int load_data)
    DATA32             *ptr2, rval, gval, bval;
    int                 i, j, x, y;
 
+   rc = LOAD_FAIL;
+
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return rc;
+
+   mm_init(fdata, im->fsize);
+
    /* read the header info */
 
    rc = LOAD_FAIL;
 
-   c = fgetc(im->fp);
+   c = mm_getc();
    if (c != 'P')
       goto quit;
 
-   p = fgetc(im->fp);
+   p = mm_getc();
    if (p == '1' || p == '4')
       numbers = 2;              /* bitimages don't have max value */
 
@@ -32,19 +112,19 @@ load2(ImlibImage * im, int load_data)
    count = 0;
    while (count < numbers)
      {
-        c = fgetc(im->fp);
+        c = mm_getc();
 
         if (c == EOF)
            goto quit;
 
         /* eat whitespace */
         while (isspace(c))
-           c = fgetc(im->fp);
+           c = mm_getc();
         /* if comment, eat that */
         if (c == '#')
           {
              do
-                c = fgetc(im->fp);
+                c = mm_getc();
              while (c != '\n' && c != EOF);
           }
         /* no comment -> proceed */
@@ -56,7 +136,7 @@ load2(ImlibImage * im, int load_data)
              while (c != EOF && !isspace(c) && (i < 255))
                {
                   buf[i++] = c;
-                  c = fgetc(im->fp);
+                  c = mm_getc();
                }
              if (i)
                {
@@ -88,10 +168,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(w, h))
       goto quit;
 
-   if (p == '8')
-      SET_FLAG(im->flags, F_HAS_ALPHA);
-   else
-      UNSET_FLAG(im->flags, F_HAS_ALPHA);
+   UPDATE_FLAG(im->flags, F_HAS_ALPHA, p == '8');
 
    if (!load_data)
      {
@@ -113,8 +190,7 @@ load2(ImlibImage * im, int load_data)
           {
              for (x = 0; x < w; x++)
                {
-                  j = fscanf(im->fp, "%u", &gval);
-                  if (j <= 0)
+                  if (mm_getu(&gval))
                      goto quit;
 
                   if (gval == 1)
@@ -134,8 +210,7 @@ load2(ImlibImage * im, int load_data)
           {
              for (x = 0; x < w; x++)
                {
-                  j = fscanf(im->fp, "%u", &gval);
-                  if (j <= 0)
+                  if (mm_getu(&gval))
                      goto quit;
 
                   if (v == 0 || v == 255)
@@ -159,8 +234,11 @@ load2(ImlibImage * im, int load_data)
           {
              for (x = 0; x < w; x++)
                {
-                  j = fscanf(im->fp, "%u %u %u", &rval, &gval, &bval);
-                  if (j <= 2)
+                  if (mm_getu(&rval))
+                     goto quit;
+                  if (mm_getu(&gval))
+                     goto quit;
+                  if (mm_getu(&bval))
                      goto quit;
 
                   if (v == 0 || v == 255)
@@ -188,7 +266,7 @@ load2(ImlibImage * im, int load_data)
         ptr2 = im->data;
         for (y = 0; y < h; y++)
           {
-             if (!fread(data, (w + 7) / 8, 1, im->fp))
+             if (mm_read(data, (w + 7) / 8))
                 goto quit;
 
              ptr = data;
@@ -218,7 +296,7 @@ load2(ImlibImage * im, int load_data)
         ptr2 = im->data;
         for (y = 0; y < h; y++)
           {
-             if (!fread(data, w * 1, 1, im->fp))
+             if (mm_read(data, w * 1))
                 goto quit;
 
              ptr = data;
@@ -257,7 +335,7 @@ load2(ImlibImage * im, int load_data)
         ptr2 = im->data;
         for (y = 0; y < h; y++)
           {
-             if (!fread(data, w * 3, 1, im->fp))
+             if (mm_read(data, w * 3))
                 goto quit;
 
              ptr = data;
@@ -296,7 +374,7 @@ load2(ImlibImage * im, int load_data)
         ptr2 = im->data;
         for (y = 0; y < h; y++)
           {
-             if (!fread(data, w * 1, 1, im->fp))
+             if (mm_read(data, w * 1))
                 goto quit;
 
              ptr = data;
@@ -328,7 +406,7 @@ load2(ImlibImage * im, int load_data)
         ptr2 = im->data;
         for (y = 0; y < h; y++)
           {
-             if (!fread(data, w * 4, 1, im->fp))
+             if (mm_read(data, w * 4))
                 goto quit;
 
              ptr = data;
@@ -370,6 +448,8 @@ load2(ImlibImage * im, int load_data)
  quit:
    free(idata);
    free(data);
+   if (fdata != MAP_FAILED)
+      munmap(fdata, im->fsize);
 
    if (rc == 0)
       __imlib_FreeData(im);
@@ -465,6 +545,5 @@ formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] =
       { "pnm", "ppm", "pgm", "pbm", "pam" };
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }

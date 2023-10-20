@@ -1,10 +1,11 @@
 #include "common.h"
-#ifdef BUILD_X11
+
 #include <X11/Xlib.h>
-#include "color.h"
-#include "context.h"
+
 #include "image.h"
-#include "rgba.h"
+#include "x11_color.h"
+#include "x11_context.h"
+#include "x11_rgba.h"
 
 static Context     *context = NULL;
 static int          max_context_count = 128;
@@ -160,5 +161,3 @@ __imlib_GetContext(Display * d, Visual * v, Colormap c, int depth)
 
    return ct;
 }
-
-#endif /* BUILD_X11 */

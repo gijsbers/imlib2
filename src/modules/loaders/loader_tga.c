@@ -1,18 +1,20 @@
-/* 
+/*
  * loader_tga.c - Loader for Truevision Targa images
  *                for Imlib2
  *
  * by Dan Maas <dmaas@dcine.com>   May 15, 2000
  *
- * based on TGA specifications available at: 
+ * based on TGA specifications available at:
  * http://www.wotsit.org/cgi-bin/search.cgi?TGA
  *
- * header/footer structures courtesy of the GIMP Targa plugin 
+ * header/footer structures courtesy of the GIMP Targa plugin
  */
 #include "loader_common.h"
+
 #include <stdint.h>
-#include <sys/stat.h>
 #include <sys/mman.h>
+
+#define DBG_PFX "LDR-tga"
 
 /* flip an inverted image - see RLE reading below */
 static void         tgaflip(DATA32 * in, int w, int h, int fliph, int flipv);
@@ -55,7 +57,7 @@ typedef struct {
    char                null;
 } tga_footer;
 
-/* 
+/*
  * Write an uncompressed RGBA 24- or 32-bit targa to disk
  * (If anyone wants to write a RLE saver, feel free =)
  */
@@ -151,77 +153,70 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    return rc;
 }
 
-/* Load up a TGA file 
- * 
- * As written this function only recognizes the following types of Targas: 
- *		Type 02 - Uncompressed RGB, 24 or 32 bits 
+/* Load up a TGA file
+ *
+ * As written this function only recognizes the following types of Targas:
+ *		Type 02 - Uncompressed RGB, 24 or 32 bits
  *		Type 03 - Uncompressed grayscale, 8 bits
  *		Type 10 - RLE-compressed RGB, 24 or 32 bits
- *		Type 11 - RLE-compressed grayscale, 8 bits  
+ *		Type 11 - RLE-compressed grayscale, 8 bits
  * There are several other (uncommon) Targa formats which this function can't currently handle
  */
 
 int
 load2(ImlibImage * im, int load_data)
 {
-   int                 fd, rc;
-   void               *seg, *filedata;
-   struct stat         ss;
-   tga_header         *header;
-   tga_footer         *footer;
+   int                 rc;
+   void               *fdata;
+   const unsigned char *fptr;
+   const tga_header   *header;
+   const tga_footer   *footer;
    int                 footer_present;
    int                 rle, bpp, hasa, hasc, fliph, flipv;
    unsigned long       datasize;
-   unsigned char      *bufptr, *bufend, *palette = 0;
+   const unsigned char *bufptr, *bufend, *palette;
    DATA32             *dataptr;
    int                 palcnt = 0, palbpp = 0;
    unsigned char       a, r, g, b;
    unsigned int        pix16;
 
-   fd = fileno(im->fp);
-
    rc = LOAD_FAIL;
-   seg = MAP_FAILED;
+   fdata = MAP_FAILED;
 
-   if (fstat(fd, &ss) < 0)
+   if (im->fsize < (int)(sizeof(tga_header)) ||
+       (uintmax_t) im->fsize > SIZE_MAX)
       goto quit;
 
-   if (ss.st_size < (long)(sizeof(tga_header)) ||
-       (uintmax_t) ss.st_size > SIZE_MAX)
+   fdata = mmap(0, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
       goto quit;
 
-   seg = mmap(0, ss.st_size, PROT_READ, MAP_SHARED, fd, 0);
-   if (seg == MAP_FAILED)
-      goto quit;
+   fptr = fdata;
+   header = fdata;
 
-   filedata = seg;
-   header = (tga_header *) filedata;
-
-   if (ss.st_size > (long)(sizeof(tga_footer)))
+   if (im->fsize > (int)(sizeof(tga_footer)))
      {
-        footer =
-           (tga_footer *) ((char *)filedata + ss.st_size - sizeof(tga_footer));
+        footer = (tga_footer *) (fptr + im->fsize - sizeof(tga_footer));
 
         /* check the footer to see if we have a v2.0 TGA file */
-        footer_present =
-           memcmp(footer->signature, TGA_SIGNATURE,
-                  sizeof(footer->signature)) == 0;
+        footer_present = memcmp(footer->signature, TGA_SIGNATURE,
+                                sizeof(footer->signature)) == 0;
      }
    else
      {
         footer_present = 0;
      }
 
-   if ((size_t)ss.st_size < sizeof(tga_header) + header->idLength +
+   if ((size_t)im->fsize < sizeof(tga_header) + header->idLength +
        (footer_present ? sizeof(tga_footer) : 0))
       goto quit;
 
    /* skip over header */
-   filedata = (char *)filedata + sizeof(tga_header);
+   fptr += sizeof(tga_header);
 
    /* skip over alphanumeric ID field */
    if (header->idLength)
-      filedata = (char *)filedata + header->idLength;
+      fptr += header->idLength;
 
    /* now parse the header */
 
@@ -283,13 +278,13 @@ load2(ImlibImage * im, int load_data)
    im->w = (header->widthHi << 8) | header->widthLo;
    im->h = (header->heightHi << 8) | header->heightLo;
 
+   D("Image info: type: %d bpp=%d desc=%04x\n",
+     header->imageType, header->bpp, header->descriptor);
+
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   if (hasa)
-      SET_FLAG(im->flags, F_HAS_ALPHA);
-   else
-      UNSET_FLAG(im->flags, F_HAS_ALPHA);
+   UPDATE_FLAG(im->flags, F_HAS_ALPHA, hasa);
 
    if (!load_data)
      {
@@ -300,29 +295,30 @@ load2(ImlibImage * im, int load_data)
    /* find out how much data must be read from the file */
    /* (this is NOT simply width*height*4, due to compression) */
 
-   datasize = ss.st_size - sizeof(tga_header) - header->idLength -
+   datasize = im->fsize - sizeof(tga_header) - header->idLength -
       (footer_present ? sizeof(tga_footer) : 0);
 
+   palette = NULL;
    if (header->imageType == TGA_TYPE_MAPPED ||
        header->imageType == TGA_TYPE_MAPPED_RLE)
      {
         if (bpp != 8)
            goto quit;
-        palette = filedata;
+        palette = fptr;
         palcnt = (header->colorMapLengthHi << 8) | header->colorMapLengthLo;
         palbpp = header->colorMapSize / 8;      /* bytes per palette entry */
         if (palbpp < 3 || palbpp > 4)
            goto quit;           /* only supporting 24/32bit palettes */
         int                 palbytes = palcnt * palbpp;
 
-        filedata = ((unsigned char *)filedata) + palbytes;
+        fptr += palbytes;
         datasize -= palbytes;
      }
 
    /* buffer is ready for parsing */
 
    /* bufptr is the next byte to be read from the buffer */
-   bufptr = filedata;
+   bufptr = fptr;
    bufend = bufptr + datasize;
 
    /* Load data */
@@ -569,8 +565,8 @@ load2(ImlibImage * im, int load_data)
  quit:
    if (rc <= 0)
       __imlib_FreeData(im);
-   if (seg != MAP_FAILED)
-      munmap(seg, ss.st_size);
+   if (fdata != MAP_FAILED)
+      munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -579,8 +575,7 @@ void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "tga" };
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }
 
 /**********************/

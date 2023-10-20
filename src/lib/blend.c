@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include "asm_c.h"
 #include "blend.h"
 #include "colormod.h"
 #include "image.h"
@@ -20,17 +21,18 @@
                 RESHADE_COLOR(G_VAL(dest), g, G_VAL(dest)); \
                 RESHADE_COLOR(B_VAL(dest), b, B_VAL(dest));
 
-int                 pow_lut_initialized = 0;
 DATA8               pow_lut[256][256];
 
 void
 __imlib_build_pow_lut(void)
 {
+   static char         _pow_lut_initialized = 0;
    int                 i, j;
 
-   if (pow_lut_initialized)
+   if (_pow_lut_initialized)
       return;
-   pow_lut_initialized = 1;
+   _pow_lut_initialized = 1;
+
    for (i = 0; i < 256; i++)
      {
         for (j = 0; j < 256; j++)
@@ -1515,7 +1517,7 @@ __imlib_GetBlendFunction(ImlibOp op, char blend, char merge_alpha, char rgb_src,
                          ImlibColorModifier * cm)
 {
    /*\ [ mmx ][ operation ][ cmod ][ merge_alpha ][ rgb_src ][ blend ] \ */
-   static ImlibBlendFunction ibfuncs[][4][2][2][2][2] = {
+   static const ImlibBlendFunction ibfuncs[][4][2][2][2][2] = {
       /*\ OP_COPY \ */
       {{{{{__imlib_CopyRGBAToRGB, __imlib_BlendRGBAToRGB},
           {__imlib_CopyRGBToRGB, __imlib_BlendRGBToRGB}},
@@ -1714,24 +1716,24 @@ __imlib_GetBlendFunction(ImlibOp op, char blend, char merge_alpha, char rgb_src,
 #endif
    };
 
-   int                 opi = (op == OP_COPY) ? 0
-      : (op == OP_ADD) ? 1
-      : (op == OP_SUBTRACT) ? 2 : (op == OP_RESHADE) ? 3 : -1;
+   ImlibBlendFunction  bfun;
    int                 do_mmx = 0;
 
-   if (opi == -1)
+   if (op < OP_COPY || op > OP_RESHADE)
       return NULL;
 
-#ifdef DO_MMX_ASM
-   do_mmx = !!(__imlib_get_cpuid() & CPUID_MMX);
-#elif DO_AMD64_ASM
-   do_mmx = 1;                  // instruction set is always present
+#if defined(DO_MMX_ASM) || defined(DO_AMD64_ASM)
+   do_mmx = __imlib_do_asm();
 #endif
+
    if (cm && rgb_src && (A_CMOD(cm, 0xff) == 0xff))
       blend = 0;
    if (blend && cm && rgb_src && (A_CMOD(cm, 0xff) == 0))
       return NULL;
-   return ibfuncs[!!do_mmx][opi][!!cm][!!merge_alpha][!!rgb_src][!!blend];
+
+   bfun = ibfuncs[!!do_mmx][op][!!cm][!!merge_alpha][!!rgb_src][!!blend];
+
+   return bfun;
 }
 
 void
@@ -1844,10 +1846,6 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
         int                 psx, psy, psw, psh;
         int                 y, h, hh;
 
-#ifdef DO_MMX_ASM
-        int                 do_mmx;
-#endif
-
         sx = ssx;
         sy = ssy;
         sw = ssw;
@@ -1936,9 +1934,6 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
                 blend = 1;
           }
         /* scale in LINESIZE Y chunks and convert to depth */
-#ifdef DO_MMX_ASM
-        do_mmx = __imlib_get_cpuid() & CPUID_MMX;
-#endif
         for (y = 0; y < dh; y += LINESIZE)
           {
              hh = LINESIZE;
@@ -1947,12 +1942,6 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
              /* scale the imagedata for this LINESIZE lines chunk of image */
              if (aa)
                {
-#ifdef DO_MMX_ASM
-                  if (do_mmx)
-                     __imlib_Scale_mmx_AARGBA(scaleinfo, buf, dxx, dyy + y,
-                                              0, 0, dw, hh, dw, im_src->w);
-                  else
-#endif
                   if (IMAGE_HAS_ALPHA(im_src))
                      __imlib_ScaleAARGBA(scaleinfo, buf, dxx, dyy + y,
                                          0, 0, dw, hh, dw, im_src->w);

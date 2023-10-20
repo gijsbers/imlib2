@@ -1,6 +1,13 @@
 #ifndef __IMLIB_API_H
 #define __IMLIB_API_H 1
 
+#define IMLIB2_VERSION_MAJOR 1
+#define IMLIB2_VERSION_MINOR 7
+#define IMLIB2_VERSION_MICRO 5
+
+#define IMLIB2_VERSION_(maj, min, mic) (10000 * (maj) + 100 * (min) + (mic))
+#define IMLIB2_VERSION IMLIB2_VERSION_(IMLIB2_VERSION_MAJOR, IMLIB2_VERSION_MINOR, IMLIB2_VERSION_MICRO)
+
 #ifdef EAPI
 #undef EAPI
 #endif

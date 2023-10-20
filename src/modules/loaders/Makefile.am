@@ -1,5 +1,3 @@
-MAINTAINERCLEANFILES = Makefile.in
-
 AM_CFLAGS            = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
 AM_CPPFLAGS          = -I$(top_builddir) -I$(top_srcdir)/src/lib
 
@@ -74,7 +72,7 @@ ff_la_LIBTOOLFLAGS   = --tag=disable-static
 
 gif_la_SOURCES       = loader_gif.c
 gif_la_LDFLAGS       = -module -avoid-version
-gif_la_LIBADD        = @GIFLIBS@ $(top_builddir)/src/lib/libImlib2.la
+gif_la_LIBADD        = $(GIF_LIBS) $(top_builddir)/src/lib/libImlib2.la
 gif_la_LIBTOOLFLAGS = --tag=disable-static
 
 ico_la_SOURCES       = loader_ico.c
@@ -88,7 +86,7 @@ id3_la_LDFLAGS       = -module -avoid-version
 id3_la_LIBADD        = $(ID3_LIBS) $(top_builddir)/src/lib/libImlib2.la
 id3_la_LIBTOOLFLAGS = --tag=disable-static
 
-jpeg_la_SOURCES      = loader_jpeg.c
+jpeg_la_SOURCES      = loader_jpeg.c exif.c exif.h
 jpeg_la_CPPFLAGS     = $(JPEG_CFLAGS) $(AM_CPPFLAGS)
 jpeg_la_LDFLAGS      = -module -avoid-version
 jpeg_la_LIBADD       = $(JPEG_LIBS) $(top_builddir)/src/lib/libImlib2.la

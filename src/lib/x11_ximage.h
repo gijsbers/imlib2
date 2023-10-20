@@ -1,5 +1,5 @@
-#ifndef __XIMAGE
-#define __XIMAGE 1
+#ifndef X11_XIMAGE_H
+#define X11_XIMAGE_H 1
 
 #include <X11/Xlib.h>
 #include <X11/extensions/XShm.h>
@@ -22,4 +22,4 @@ XImage             *__imlib_ShmGetXImage(Display * d, Visual * v, Drawable draw,
 void                __imlib_ShmDestroyXImage(Display * d, XImage * xim,
                                              XShmSegmentInfo * si);
 
-#endif
+#endif /* X11_XIMAGE_H */

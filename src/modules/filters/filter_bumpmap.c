@@ -247,7 +247,7 @@ void
 init(struct imlib_filter_info *info)
 {
    static const char  *const filters[] = { "bump_map_point", "bump_map" };
-   int                 i = (sizeof(filters) / sizeof(*filters));
+   int                 i = ARRAY_SIZE(filters);
 
    info->name = strdup("Bump Mapping");
    info->author = strdup("Willem Monsuwe (willem@stack.nl)");

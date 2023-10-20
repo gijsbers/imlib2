@@ -5,18 +5,38 @@
 /*
  * 21.3.2006 - Changes made by Petr Kobalicek
  * - Simplify and make secure RLE encoding
- * - Fix 16 and 32 bit depth (old code was incorrect and it's commented) 
+ * - Fix 16 and 32 bit depth (old code was incorrect and it's commented)
  */
 #include "loader_common.h"
-#include <sys/stat.h>
 
-#define DEBUG 0
-#if DEBUG
-#define D(fmt...) fprintf(stdout, "BMP loader: " fmt)
-#else
-#define D(fmt...)
-#endif
+#include <sys/mman.h>
+
+#define DBG_PFX "LDR-bmp"
 #define Dx(fmt...)
+
+static struct {
+   const unsigned char *data, *dptr;
+   unsigned int        size;
+} mdata;
+
+static void
+mm_init(void *src, unsigned int size)
+{
+   mdata.data = mdata.dptr = src;
+   mdata.size = size;
+}
+
+static int
+mm_read(void *dst, unsigned int len)
+{
+   if (mdata.dptr + len > mdata.data + mdata.size)
+      return 1;                 /* Out of data */
+
+   memcpy(dst, mdata.dptr, len);
+   mdata.dptr += len;
+
+   return 0;
+}
 
 /* The BITMAPFILEHEADER (size 14) */
 typedef struct {
@@ -137,7 +157,10 @@ int
 load2(ImlibImage * im, int load_data)
 {
    int                 rc;
-   unsigned int        offset;
+   void               *fdata;
+   const unsigned char *fptr;
+   bfh_t               bfh;
+   unsigned int        bfh_offset;
    unsigned int        size, comp, imgsize;
    unsigned int        bitcount, ncols, skip;
    unsigned char       a, r, g, b;
@@ -145,7 +168,7 @@ load2(ImlibImage * im, int load_data)
    unsigned int        i, k;
    int                 w, h, x, y, j, l;
    DATA32             *ptr, pixel;
-   unsigned char      *buffer_ptr, *buffer, *buffer_end, *buffer_end_safe;
+   const unsigned char *buffer_ptr, *buffer_end, *buffer_end_safe;
    RGBQUAD             rgbQuads[256];
    DATA32              argbCmap[256];
    unsigned int        amask, rmask, gmask, bmask;
@@ -154,233 +177,224 @@ load2(ImlibImage * im, int load_data)
    bih_t               bih;
 
    rc = LOAD_FAIL;
-   buffer = NULL;
+
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return rc;
+
+   fptr = fdata;
+   mm_init(fdata, im->fsize);
 
    /* Load header */
-   {
-      struct stat         statbuf;
-      bfh_t               bfh;
 
-      if (fstat(fileno(im->fp), &statbuf) < 0)
-         goto quit;
+   if (mm_read(&bfh, sizeof(bfh)))
+      goto quit;
 
-      size = statbuf.st_size;
-      if ((long)size != statbuf.st_size)
-         goto quit;
+   if (bfh.header[0] != 'B' || bfh.header[1] != 'M')
+      goto quit;
 
-      if (fread(&bfh, sizeof(bfh), 1, im->fp) != 1)
-         goto quit;
+   size = im->fsize;
+#define WORD_LE_32(p8) (((p8)[3] << 24) | ((p8)[2] << 16) | ((p8)[1] << 8) | (p8)[0])
+   bfh_offset = WORD_LE_32(bfh.offs);
 
-      if (bfh.header[0] != 'B' || bfh.header[1] != 'M')
-         goto quit;
+   if (bfh_offset >= size)
+      goto quit;
 
-#define WORD_LE_32(p8) ((p8[3] << 24) | (p8[2] << 16) | (p8[1] << 8) | p8[0])
-      offset = WORD_LE_32(bfh.offs);
+   memset(&bih, 0, sizeof(bih));
+   if (mm_read(&bih.header_size, sizeof(bih.header_size)))
+      goto quit;
 
-      if (offset >= size)
-         goto quit;
+   SWAP_LE_32_INPLACE(bih.header_size);
 
-      memset(&bih, 0, sizeof(bih));
-      if (fread(&bih, 4, 1, im->fp) != 1)
-         goto quit;
+   D("fsize=%u, hsize=%u, header: fsize=%u offs=%u\n",
+     size, bih.header_size, WORD_LE_32(bfh.size), bfh_offset);
 
-      SWAP_LE_32_INPLACE(bih.header_size);
+   if (bih.header_size < 12 || bih.header_size > sizeof(bih))
+      goto quit;
 
-      D("fsize=%u, hsize=%u, header: fsize=%u offs=%u\n",
-        size, bih.header_size, WORD_LE_32(bfh.size), offset);
+   if (mm_read(&bih.header_size + 1, bih.header_size - 4))
+      goto quit;
 
-      if (bih.header_size < 12 || bih.header_size > sizeof(bih))
-         goto quit;
+   comp = BI_RGB;
+   amask = rmask = gmask = bmask = 0;
+   ashift1 = rshift1 = gshift1 = bshift1 = 0;
+   ashift2 = rshift2 = gshift2 = bshift2 = 1;
 
-      if (fread(&bih.header_size + 1, bih.header_size - 4, 1, im->fp) != 1)
-         goto quit;
+   if (bih.header_size == 12)
+     {
+        w = SWAP_LE_16(bih.bch.width);
+        h = SWAP_LE_16(bih.bch.height);
+//      planes = SWAP_LE_16(bih.bch.planes);
+        bitcount = SWAP_LE_16(bih.bch.bpp);
+     }
+   else if (bih.header_size >= 16)
+     {
+        w = SWAP_LE_32(bih.bih.width);
+        h = SWAP_LE_32(bih.bih.height);
+//      planes = SWAP_LE_16(bih.bih.planes);
+        bitcount = SWAP_LE_16(bih.bih.bpp);
+        comp = SWAP_LE_32(bih.bih.compression);
+//      imgsize = SWAP_LE_32(bih.bih.size);  /* We don't use this */
 
-      comp = BI_RGB;
-      amask = rmask = gmask = bmask = 0;
-      ashift1 = rshift1 = gshift1 = bshift1 = 0;
-      ashift2 = rshift2 = gshift2 = bshift2 = 1;
+        if (bih.header_size >= 40 &&
+            (comp == BI_BITFIELDS || comp == BI_ALPHABITFIELDS))
+          {
+             if (bih.header_size == 40)
+               {
+                  ncols = (comp == BI_ALPHABITFIELDS) ? 4 : 3;
+                  if (mm_read(&bih.bih.mask_r, 4 * ncols))
+                     goto quit;
+               }
+             rmask = SWAP_LE_32(bih.bih.mask_r);
+             gmask = SWAP_LE_32(bih.bih.mask_g);
+             bmask = SWAP_LE_32(bih.bih.mask_b);
+             amask = SWAP_LE_32(bih.bih.mask_a);
+          }
+     }
+   else
+     {
+        goto quit;
+     }
 
-      UNSET_FLAG(im->flags, F_HAS_ALPHA);
+   UPDATE_FLAG(im->flags, F_HAS_ALPHA, amask);
 
-      if (bih.header_size == 12)
-        {
-           w = SWAP_LE_16(bih.bch.width);
-           h = SWAP_LE_16(bih.bch.height);
-//         planes = SWAP_LE_16(bih.bch.planes);
-           bitcount = SWAP_LE_16(bih.bch.bpp);
-        }
-      else if (bih.header_size >= 16)
-        {
-           w = SWAP_LE_32(bih.bih.width);
-           h = SWAP_LE_32(bih.bih.height);
-//         planes = SWAP_LE_16(bih.bih.planes);
-           bitcount = SWAP_LE_16(bih.bih.bpp);
-           comp = SWAP_LE_32(bih.bih.compression);
-//         imgsize = SWAP_LE_32(bih.bih.size);  /* We don't use this */
+   imgsize = size - bfh_offset;
+   D("w=%3d h=%3d bitcount=%d comp=%d imgsize=%d\n",
+     w, h, bitcount, comp, imgsize);
 
-           if (bih.header_size >= 40 &&
-               (comp == BI_BITFIELDS || comp == BI_ALPHABITFIELDS))
-             {
-                if (bih.header_size == 40)
-                  {
-                     ncols = (comp == BI_ALPHABITFIELDS) ? 4 : 3;
-                     if (fread(&bih.bih.mask_r, 4, ncols, im->fp) != ncols)
-                        goto quit;
-                  }
-                rmask = SWAP_LE_32(bih.bih.mask_r);
-                gmask = SWAP_LE_32(bih.bih.mask_g);
-                bmask = SWAP_LE_32(bih.bih.mask_b);
-                amask = SWAP_LE_32(bih.bih.mask_a);
-                if (amask)
-                   SET_FLAG(im->flags, F_HAS_ALPHA);
-             }
-        }
-      else
-        {
-           goto quit;
-        }
+   /* "Bottom-up" images are loaded but not properly flipped */
+   h = abs(h);
 
-      imgsize = size - offset;
-      D("w=%3d h=%3d bitcount=%d comp=%d imgsize=%d\n",
-        w, h, bitcount, comp, imgsize);
+   if (!IMAGE_DIMENSIONS_OK(w, h))
+      goto quit;
 
-      /* "Bottom-up" images are loaded but not properly flipped */
-      h = abs(h);
+   switch (bitcount)
+     {
+     default:
+        goto quit;
 
-      if (!IMAGE_DIMENSIONS_OK(w, h))
-         goto quit;
-
-      switch (bitcount)
-        {
-        default:
-           goto quit;
-
-        case 1:
-        case 4:
-        case 8:
-           ncols = (offset - bih.header_size - 14);
-           if (bih.header_size == 12)
-             {
-                ncols /= 3;
-                if (ncols > 256)
-                   ncols = 256;
-                for (i = 0; i < ncols; i++)
-                   if (fread(&rgbQuads[i], 3, 1, im->fp) != 1)
-                      goto quit;
-             }
-           else
-             {
-                ncols /= 4;
-                if (ncols > 256)
-                   ncols = 256;
-                if (fread(rgbQuads, 4, ncols, im->fp) != ncols)
+     case 1:
+     case 4:
+     case 8:
+        ncols = (bfh_offset - bih.header_size - 14);
+        if (bih.header_size == 12)
+          {
+             ncols /= 3;
+             if (ncols > 256)
+                ncols = 256;
+             for (i = 0; i < ncols; i++)
+                if (mm_read(&rgbQuads[i], 3))
                    goto quit;
-             }
-           for (i = 0; i < ncols; i++)
-              argbCmap[i] =
-                 PIXEL_ARGB(0xff, rgbQuads[i].rgbRed, rgbQuads[i].rgbGreen,
-                            rgbQuads[i].rgbBlue);
-           D("ncols=%d\n", ncols);
-           break;
+          }
+        else
+          {
+             ncols /= 4;
+             if (ncols > 256)
+                ncols = 256;
+             if (mm_read(rgbQuads, 4 * ncols))
+                goto quit;
+          }
+        for (i = 0; i < ncols; i++)
+           argbCmap[i] =
+              PIXEL_ARGB(0xff, rgbQuads[i].rgbRed, rgbQuads[i].rgbGreen,
+                         rgbQuads[i].rgbBlue);
+        D("ncols=%d\n", ncols);
+        break;
 
-        case 24:
-           break;
+     case 24:
+        break;
 
-        case 16:
-        case 32:
-           if (comp == BI_BITFIELDS || comp == BI_ALPHABITFIELDS)
-             {
-                unsigned int        bit, bithi;
-                unsigned int        mask;
+     case 16:
+     case 32:
+        if (comp == BI_BITFIELDS || comp == BI_ALPHABITFIELDS)
+          {
+             unsigned int        bit, bithi;
+             unsigned int        mask;
 
-                D("mask   ARGB: %08x %08x %08x %08x\n",
-                  amask, rmask, gmask, bmask);
-                if (bitcount == 16)
-                  {
-                     amask &= 0xffffU;
-                     rmask &= 0xffffU;
-                     gmask &= 0xffffU;
-                     bmask &= 0xffffU;
-                  }
-                if (rmask == 0 && gmask == 0 && bmask == 0)
-                   goto quit;
-                for (bit = 0; bit < bitcount; bit++)
-                  {
-                     /* Find LSB bit positions */
-                     bithi = bitcount - bit - 1;
-                     mask = 1 << bithi;
-                     if (amask & mask)
-                        ashift1 = bithi;
-                     if (bmask & mask)
-                        bshift1 = bithi;
-                     if (gmask & mask)
-                        gshift1 = bithi;
-                     if (rmask & mask)
-                        rshift1 = bithi;
+             D("mask   ARGB: %08x %08x %08x %08x\n",
+               amask, rmask, gmask, bmask);
+             if (bitcount == 16)
+               {
+                  amask &= 0xffffU;
+                  rmask &= 0xffffU;
+                  gmask &= 0xffffU;
+                  bmask &= 0xffffU;
+               }
+             if (rmask == 0 && gmask == 0 && bmask == 0)
+                goto quit;
+             for (bit = 0; bit < bitcount; bit++)
+               {
+                  /* Find LSB bit positions */
+                  bithi = bitcount - bit - 1;
+                  mask = 1 << bithi;
+                  if (amask & mask)
+                     ashift1 = bithi;
+                  if (bmask & mask)
+                     bshift1 = bithi;
+                  if (gmask & mask)
+                     gshift1 = bithi;
+                  if (rmask & mask)
+                     rshift1 = bithi;
 
-                     /* Find MSB bit positions */
-                     mask = 1 << bit;
-                     if (amask & mask)
-                        ashift2 = bit;
-                     if (rmask & mask)
-                        rshift2 = bit;
-                     if (gmask & mask)
-                        gshift2 = bit;
-                     if (bmask & mask)
-                        bshift2 = bit;
-                  }
+                  /* Find MSB bit positions */
+                  mask = 1 << bit;
+                  if (amask & mask)
+                     ashift2 = bit;
+                  if (rmask & mask)
+                     rshift2 = bit;
+                  if (gmask & mask)
+                     gshift2 = bit;
+                  if (bmask & mask)
+                     bshift2 = bit;
+               }
 
-                /* Calculate shift2s as bits in mask */
-                ashift2 -= ashift1 - 1;
-                rshift2 -= rshift1 - 1;
-                gshift2 -= gshift1 - 1;
-                bshift2 -= bshift1 - 1;
-             }
-           else if (bitcount == 16)
-             {
-                rmask = 0x7C00;
-                gmask = 0x03E0;
-                bmask = 0x001F;
-                rshift1 = 10;
-                gshift1 = 5;
-                bshift1 = 0;
-                rshift2 = gshift2 = bshift2 = 5;
-             }
-           else if (bitcount == 32)
-             {
-                amask = 0xFF000000;
-                rmask = 0x00FF0000;
-                gmask = 0x0000FF00;
-                bmask = 0x000000FF;
-                ashift1 = 24;
-                rshift1 = 16;
-                gshift1 = 8;
-                bshift1 = 0;
-                ashift2 = rshift2 = gshift2 = bshift2 = 8;
-             }
+             /* Calculate shift2s as bits in mask */
+             ashift2 -= ashift1 - 1;
+             rshift2 -= rshift1 - 1;
+             gshift2 -= gshift1 - 1;
+             bshift2 -= bshift1 - 1;
+          }
+        else if (bitcount == 16)
+          {
+             rmask = 0x7C00;
+             gmask = 0x03E0;
+             bmask = 0x001F;
+             rshift1 = 10;
+             gshift1 = 5;
+             bshift1 = 0;
+             rshift2 = gshift2 = bshift2 = 5;
+          }
+        else if (bitcount == 32)
+          {
+             amask = 0xFF000000;
+             rmask = 0x00FF0000;
+             gmask = 0x0000FF00;
+             bmask = 0x000000FF;
+             ashift1 = 24;
+             rshift1 = 16;
+             gshift1 = 8;
+             bshift1 = 0;
+             ashift2 = rshift2 = gshift2 = bshift2 = 8;
+          }
 
-           /* Calculate shift2s as scale factor */
-           ashift2 = ashift2 > 0 ? (1 << ashift2) - 1 : 1;
-           rshift2 = rshift2 > 0 ? (1 << rshift2) - 1 : 1;
-           gshift2 = gshift2 > 0 ? (1 << gshift2) - 1 : 1;
-           bshift2 = bshift2 > 0 ? (1 << bshift2) - 1 : 1;
+        /* Calculate shift2s as scale factor */
+        ashift2 = ashift2 > 0 ? (1 << ashift2) - 1 : 1;
+        rshift2 = rshift2 > 0 ? (1 << rshift2) - 1 : 1;
+        gshift2 = gshift2 > 0 ? (1 << gshift2) - 1 : 1;
+        bshift2 = bshift2 > 0 ? (1 << bshift2) - 1 : 1;
 
 #define SCALE(c, x) ((((x & c##mask)>> (c##shift1 - 0)) * 255) / c##shift2)
 
-           D("mask   ARGB: %08x %08x %08x %08x\n", amask, rmask, gmask, bmask);
-           D("shift1 ARGB: %8d %8d %8d %8d\n",
-             ashift1, rshift1, gshift1, bshift1);
-           D("shift2 ARGB: %8d %8d %8d %8d\n",
-             ashift2, rshift2, gshift2, bshift2);
-           D("check  ARGB: %08x %08x %08x %08x\n",
-             SCALE(a, amask), SCALE(r, rmask),
-             SCALE(g, gmask), SCALE(b, bmask));
-           break;
-        }
+        D("mask   ARGB: %08x %08x %08x %08x\n", amask, rmask, gmask, bmask);
+        D("shift1 ARGB: %8d %8d %8d %8d\n", ashift1, rshift1, gshift1, bshift1);
+        D("shift2 ARGB: %8d %8d %8d %8d\n", ashift2, rshift2, gshift2, bshift2);
+        D("check  ARGB: %08x %08x %08x %08x\n",
+          SCALE(a, amask), SCALE(r, rmask), SCALE(g, gmask), SCALE(b, bmask));
+        break;
+     }
 
-      im->w = w;
-      im->h = h;
-   }
+   im->w = w;
+   im->h = h;
 
    if (!load_data)
      {
@@ -390,20 +404,13 @@ load2(ImlibImage * im, int load_data)
 
    /* Load data */
 
-   fseek(im->fp, offset, SEEK_SET);
-
    if (!__imlib_AllocateData(im))
       goto quit;
 
-   buffer = malloc(imgsize);
-   if (!buffer)
-      goto quit;
+   fptr += bfh_offset;
 
-   if (fread(buffer, imgsize, 1, im->fp) != 1)
-      goto quit;
-
-   buffer_ptr = buffer;
-   buffer_end = buffer + imgsize;
+   buffer_ptr = fptr;
+   buffer_end = fptr + imgsize;
 
    ptr = im->data + ((h - 1) * w);
 
@@ -778,7 +785,8 @@ load2(ImlibImage * im, int load_data)
  quit:
    if (rc <= 0)
       __imlib_FreeData(im);
-   free(buffer);
+   if (fdata != MAP_FAILED)
+      munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -841,6 +849,5 @@ void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "bmp" };
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }
