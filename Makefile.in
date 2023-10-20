@@ -191,7 +191,6 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
-DIST_SUBDIRS = src data doc test
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/README.in \
 	$(srcdir)/config.h.in $(srcdir)/imlib2.pc.in AUTHORS COPYING \
 	ChangeLog INSTALL TODO compile config.guess config.sub \
@@ -409,6 +408,7 @@ AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
 @BUILD_TEST_TRUE@SUBDIRS_TEST = test
 SUBDIRS = src data doc $(SUBDIRS_TEST)
+DIST_SUBDIRS = src data doc
 CLEANFILES = $(PACKAGE).spec
 MAINTAINERCLEANFILES = aclocal.m4 compile \
 		       config.guess config.h.in config.sub configure \

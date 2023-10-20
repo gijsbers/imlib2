@@ -1,5 +1,5 @@
 AM_CFLAGS            = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
-AM_CPPFLAGS          = -I$(top_builddir) -I$(top_srcdir)/src/lib
+AM_CPPFLAGS          = -I$(top_builddir) -I$(top_builddir)/src/lib -I$(top_srcdir)/src/lib
 
 pkgdir                = $(libdir)/imlib2/filters
 pkg_LTLIBRARIES       = testfilter.la bumpmap.la colormod.la

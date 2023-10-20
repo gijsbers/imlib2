@@ -1,7 +1,8 @@
 #ifndef X11_CONTEXT_H
 #define X11_CONTEXT_H 1
 
-#include "common.h"
+#include <X11/Xlib.h>
+#include "types.h"
 
 typedef struct _Context {
    int                 last_use;
@@ -12,7 +13,7 @@ typedef struct _Context {
    struct _Context    *next;
 
    DATA8              *palette;
-   DATA8               palette_type;
+   unsigned char       palette_type;
    void               *r_dither;
    void               *g_dither;
    void               *b_dither;

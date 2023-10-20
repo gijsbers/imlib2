@@ -29,8 +29,10 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
 {
    int                 x, y, inx, iny;
    const DATA32       *src;
+   const DATA16       *s16;
    DATA32             *ptr;
    int                 pixel;
+   DATA16              p16;
    int                 bgr = 0;
 
    if (!data)
@@ -160,73 +162,44 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
 #undef RMSK
 #undef GMSK
 #undef BMSK
-#undef R1SH
-#undef G1SH
-#undef B1SH
-#undef R2SH
-#undef G2SH
-#undef B2SH
-#undef P1
-#undef P2
-#define MP(x, y) ((XGetPixel(mxim, (x), (y))) ? 0xff000000 : 0)
-#define RMSK  0xf80000
-#define GMSK  0x00fc00
-#define BMSK  0x0000f8
-#define R1SH(p)  ((p) << 8)
-#define G1SH(p)  ((p) << 5)
-#define B1SH(p)  ((p) << 3)
-#define R2SH(p)  ((p) >> 8)
-#define G2SH(p)  ((p) >> 11)
-#define B2SH(p)  ((p) >> 13)
-#define P1(p) (R1SH(p) & RMSK) | (G1SH(p) & GMSK) | (B1SH(p) & BMSK)
-#define P2(p) (R2SH(p) & RMSK) | (G2SH(p) & GMSK) | (B2SH(p) & BMSK)
+#undef RSH
+#undef GSH
+#undef BSH
+#define MP(x, y) ((XGetPixel(mxim, (x), (y))) ? 0xff: 0)
+#define RMSK  0x1f
+#define GMSK  0x3f
+#define BMSK  0x1f
+#define RSH(p)  ((p) >> 11)
+#define GSH(p)  ((p) >>  5)
+#define BSH(p)  ((p) >>  0)
+#define RVAL(p) (255 * (RSH(p) & RMSK)) / RMSK
+#define GVAL(p) (255 * (GSH(p) & GMSK)) / GMSK
+#define BVAL(p) (255 * (BSH(p) & BMSK)) / BMSK
         if (mxim)
           {
              for (y = 0; y < h_src; y++)
                {
-                  src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = (DATA16 *) (xim->data + (xim->bytes_per_line * y));
                   ptr = data + ((y + iny) * w_dst) + inx;
-                  for (x = 0; x < (w_src - 1); x += 2)
+                  for (x = 0; x < w_src; x++)
                     {
-#ifdef WORDS_BIGENDIAN
-                       *ptr++ = MP(x + 1, y) | P2(*src);
-                       *ptr++ = MP(x, y) | P1(*src);
-#else
-                       *ptr++ = MP(x, y) | P1(*src);
-                       *ptr++ = MP(x + 1, y) | P2(*src);
-#endif
-                       src++;
-                    }
-                  if (x == (w_src - 1))
-                    {
-                       pixel = XGetPixel(xim, x, y);
-                       *ptr++ = MP(x, y) | P1(pixel);
+                       p16 = *s16++;
+                       *ptr++ =
+                          PIXEL_ARGB(MP(x, y), RVAL(p16), GVAL(p16), BVAL(p16));
                     }
                }
           }
-#undef MP
-#define MP(x, y) (0xff000000)
         else
           {
              for (y = 0; y < h_src; y++)
                {
-                  src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = (DATA16 *) (xim->data + (xim->bytes_per_line * y));
                   ptr = data + ((y + iny) * w_dst) + inx;
-                  for (x = 0; x < (w_src - 1); x += 2)
+                  for (x = 0; x < w_src; x++)
                     {
-#ifdef WORDS_BIGENDIAN
-                       *ptr++ = MP(x + 1, y) | P2(*src);
-                       *ptr++ = MP(x, y) | P1(*src);
-#else
-                       *ptr++ = MP(x, y) | P1(*src);
-                       *ptr++ = MP(x + 1, y) | P2(*src);
-#endif
-                       src++;
-                    }
-                  if (x == (w_src - 1))
-                    {
-                       pixel = XGetPixel(xim, x, y);
-                       *ptr++ = MP(x, y) | P1(pixel);
+                       p16 = *s16++;
+                       *ptr++ =
+                          PIXEL_ARGB(0xff, RVAL(p16), GVAL(p16), BVAL(p16));
                     }
                }
           }
@@ -236,73 +209,44 @@ __imlib_GrabXImageToRGBA(DATA32 * data,
 #undef RMSK
 #undef GMSK
 #undef BMSK
-#undef R1SH
-#undef G1SH
-#undef B1SH
-#undef R2SH
-#undef G2SH
-#undef B2SH
-#undef P1
-#undef P2
-#define MP(x, y) ((XGetPixel(mxim, (x), (y))) ? 0xff000000 : 0)
-#define RMSK  0xf80000
-#define GMSK  0x00f800
-#define BMSK  0x0000f8
-#define R1SH(p)  ((p) << 9)
-#define G1SH(p)  ((p) << 6)
-#define B1SH(p)  ((p) << 3)
-#define R2SH(p)  ((p) >> 7)
-#define G2SH(p)  ((p) >> 10)
-#define B2SH(p)  ((p) >> 13)
-#define P1(p) (R1SH(p) & RMSK) | (G1SH(p) & GMSK) | (B1SH(p) & BMSK)
-#define P2(p) (R2SH(p) & RMSK) | (G2SH(p) & GMSK) | (B2SH(p) & BMSK)
+#undef RSH
+#undef GSH
+#undef BSH
+#define MP(x, y) ((XGetPixel(mxim, (x), (y))) ? 0xff: 0)
+#define RMSK  0x1f
+#define GMSK  0x1f
+#define BMSK  0x1f
+#define RSH(p)  ((p) >> 10)
+#define GSH(p)  ((p) >>  5)
+#define BSH(p)  ((p) >>  0)
+#define RVAL(p) (255 * (RSH(p) & RMSK)) / RMSK
+#define GVAL(p) (255 * (GSH(p) & GMSK)) / GMSK
+#define BVAL(p) (255 * (BSH(p) & BMSK)) / BMSK
         if (mxim)
           {
              for (y = 0; y < h_src; y++)
                {
-                  src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = (DATA16 *) (xim->data + (xim->bytes_per_line * y));
                   ptr = data + ((y + iny) * w_dst) + inx;
-                  for (x = 0; x < (w_src - 1); x += 2)
+                  for (x = 0; x < w_src; x++)
                     {
-#ifdef WORDS_BIGENDIAN
-                       *ptr++ = MP(x + 1, y) | P2(*src);
-                       *ptr++ = MP(x, y) | P1(*src);
-#else
-                       *ptr++ = MP(x, y) | P1(*src);
-                       *ptr++ = MP(x + 1, y) | P2(*src);
-#endif
-                       src++;
-                    }
-                  if (x == (w_src - 1))
-                    {
-                       pixel = XGetPixel(xim, x, y);
-                       *ptr++ = MP(x, y) | P1(pixel);
+                       p16 = *s16++;
+                       *ptr++ =
+                          PIXEL_ARGB(MP(x, y), RVAL(p16), GVAL(p16), BVAL(p16));
                     }
                }
           }
-#undef MP
-#define MP(x, y) (0xff000000)
         else
           {
              for (y = 0; y < h_src; y++)
                {
-                  src = (DATA32 *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = (DATA16 *) (xim->data + (xim->bytes_per_line * y));
                   ptr = data + ((y + iny) * w_dst) + inx;
-                  for (x = 0; x < (w_src - 1); x += 2)
+                  for (x = 0; x < w_src; x++)
                     {
-#ifdef WORDS_BIGENDIAN
-                       *ptr++ = MP(x + 1, y) | P2(*src);
-                       *ptr++ = MP(x, y) | P1(*src);
-#else
-                       *ptr++ = MP(x, y) | P1(*src);
-                       *ptr++ = MP(x + 1, y) | P2(*src);
-#endif
-                       src++;
-                    }
-                  if (x == (w_src - 1))
-                    {
-                       pixel = XGetPixel(xim, x, y);
-                       *ptr++ = MP(x, y) | P1(pixel);
+                       p16 = *s16++;
+                       *ptr++ =
+                          PIXEL_ARGB(0xff, RVAL(p16), GVAL(p16), BVAL(p16));
                     }
                }
           }

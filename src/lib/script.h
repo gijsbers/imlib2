@@ -2,8 +2,7 @@
 #define _DYN_FUNCTION_H_
 
 #include <stdarg.h>
-#include "common.h"
-#include "image.h"
+#include "types.h"
 
 #define VAR_CHAR 1
 #define VAR_PTR  2

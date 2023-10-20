@@ -1,9 +1,9 @@
 #ifndef __LOADERS
 #define __LOADERS 1
 
-#include "image.h"
+#include "types.h"
 
-struct _imlibloader {
+struct _ImlibLoader {
    char               *file;
    int                 num_formats;
    char              **formats;
@@ -17,5 +17,8 @@ struct _imlibloader {
    ImlibLoader        *next;
    int                 (*load2)(ImlibImage * im, int load_data);
 };
+
+void                __imlib_RemoveAllLoaders(void);
+ImlibLoader       **__imlib_GetLoaderList(void);
 
 #endif /* __LOADERS */

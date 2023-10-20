@@ -12,7 +12,6 @@
 #include "loader_common.h"
 
 #include <stdint.h>
-#include <sys/mman.h>
 
 #define DBG_PFX "LDR-tga"
 
@@ -189,7 +188,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   UPDATE_FLAG(im->flags, F_HAS_ALPHA, hasa);
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA, hasa);
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -537,15 +536,15 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    header.heightHi = im->h >> 8;
 
    /* total number of bits per pixel */
-   header.bpp = (im->flags & F_HAS_ALPHA) ? 32 : 24;
+   header.bpp = IM_FLAG_ISSET(im, F_HAS_ALPHA) ? 32 : 24;
    /* number of extra (alpha) bits per pixel */
-   header.descriptor = (im->flags & F_HAS_ALPHA) ? 8 : 0;
+   header.descriptor = IM_FLAG_ISSET(im, F_HAS_ALPHA) ? 8 : 0;
 
    /* top-to-bottom storage */
    header.descriptor |= TGA_DESC_VERTICAL;
 
    /* allocate a buffer to receive the BGRA-swapped pixel values */
-   buf = malloc(im->w * im->h * ((im->flags & F_HAS_ALPHA) ? 4 : 3));
+   buf = malloc(im->w * im->h * (IM_FLAG_ISSET(im, F_HAS_ALPHA) ? 4 : 3));
    if (!buf)
       goto quit;
 
@@ -566,7 +565,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
              *bufptr++ = PIXEL_B(pixel);
              *bufptr++ = PIXEL_G(pixel);
              *bufptr++ = PIXEL_R(pixel);
-             if (im->flags & F_HAS_ALPHA)
+             if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
                 *bufptr++ = PIXEL_A(pixel);
           }                     /* end for (each pixel in row) */
 
@@ -579,7 +578,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    fwrite(&header, sizeof(header), 1, f);
 
    /* write the image data */
-   fwrite(buf, 1, im->w * im->h * ((im->flags & F_HAS_ALPHA) ? 4 : 3), f);
+   fwrite(buf, 1, im->w * im->h * (IM_FLAG_ISSET(im, F_HAS_ALPHA) ? 4 : 3), f);
 
    rc = LOAD_SUCCESS;
 

@@ -7,7 +7,6 @@
 #include "loader_common.h"
 
 #include <libheif/heif.h>
-#include <sys/mman.h>
 
 #define HEIF_BYTES_TO_CHECK 12L
 #define HEIF_8BIT_TO_PIXEL_ARGB(plane, has_alpha) \
@@ -84,10 +83,7 @@ load2(ImlibImage * im, int load_data)
       goto quit;
 
    img_has_alpha = heif_image_handle_has_alpha_channel(img_handle);
-   if (img_has_alpha)
-      SET_FLAG(im->flags, F_HAS_ALPHA);
-   else
-      UNSET_FLAG(im->flags, F_HAS_ALPHA);
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA, img_has_alpha);
 
    if (!load_data)
      {

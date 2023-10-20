@@ -1,6 +1,10 @@
-#include "filter_common.h"
-#include <string.h>
+#include "config.h"
 #include <Imlib2.h>
+
+#include <stdlib.h>
+#include <string.h>
+
+#include "filter_common.h"
 
 void
 init(ImlibFilterInfo * info)

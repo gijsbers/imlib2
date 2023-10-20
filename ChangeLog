@@ -1,3 +1,52 @@
+v1.8.1 - 2022-03-15
+--------------------
+Kim Woelders (32):
+      PNM, XPM loaders: Fix trouble with non-ascii characters
+      XPM loader: Reduce signature window size some more
+      Refactor image flags stuff
+      Remove some unused image flags and deprecate functions referencing them
+      JPEG, XBM loaders: Drop pointless clearing of flag
+      Deal consistently with including Imlib2.h
+      Merge x11_draw.c/h into x11_pixmap.c/h
+      x11_rgba.c: Add some missing static qualifiers
+      x11_color.c: Make most __imlib_AllocColors*() functions static
+      x11_...: Introduce palette type enum
+      Loader includes tweaks
+      Move some loader related function prototypes to loaders.h
+      common.h: Drop round() macro
+      debug.c/h: Move __EXPORT__ to .c file
+      Remove system includes from common.h
+      Move x_VAL() macros to common.h
+      Introduce types.h
+      Remove some unnecessary headers
+      grad.c: Refactor __imlib_DrawGradient() and __imlib_DrawHsvaGradient()
+      Only have one CLIP macro
+      Mostly cosmetic tweaks around clipping checks
+      test: Command line options tweak
+      test_grab: Enable testing depths other than 24 and 32
+      x11_grab.c: Correct 16 and 15 bit depth grabbing
+      TIFF loader: Remove obsolete comment
+      ID3 loader: Drop inline and likely stuff
+      ID3 loader: Disable tags stuff
+      Introduce __imlib_GetKey()
+      Merge __imlib_FindBestLoader...() functions
+      test: Properly include test.h in test SOURCES
+      test: Exclude from tarball
+      v1.8.1
+
+Matthias Grosser (1):
+      imlib2: saving progressive JPEG
+
+NRK (1):
+      XPM Loader: limit signature check to first 4KiB
+
+Tobias Stoeckmann (2):
+      imlib2: allow compilation without x headers
+      imlib2_load: fix typo
+
+Youssef Rebahi-Gilbert (1):
+      fix: possible memleak in rgba save on big endian systems
+
 v1.8.0 - 2022-02-06
 --------------------
 Kim Woelders (86):

@@ -14,7 +14,6 @@
 
 #include "dynamic_filters.h"
 #include "file.h"
-#include "image.h"
 #include "script.h"
 
 static ImlibExternalFilter *filters = NULL;

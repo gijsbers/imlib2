@@ -1,7 +1,6 @@
 #ifndef __FILTER_COMMON_H
 #define __FILTER_COMMON_H 1
 
-#include "config.h"
 #include "common.h"
 #include "dynamic_filters.h"
 #include "image.h"

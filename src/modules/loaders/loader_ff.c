@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <arpa/inet.h>
-#include <sys/mman.h>
 
 #define mm_check(p) ((const char *)(p) <= (const char *)fdata + im->fsize)
 
@@ -43,7 +42,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   SET_FLAG(im->flags, F_HAS_ALPHA);
+   IM_FLAG_SET(im, F_HAS_ALPHA);
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);

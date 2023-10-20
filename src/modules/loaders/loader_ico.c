@@ -8,7 +8,6 @@
 #include "loader_common.h"
 
 #include <limits.h>
-#include <sys/mman.h>
 
 #define DBG_PFX "LDR-ico"
 
@@ -139,6 +138,7 @@ ico_read_icon(ico_t * ico, int ino)
 {
    ie_t               *ie;
    unsigned int        size;
+
 #ifdef WORDS_BIGENDIAN
    unsigned int        nr;
 #endif
@@ -307,7 +307,7 @@ ico_load(ico_t * ico, ImlibImage * im, int load_data)
    im->w = w;
    im->h = h;
 
-   SET_FLAG(im->flags, F_HAS_ALPHA);
+   IM_FLAG_SET(im, F_HAS_ALPHA);
 
    if (!load_data)
       return 1;

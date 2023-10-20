@@ -13,8 +13,6 @@
 
 #include "loader_common.h"
 
-#include <sys/mman.h>
-
 #define DBG_PFX "LDR-lbm"
 
 #define L2RLONG(a) ((((int)((a)[0]) & 0xff) << 24) + (((int)((a)[1]) & 0xff) << 16) + (((int)((a)[2]) & 0xff) << 8) + ((int)((a)[3]) & 0xff))
@@ -489,13 +487,13 @@ load2(ImlibImage * im, int load_data)
 
    ilbm.mask = ilbm.bmhd.data[9];
 
-   UPDATE_FLAG(im->flags, F_HAS_ALPHA, ilbm.mask || ilbm.depth == 32);
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA, ilbm.mask || ilbm.depth == 32);
 
    env = getenv("IMLIB2_LBM_NOMASK");
    if (env
        && (!strcmp(env, "true") || !strcmp(env, "1") || !strcmp(env, "yes")
            || !strcmp(env, "on")))
-      UNSET_FLAG(im->flags, F_HAS_ALPHA);
+      IM_FLAG_CLR(im, F_HAS_ALPHA);
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);

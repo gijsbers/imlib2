@@ -1,12 +1,8 @@
-/* To do: */
-/* o Need code to handle tiff with different orientations */
-
 #include "loader_common.h"
 
 #include <setjmp.h>
 #include <stdint.h>
 #include <tiffio.h>
-#include <sys/mman.h>
 
 /* This is a wrapper data structure for TIFFRGBAImage, so that data can be */
 /* passed into the callbacks. More elegent, I think, than a bunch of globals */
@@ -313,8 +309,8 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   UPDATE_FLAG(im->flags, F_HAS_ALPHA,
-               rgba_image.rgba.alpha != EXTRASAMPLE_UNSPECIFIED);
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA,
+                  rgba_image.rgba.alpha != EXTRASAMPLE_UNSPECIFIED);
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -374,7 +370,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    double              alpha_factor;
    int                 x, y;
    uint8_t             r, g, b, a = 0;
-   int                 has_alpha = IMAGE_HAS_ALPHA(im);
+   int                 has_alpha = IM_FLAG_ISSET(im, F_HAS_ALPHA);
    int                 i;
 
    /* By default uses patent-free use COMPRESSION_DEFLATE,

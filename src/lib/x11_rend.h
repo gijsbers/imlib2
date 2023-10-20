@@ -1,7 +1,7 @@
 #ifndef X11_REND_H
 #define X11_REND_H 1
 
-#include "common.h"
+#include "types.h"
 
 DATA32              __imlib_RenderGetPixel(Display * d, Drawable w, Visual * v,
                                            Colormap cm, int depth, DATA8 r,

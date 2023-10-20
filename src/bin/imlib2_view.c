@@ -1,4 +1,5 @@
 #include "config.h"
+#include <Imlib2.h>
 
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
@@ -8,7 +9,6 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-#include <Imlib2.h>
 #include "props.h"
 
 #define MIN(a, b) ((a < b) ? a : b)

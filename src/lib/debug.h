@@ -17,10 +17,9 @@
 #define DL(fmt...) DC(DBG_LDR2, fmt)
 #endif
 
-__EXPORT__ extern unsigned int __imlib_debug;
+extern unsigned int __imlib_debug;
 
-__EXPORT__ __PRINTF_2__ void __imlib_printf(const char *pfx,
-                                            const char *fmt, ...);
+__PRINTF_2__ void   __imlib_printf(const char *pfx, const char *fmt, ...);
 
 unsigned int        __imlib_time_us(void);
 

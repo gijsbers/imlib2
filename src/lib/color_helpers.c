@@ -1,8 +1,12 @@
-#include "color_helpers.h"
 /*
  * Color space conversion helper routines
  * Convert between rgb and hsv and between rgb and hls
  */
+#include "common.h"
+
+#include <math.h>
+
+#include "color_helpers.h"
 
 void
 __imlib_rgb_to_hsv(int r, int g, int b, float *h, float *s, float *v)

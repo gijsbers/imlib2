@@ -1,8 +1,6 @@
 #ifndef __FILTER
 #define __FILTER 1
 
-#include "common.h"
-
 typedef struct {
    int                 xoff, yoff;
    int                 a, r, g, b;

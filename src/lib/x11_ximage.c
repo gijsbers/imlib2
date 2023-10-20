@@ -1,5 +1,8 @@
 #include "common.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/XShm.h>
 #include <X11/Xutil.h>

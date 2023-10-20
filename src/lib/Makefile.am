@@ -42,6 +42,7 @@ rotate.c	rotate.h	\
 scale.c		scale.h		\
 script.c	script.h	\
 span.c		span.h		\
+types.h	\
 updates.c	updates.h
 
 MMX_SRCS = \
@@ -62,7 +63,6 @@ if BUILD_X11
 libImlib2_la_SOURCES += \
 x11_color.c	x11_color.h	\
 x11_context.c	x11_context.h	\
-x11_draw.c	x11_draw.h	\
 x11_grab.c	x11_grab.h	\
 x11_pixmap.c	x11_pixmap.h	\
 x11_rend.c	x11_rend.h	\

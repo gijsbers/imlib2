@@ -1,11 +1,14 @@
 #include "common.h"
+
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "debug.h"
 
 #if IMLIB2_DEBUG
 
-unsigned int        __imlib_debug = 0;
+__EXPORT__ unsigned int __imlib_debug = 0;
 
 static FILE        *opt_fout = NULL;
 
@@ -52,7 +55,7 @@ __imlib_time_us(void)
 #endif
 }
 
-void
+__EXPORT__ void
 __imlib_printf(const char *pfx, const char *fmt, ...)
 {
    char                fmtx[1024];

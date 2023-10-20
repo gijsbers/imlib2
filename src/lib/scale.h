@@ -1,7 +1,7 @@
 #ifndef __SCALE
 #define __SCALE 1
 
-#include "common.h"
+#include "types.h"
 
 typedef struct _imlib_scale_info ImlibScaleInfo;
 

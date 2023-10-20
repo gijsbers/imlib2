@@ -1,8 +1,7 @@
 #ifndef __RGBADRAW
 #define __RGBADRAW 1
 
-#include "common.h"
-#include "updates.h"
+#include "types.h"
 
 #define IN_SEGMENT(x, sx, sw) \
 ((unsigned)((x) - (sx)) < (unsigned)(sw))
@@ -13,20 +12,6 @@
 #define IN_RECT(x, y, rx, ry, rw, rh) \
 ( ((unsigned)((x) - (rx)) < (unsigned)(rw)) && \
   ((unsigned)((y) - (ry)) < (unsigned)(rh)) )
-
-#define CLIP_RECT_TO_RECT(x, y, w, h, rx, ry, rw, rh) \
-{								\
-  int   _t0, _t1;						\
-								\
-  _t0 = MAX(x, (rx));						\
-  _t1 = MIN(x + w, (rx) + (rw));				\
-  x = _t0;							\
-  w = _t1 - _t0;						\
-  _t0 = MAX(y, (ry));						\
-  _t1 = MIN(y + h, (ry) + (rh));				\
-  y = _t0;							\
-  h = _t1 - _t0;						\
-}
 
 #define DIV_255(a, x, tmp) \
 do {                           \

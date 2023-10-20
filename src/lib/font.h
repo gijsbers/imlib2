@@ -5,8 +5,8 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
-#include "common.h"
 #include "object.h"
+#include "types.h"
 
 typedef struct _Imlib_Font {
    Imlib_Object_List   _list_data;

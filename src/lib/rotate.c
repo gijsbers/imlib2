@@ -1,7 +1,10 @@
 #include "common.h"
 
+#include <stdlib.h>
+
 #include "asm_c.h"
 #include "blend.h"
+#include "image.h"
 #include "rotate.h"
 
 /*\ Linear interpolation functions \*/

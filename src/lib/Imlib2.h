@@ -3,7 +3,7 @@
 
 #define IMLIB2_VERSION_MAJOR 1
 #define IMLIB2_VERSION_MINOR 8
-#define IMLIB2_VERSION_MICRO 0
+#define IMLIB2_VERSION_MICRO 1
 
 #define IMLIB2_VERSION_(maj, min, mic) (10000 * (maj) + 100 * (min) + (mic))
 #define IMLIB2_VERSION IMLIB2_VERSION_(IMLIB2_VERSION_MAJOR, IMLIB2_VERSION_MINOR, IMLIB2_VERSION_MICRO)
@@ -35,6 +35,7 @@
 #define IMLIB2_DEPRECATED
 #endif
 
+#include <stddef.h>
 #ifndef X_DISPLAY_MISSING
 #include <X11/Xlib.h>
 #endif
@@ -239,8 +240,6 @@ EAPI void           imlib_image_get_border(Imlib_Border * border);
 EAPI void           imlib_image_set_border(Imlib_Border * border);
 EAPI void           imlib_image_set_format(const char *format);
 EAPI void           imlib_image_set_irrelevant_format(char irrelevant);
-EAPI void           imlib_image_set_irrelevant_border(char irrelevant);
-EAPI void           imlib_image_set_irrelevant_alpha(char irrelevant);
 EAPI char          *imlib_image_format(void);
 EAPI void           imlib_image_set_has_alpha(char has_alpha);
 EAPI void           imlib_image_query_pixel(int x, int y,
@@ -622,6 +621,14 @@ EAPI void           imlib_image_get_frame_info(Imlib_Frame_Info * info);
  * Deprecated functionality
  */
 
+/** Deprecated function - hasn't done anything useful ever */
+IMLIB2_DEPRECATED
+EAPI void           imlib_image_set_irrelevant_border(char irrelevant);
+
+/** Deprecated function - hasn't done anything useful ever */
+IMLIB2_DEPRECATED
+EAPI void           imlib_image_set_irrelevant_alpha(char irrelevant);
+
 /* Encodings known to Imlib2 (so far) */
 typedef enum {
    IMLIB_TTF_ENCODING_ISO_8859_1,
@@ -631,15 +638,11 @@ typedef enum {
    IMLIB_TTF_ENCODING_ISO_8859_5
 } Imlib_TTF_Encoding;
 
-/**
- * Deprecated function. Hasn't done anything useful in ~20 years.
- */
+/** Deprecated function - hasn't done anything useful in ~20 years */
 IMLIB2_DEPRECATED
 EAPI void           imlib_context_set_TTF_encoding(Imlib_TTF_Encoding encoding);
 
-/**
- * Deprecated function. Hasn't done anything useful in ~20 years.
- */
+/** Deprecated function - hasn't done anything useful in ~20 years */
 IMLIB2_DEPRECATED
 EAPI Imlib_TTF_Encoding imlib_context_get_TTF_encoding(void);
 

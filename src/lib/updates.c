@@ -1,5 +1,8 @@
 #include "common.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "updates.h"
 
 enum _t_used {

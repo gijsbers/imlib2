@@ -1,4 +1,9 @@
 #include "config.h"
+#ifndef X_DISPLAY_MISSING
+#define X_DISPLAY_MISSING
+#endif
+#include <Imlib2.h>
+
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -10,11 +15,6 @@
 #else
 #include <sys/time.h>
 #endif
-
-#ifndef X_DISPLAY_MISSING
-#define X_DISPLAY_MISSING
-#endif
-#include <Imlib2.h>
 
 #define PROG_NAME "imlib2_load"
 
@@ -31,7 +31,7 @@ static FILE        *fout;
    "  -e  : Break on error\n" \
    "  -f  : Load with imlib_load_image_fd()\n" \
    "  -i  : Load with imlib_load_image_immediately()\n" \
-   "  -n N: Reeat load N times\n" \
+   "  -n N: Repeat load N times\n" \
    "  -p  : Check that progress is called\n" \
    "  -v  : Increase verbosity\n" \
    "  -x  : Print to stderr\n"

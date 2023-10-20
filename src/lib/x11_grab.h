@@ -1,7 +1,8 @@
 #ifndef X11_GRAB_H
 #define X11_GRAB_H 1
 
-#include "common.h"
+#include <X11/Xlib.h>
+#include "types.h"
 
 int                 __imlib_GrabDrawableToRGBA(DATA32 * data, int x_dst,
                                                int y_dst, int w_dst, int h_dst,

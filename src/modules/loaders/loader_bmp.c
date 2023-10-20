@@ -9,8 +9,6 @@
  */
 #include "loader_common.h"
 
-#include <sys/mman.h>
-
 #define DBG_PFX "LDR-bmp"
 #define Dx(fmt...)
 
@@ -258,7 +256,7 @@ load2(ImlibImage * im, int load_data)
         goto quit;
      }
 
-   UPDATE_FLAG(im->flags, F_HAS_ALPHA, amask);
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA, amask);
 
    imgsize = size - bfh_offset;
    D("w=%3d h=%3d bitcount=%d comp=%d imgsize=%d\n",
@@ -687,7 +685,7 @@ load2(ImlibImage * im, int load_data)
                {
                   pixel = *(unsigned short *)buffer_ptr;
 
-                  if (im->flags & F_HAS_ALPHA)
+                  if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
                      a = SCALE(a, pixel);
                   else
                      a = 0xff;
@@ -736,7 +734,7 @@ load2(ImlibImage * im, int load_data)
                {
                   pixel = *(unsigned int *)buffer_ptr;
 
-                  if (im->flags & F_HAS_ALPHA)
+                  if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
                      a = SCALE(a, pixel);
                   else
                      a = 0xff;

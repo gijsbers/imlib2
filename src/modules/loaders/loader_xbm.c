@@ -4,8 +4,6 @@
 #define _GNU_SOURCE             /* memmem() */
 #include "loader_common.h"
 
-#include <sys/mman.h>
-
 #define DBG_PFX "LDR-xbm"
 
 static struct {
@@ -152,8 +150,6 @@ load2(ImlibImage * im, int load_data)
 
                   if (!load_data)
                      QUIT_WITH_RC(LOAD_SUCCESS);
-
-                  UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
                   header = 0;
 

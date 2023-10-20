@@ -1,3 +1,5 @@
+#include "config.h"
+#include <Imlib2.h>
 #include "common.h"
 
 #include <ctype.h>
@@ -11,9 +13,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "Imlib2.h"
 #include "dynamic_filters.h"
-#include "image.h"
 #include "script.h"
 
 /*

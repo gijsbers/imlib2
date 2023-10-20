@@ -1,7 +1,6 @@
 #include "loader_common.h"
 
 #include <math.h>
-#include <sys/mman.h>
 #include <librsvg/rsvg.h>
 
 #define DBG_PFX "LDR-svg"
@@ -153,7 +152,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   UPDATE_FLAG(im->flags, F_HAS_ALPHA, 1);
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA, 1);
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);

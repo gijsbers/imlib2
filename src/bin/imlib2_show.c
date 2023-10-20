@@ -1,4 +1,5 @@
 #include "config.h"
+#include <Imlib2.h>
 
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
@@ -9,8 +10,6 @@
 #include <sys/time.h>
 #include <math.h>
 #include <locale.h>
-
-#include <Imlib2.h>
 
 Display            *disp;
 Window              win;

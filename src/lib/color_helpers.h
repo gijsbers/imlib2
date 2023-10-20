@@ -1,8 +1,6 @@
 #ifndef __COLOR_HELPERS
 #define __COLOR_HELPERS 1
 
-#include "common.h"
-
 void                __imlib_rgb_to_hsv(int r, int g, int b, float *hue,
                                        float *saturation, float *value);
 void                __imlib_hsv_to_rgb(float hue, float saturation, float value,

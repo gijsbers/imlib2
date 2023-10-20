@@ -1,20 +1,11 @@
-#include "config.h"
+#include "common.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
-#include <math.h>
-#include <string.h>
-#include <sys/types.h>
 
-#include "blend.h"
-#include "colormod.h"
-#include "common.h"
 #include "file.h"
 #include "font.h"
-#include "image.h"
-#include "rgbadraw.h"
-#include "rotate.h"
 
 extern FT_Library   ft_lib;
 

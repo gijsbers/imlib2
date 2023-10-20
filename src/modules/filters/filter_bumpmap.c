@@ -1,8 +1,11 @@
-#include "filter_common.h"
-#include <string.h>
-#include <math.h>
+#include "config.h"
 #include <Imlib2.h>
-#include "colormod.h"
+
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "filter_common.h"
 #include "blend.h"
 
 #define PI (4 * atan(1))

@@ -1,56 +1,7 @@
 #ifndef __BLEND
 #define __BLEND 1
 
-#include "colormod.h"
-
-#ifndef WORDS_BIGENDIAN
-
-#define A_VAL(p) ((DATA8 *)(p))[3]
-#define R_VAL(p) ((DATA8 *)(p))[2]
-#define G_VAL(p) ((DATA8 *)(p))[1]
-#define B_VAL(p) ((DATA8 *)(p))[0]
-
-#else
-
-#define A_VAL(p) ((DATA8 *)(p))[0]
-#define R_VAL(p) ((DATA8 *)(p))[1]
-#define G_VAL(p) ((DATA8 *)(p))[2]
-#define B_VAL(p) ((DATA8 *)(p))[3]
-
-#endif
-
-#define INTERSECTS(x, y, w, h, xx, yy, ww, hh) \
-   ((x < (xx + ww)) && \
-       (y < (yy + hh)) && \
-       ((x + w) > xx) && \
-       ((y + h) > yy))
-
-#define CLIP_TO(_x, _y, _w, _h, _cx, _cy, _cw, _ch) \
-{ \
-if (INTERSECTS(_x, _y, _w, _h, _cx, _cy, _cw, _ch)) \
-   { \
-         if (_x < _cx) \
-	{ \
-	           _w += _x - _cx; \
-	           _x = _cx; \
-	           if (_w < 0) _w = 0; \
-	} \
-         if ((_x + _w) > (_cx + _cw)) \
-	     _w = _cx + _cw - _x; \
-         if (_y < _cy) \
-	{ \
-	           _h += _y - _cy; \
-	           _y = _cy; \
-	           if (_h < 0) _h = 0; \
-	} \
-         if ((_y + _h) > (_cy + _ch)) \
-	     _h = _cy + _ch - _y; \
-   } \
-else \
-   { \
-      _w = 0; _h = 0; \
-   } \
-}
+#include "types.h"
 
 /*
  * 1) Basic Saturation - 8 bit unsigned
@@ -352,8 +303,6 @@ enum _imlibop {
    OP_SUBTRACT,
    OP_RESHADE
 };
-
-typedef enum _imlibop ImlibOp;
 
 typedef void        (*ImlibBlendFunction)(DATA32 *, int, DATA32 *, int, int,
                                           int, ImlibColorModifier *);

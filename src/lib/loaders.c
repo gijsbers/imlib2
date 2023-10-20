@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include <dlfcn.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -316,11 +317,14 @@ __imlib_LookupLoadedLoader(const char *format, int for_save)
 }
 
 __EXPORT__ ImlibLoader *
-__imlib_FindBestLoaderForFormat(const char *format, int for_save)
+__imlib_FindBestLoader(const char *file, const char *format, int for_save)
 {
    ImlibLoader        *l;
 
-   DP("%s: fmt='%s'\n", __func__, format);
+   DP("%s: file='%s' fmt='%s'\n", __func__, file, format);
+
+   if (!format)
+      format = __imlib_FileExtension(file);
 
    if (!format || format[0] == '\0')
       return NULL;
@@ -344,32 +348,6 @@ __imlib_FindBestLoaderForFormat(const char *format, int for_save)
  done:
    DP("%s: fmt='%s': %s\n", __func__, format, l ? l->file : "-");
    return l;
-}
-
-__EXPORT__ ImlibLoader *
-__imlib_FindBestLoaderForFile(const char *file, int for_save)
-{
-   ImlibLoader        *l;
-
-   DP("%s: file='%s'\n", __func__, file);
-
-   l = __imlib_FindBestLoaderForFormat(__imlib_FileExtension(file), for_save);
-
-   return l;
-}
-
-ImlibLoader        *
-__imlib_FindBestLoaderForFileFormat(const char *file, const char *format,
-                                    int for_save)
-{
-   DP("%s: file='%s' ext='%s'\n", __func__, file, format);
-
-   /* if the format is provided ("png" "jpg" etc.) use that */
-   /* otherwise us the file extension */
-   if (format)
-      return __imlib_FindBestLoaderForFormat(format, for_save);
-   else
-      return __imlib_FindBestLoaderForFile(file, for_save);
 }
 
 __EXPORT__ void

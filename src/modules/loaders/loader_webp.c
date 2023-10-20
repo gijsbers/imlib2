@@ -1,6 +1,5 @@
 #include "loader_common.h"
 
-#include <sys/mman.h>
 #include <webp/decode.h>
 #include <webp/demux.h>
 #include <webp/encode.h>
@@ -76,7 +75,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   UPDATE_FLAG(im->flags, F_HAS_ALPHA, iter.has_alpha);
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA, iter.has_alpha);
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);

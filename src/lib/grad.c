@@ -1,9 +1,9 @@
 #include "common.h"
 
 #include <math.h>
+#include <stdlib.h>
 
 #include "blend.h"
-#include "colormod.h"
 #include "color_helpers.h"
 #include "grad.h"
 #include "image.h"
@@ -235,19 +235,23 @@ __imlib_MapHsvaRange(ImlibRange * rg, int len)
    return map;
 }
 
-void
-__imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
-                     ImlibRange * rg, double angle, ImlibOp op,
-                     int clx, int cly, int clw, int clh)
+typedef DATA32     *(ImlibRangeMapFunc) (ImlibRange * rg, int len);
+
+static void
+_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
+              ImlibRange * rg, double angle, ImlibOp op,
+              int clx, int cly, int clw, int clh, ImlibRangeMapFunc * rmf)
 {
    DATA32             *map, *p;
-   int                *hlut, *vlut, len = 0, xx, yy, xoff = 0, yoff =
-      0, ww, hh, jump;
+   int                *hlut, *vlut, len;
+   int                 xx, yy, xoff, yoff, ww, hh, jump;
    int                 tmp, i, divw, divh;
    DATA8               r, g, b, a;
 
+   xoff = yoff = 0;
    ww = w;
    hh = h;
+
    if (x < 0)
      {
         w += x;
@@ -276,11 +280,11 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
      {
         int                 px, py;
 
-        CLIP_TO(clx, cly, clw, clh, 0, 0, im->w, im->h);
+        CLIP(clx, cly, clw, clh, 0, 0, im->w, im->h);
         px = x;
         py = y;
-        CLIP_TO(x, y, w, h, clx, cly, clw, clh);
-        if ((w < 1) || (h < 1))
+        CLIP(x, y, w, h, clx, cly, clw, clh);
+        if (w <= 0 || h <= 0)
            return;
         xoff += (x - px);
         yoff += (y - py);
@@ -300,7 +304,7 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
       len = ww * 16;
    else
       len = hh * 16;
-   map = __imlib_MapRange(rg, len);
+   map = rmf(rg, len);
    if (!map)
       goto quit;
 
@@ -338,7 +342,7 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
    switch (op)
      {
      case OP_COPY:
-        if (IMAGE_HAS_ALPHA(im))
+        if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
           {
              __imlib_build_pow_lut();
              for (yy = 0; yy < h; yy++)
@@ -438,203 +442,19 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
 }
 
 void
+__imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
+                     ImlibRange * rg, double angle, ImlibOp op,
+                     int clx, int cly, int clw, int clh)
+{
+   _DrawGradient(im, x, y, w, h, rg, angle, op, clx, cly, clw, clh,
+                 __imlib_MapRange);
+}
+
+void
 __imlib_DrawHsvaGradient(ImlibImage * im, int x, int y, int w, int h,
                          ImlibRange * rg, double angle, ImlibOp op,
                          int clx, int cly, int clw, int clh)
 {
-   DATA32             *map, *p;
-   int                *hlut, *vlut, len = 0, xx, yy, xoff = 0, yoff =
-      0, ww, hh, jump;
-   int                 tmp, i, divw, divh;
-   DATA8               r, g, b, a;
-
-   ww = w;
-   hh = h;
-   if (x < 0)
-     {
-        w += x;
-        xoff = -x;
-        x = 0;
-     }
-   if (w <= 0)
-      return;
-   if ((x + w) > im->w)
-      w = (im->w - x);
-   if (w <= 0)
-      return;
-   if (y < 0)
-     {
-        h += y;
-        yoff = -y;
-        y = 0;
-     }
-   if (h <= 0)
-      return;
-   if ((y + h) > im->h)
-      h = (im->h - y);
-   if (h <= 0)
-      return;
-   if (clw)
-     {
-        int                 px, py;
-
-        CLIP_TO(clx, cly, clw, clh, 0, 0, im->w, im->h);
-        px = x;
-        py = y;
-        CLIP_TO(x, y, w, h, clx, cly, clw, clh);
-        if ((w < 1) || (h < 1))
-           return;
-        xoff += (x - px);
-        yoff += (y - py);
-     }
-
-   vlut = NULL;
-   map = NULL;
-
-   hlut = malloc(sizeof(int) * ww);
-   if (!hlut)
-      goto quit;
-   vlut = malloc(sizeof(int) * hh);
-   if (!vlut)
-      goto quit;
-
-   if (ww > hh)
-      len = ww * 16;
-   else
-      len = hh * 16;
-   map = __imlib_MapHsvaRange(rg, len);
-   if (!map)
-      goto quit;
-
-   xx = (int)(32 * sin(((angle + 180) * 2 * 3.141592654) / 360));
-   yy = -(int)(32 * cos(((angle + 180) * 2 * 3.141592654) / 360));
-   divw = ((ww - 1) << 5);
-   divh = ((hh - 1) << 5);
-   if (divw < 1)
-      divw = 1;
-   if (divh < 1)
-      divh = 1;
-   if (xx < 0)
-     {
-        for (i = 0; i < ww; i++)
-           hlut[i] = (-xx * (ww - 1 - i) * len) / divw;
-     }
-   else
-     {
-        for (i = 0; i < ww; i++)
-           hlut[i] = (xx * i * len) / divw;
-     }
-   if (yy < 0)
-     {
-        for (i = 0; i < hh; i++)
-           vlut[i] = (-yy * (hh - 1 - i) * len) / divh;
-     }
-   else
-     {
-        for (i = 0; i < hh; i++)
-           vlut[i] = (yy * i * len) / divh;
-     }
-   jump = im->w - w;
-
-   p = im->data + (y * im->w) + x;
-   switch (op)
-     {
-     case OP_COPY:
-        if (IMAGE_HAS_ALPHA(im))
-          {
-             __imlib_build_pow_lut();
-             for (yy = 0; yy < h; yy++)
-               {
-                  for (xx = 0; xx < w; xx++)
-                    {
-                       i = vlut[yoff + yy] + hlut[xoff + xx];
-                       if (i < 0)
-                          i = 0;
-                       else if (i >= len)
-                          i = len - 1;
-                       ARGB_TO_R_G_B_A(map[i], r, g, b, a);
-                       BLEND_DST_ALPHA(r, g, b, a, p);
-                       p++;
-                    }
-                  p += jump;
-               }
-          }
-        else
-          {
-             for (yy = 0; yy < h; yy++)
-               {
-                  for (xx = 0; xx < w; xx++)
-                    {
-                       i = vlut[yoff + yy] + hlut[xoff + xx];
-                       if (i < 0)
-                          i = 0;
-                       else if (i >= len)
-                          i = len - 1;
-                       ARGB_TO_R_G_B_A(map[i], r, g, b, a);
-                       BLEND(r, g, b, a, p);
-                       p++;
-                    }
-                  p += jump;
-               }
-          }
-        break;
-     case OP_ADD:
-        for (yy = 0; yy < h; yy++)
-          {
-             for (xx = 0; xx < w; xx++)
-               {
-                  i = vlut[yoff + yy] + hlut[xoff + xx];
-                  if (i < 0)
-                     i = 0;
-                  else if (i >= len)
-                     i = len - 1;
-                  ARGB_TO_R_G_B_A(map[i], r, g, b, a);
-                  BLEND_SUB(r, g, b, a, p);
-                  p++;
-               }
-             p += jump;
-          }
-        break;
-     case OP_SUBTRACT:
-        for (yy = 0; yy < h; yy++)
-          {
-             for (xx = 0; xx < w; xx++)
-               {
-                  i = vlut[yoff + yy] + hlut[xoff + xx];
-                  if (i < 0)
-                     i = 0;
-                  else if (i >= len)
-                     i = len - 1;
-                  ARGB_TO_R_G_B_A(map[i], r, g, b, a);
-                  BLEND_SUB(r, g, b, a, p);
-                  p++;
-               }
-             p += jump;
-          }
-        break;
-     case OP_RESHADE:
-        for (yy = 0; yy < h; yy++)
-          {
-             for (xx = 0; xx < w; xx++)
-               {
-                  i = vlut[yoff + yy] + hlut[xoff + xx];
-                  if (i < 0)
-                     i = 0;
-                  else if (i >= len)
-                     i = len - 1;
-                  ARGB_TO_R_G_B_A(map[i], r, g, b, a);
-                  BLEND_RE(r, g, b, a, p);
-                  p++;
-               }
-             p += jump;
-          }
-        break;
-     default:
-        break;
-     }
-
- quit:
-   free(vlut);
-   free(hlut);
-   free(map);
+   _DrawGradient(im, x, y, w, h, rg, angle, op, clx, cly, clw, clh,
+                 __imlib_MapHsvaRange);
 }

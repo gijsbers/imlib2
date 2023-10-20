@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include <stdlib.h>
+#include <string.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/XShm.h>
@@ -31,35 +33,35 @@ __imlib_RenderGetPixel(Display * d, Drawable w, Visual * v, Colormap cm,
      {
         switch (ct->palette_type)
           {
-          case 0:              /* 332 */
+          case PAL_TYPE_332:
              return ct->palette[((r >> 0) & 0xe0) |
                                 ((g >> 3) & 0x1b) | ((b >> 6) & 0x02)];
              break;
-          case 1:              /* 232 */
+          case PAL_TYPE_232:
              return ct->palette[((r >> 0) & 0xe0) |
                                 ((g >> 3) & 0x1b) | ((b >> 6) & 0x02)];
              break;
-          case 2:              /* 222 */
+          case PAL_TYPE_222:
              return ct->palette[((r >> 0) & 0xe0) |
                                 ((g >> 3) & 0x1b) | ((b >> 6) & 0x02)];
              break;
-          case 3:              /* 221 */
+          case PAL_TYPE_221:
              return ct->palette[((r >> 0) & 0xe0) |
                                 ((g >> 3) & 0x1b) | ((b >> 6) & 0x02)];
              break;
-          case 4:              /* 121 */
+          case PAL_TYPE_121:
              return ct->palette[((r >> 0) & 0xe0) |
                                 ((g >> 3) & 0x1b) | ((b >> 6) & 0x02)];
              break;
-          case 5:              /* 111 */
+          case PAL_TYPE_111:
              return ct->palette[((r >> 0) & 0xe0) |
                                 ((g >> 3) & 0x1b) | ((b >> 6) & 0x02)];
              break;
-          case 6:              /* 1 */
+          case PAL_TYPE_1:
              return ct->palette[((r >> 0) & 0xe0) |
                                 ((g >> 3) & 0x1b) | ((b >> 6) & 0x02)];
              break;
-          case 7:              /* 666 */
+          case PAL_TYPE_666:
              return ct->palette[((int)(((double)r / 255) * 5.0) * 36) +
                                 ((int)(((double)g / 255) * 5.0) * 6) +
                                 ((int)(((double)b / 255) * 5.0))];
@@ -266,7 +268,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
    ImlibBlendFunction  blender = NULL;
 
    blender = __imlib_GetBlendFunction(op, 1, 0,
-                                      (!(im->flags & F_HAS_ALPHA)), NULL);
+                                      !IM_FLAG_ISSET(im, F_HAS_ALPHA), NULL);
 
    /* dont do anything if we have a 0 widht or height image to render */
    if ((dw == 0) || (dh == 0))
@@ -314,7 +316,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
    dh = abs(dh);
    ct = __imlib_GetContext(d, v, cm, depth);
    __imlib_RGBASetupContext(ct);
-   if ((blend) && (IMAGE_HAS_ALPHA(im)))
+   if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
      {
         back = malloc(dw * dh * sizeof(DATA32));
         if (!__imlib_GrabDrawableToRGBA
@@ -379,7 +381,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
              /* scale the imagedata for this LINESIZE lines chunk of image data */
              if (antialias)
                {
-                  if (IMAGE_HAS_ALPHA(im))
+                  if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
                      __imlib_ScaleAARGBA(scaleinfo, buf, ((sx * dw) / sw),
                                          ((sy * dh) / sh) + y,
                                          0, 0, dw, hh, dw, im->w);

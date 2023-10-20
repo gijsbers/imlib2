@@ -1,8 +1,6 @@
 #define _GNU_SOURCE             /* memmem() */
 #include "loader_common.h"
 
-#include <sys/mman.h>
-
 static struct {
    const char         *data, *dptr;
    unsigned int        size;
@@ -18,7 +16,7 @@ mm_init(void *src, unsigned int size)
 static int
 mm_getc(void)
 {
-   int                 ch;
+   unsigned char       ch;
 
    if (mdata.dptr + 1 > mdata.data + mdata.size)
       return -1;                /* Out of data */
@@ -177,7 +175,7 @@ load2(ImlibImage * im, int load_data)
    if (fdata == MAP_FAILED)
       return LOAD_BADFILE;
 
-   if (!memmem(fdata, im->fsize, " XPM */", 7))
+   if (!memmem(fdata, im->fsize <= 256 ? im->fsize : 256, " XPM */", 7))
       goto quit;
 
    rc = LOAD_BADIMAGE;          /* Format accepted */
@@ -362,7 +360,7 @@ load2(ImlibImage * im, int load_data)
                           qsort(cmap, ncolors, sizeof(cmap_t), xpm_cmap_sort);
                        context++;
 
-                       UPDATE_FLAG(im->flags, F_HAS_ALPHA, transp >= 0);
+                       IM_FLAG_UPDATE(im, F_HAS_ALPHA, transp >= 0);
 
                        if (!load_data)
                           QUIT_WITH_RC(LOAD_SUCCESS);

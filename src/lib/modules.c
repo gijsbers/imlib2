@@ -1,9 +1,10 @@
-#include "config.h"
+#include "common.h"
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "file.h"
-#include "image.h"
 
 static const char  *
 __imlib_PathToModules(void)

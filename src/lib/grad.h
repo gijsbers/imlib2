@@ -1,7 +1,7 @@
 #ifndef __GRAD
 #define __GRAD 1
 
-#include "common.h"
+#include "types.h"
 
 typedef struct _ImlibRangeColor {
    DATA8               red, green, blue, alpha;

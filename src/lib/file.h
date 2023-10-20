@@ -1,9 +1,8 @@
 #ifndef __FILE_H
 #define __FILE_H 1
 
+#include <time.h>
 #include <sys/stat.h>
-
-#include "common.h"
 
 int                 __imlib_IsRealFile(const char *s);
 char               *__imlib_FileKey(const char *file);

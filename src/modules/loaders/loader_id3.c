@@ -4,19 +4,7 @@
 #include <limits.h>
 #include <id3tag.h>
 
-#if ! defined (__STDC_VERSION__) || __STDC_VERSION__ < 199901L
-#if __GNUC__ >= 2
-#define inline __inline__
-#else
-#define inline
-#endif
-#endif
-
-#ifdef __GNUC__
-#define UNLIKELY(exp) __builtin_expect ((exp), 0)
-#else
-#define UNLIKELY(exp) (exp)
-#endif
+#define USE_TAGS 0
 
 typedef struct context {
    int                 id;
@@ -28,19 +16,19 @@ typedef struct context {
 
 static context     *id3_ctxs = NULL;
 
-static inline struct id3_frame *
+static struct id3_frame *
 id3_tag_get_frame(struct id3_tag *tag, size_t index)
 {
    return tag->frames[index];
 }
 
-static inline unsigned int
+static unsigned int
 id3_tag_get_numframes(struct id3_tag *tag)
 {
    return tag->nframes;
 }
 
-static inline char const *
+static char const  *
 id3_frame_id(struct id3_frame *frame)
 {
    return frame->id;
@@ -95,7 +83,7 @@ context_create(const char *filename, FILE * f)
    ptr = id3_ctxs;
 
    last = NULL;
-   while (UNLIKELY(ptr && (ptr->id + 1) >= last_id))
+   while (ptr && (ptr->id + 1) >= last_id)
      {
         last_id = ptr->id;
         last = ptr;
@@ -103,7 +91,7 @@ context_create(const char *filename, FILE * f)
      }
 
    /* Paranoid! this can occur only if there are INT_MAX contexts :) */
-   if (UNLIKELY(!ptr))
+   if (!ptr)
      {
         fprintf(stderr, "Too many open ID3 contexts\n");
         goto fail_close;
@@ -111,7 +99,7 @@ context_create(const char *filename, FILE * f)
 
    node->id = ptr->id + 1;
 
-   if (UNLIKELY(!!last))
+   if (last)
      {
         node->next = last->next;
         last->next = node;
@@ -139,7 +127,7 @@ context_destroy(context * ctx)
    free(ctx);
 }
 
-static inline void
+static void
 context_addref(context * ctx)
 {
    ctx->refcount++;
@@ -225,6 +213,7 @@ str2uint(const char *str, unsigned int old)
    return ((errno || index > UINT_MAX) ? old : index);
 }
 
+#if USE_TAGS
 static void
 destructor_data(ImlibImage * im, void *data)
 {
@@ -236,6 +225,7 @@ destructor_context(ImlibImage * im, void *data)
 {
    context_delref((context *) data);
 }
+#endif
 
 typedef struct lopt {
    context            *ctx;
@@ -249,10 +239,12 @@ get_options(lopt * opt, const ImlibImage * im)
 {
    unsigned int        handle = 0, index = 0, traverse = 0;
    context            *ctx;
+   const char         *str;
 
-   if (im->key)
+   str = __imlib_GetKey(im);
+   if (str)
      {
-        char               *key = strdup(im->key);
+        char               *key = strdup(str);
         char               *tok = strtok(key, ",");
 
         traverse = 0;
@@ -384,7 +376,7 @@ get_loader(lopt * opt, ImlibLoader ** loader)
         return 0;
      }
    strncpy(ext + 1, data + 6, EXT_LEN);
-   if (!(*loader = __imlib_FindBestLoaderForFile(ext, 0)))
+   if (!(*loader = __imlib_FindBestLoader(ext, NULL, 0)))
      {
         fprintf(stderr, "No loader found for extension %s\n", ext);
         return 0;
@@ -392,6 +384,7 @@ get_loader(lopt * opt, ImlibLoader ** loader)
    return 1;
 }
 
+#if USE_TAGS
 static const char  *const id3_pic_types[] = {
    /* $00 */ "Other",
    /* $01 */ "32x32 pixels file icon",
@@ -492,6 +485,7 @@ write_tags(ImlibImage * im, lopt * opt)
         __imlib_AttachTag(im, "next", 0, buf, destructor_data);
      }
 }
+#endif
 
 int
 load2(ImlibImage * im, int load_data)
@@ -558,7 +552,7 @@ load2(ImlibImage * im, int load_data)
         strncpy(url, data, length);
         url[length] = '\0';
         file = (strncmp(url, "file://", 7) ? url : url + 7);
-        if (!(loader = __imlib_FindBestLoaderForFile(file, 0)))
+        if (!(loader = __imlib_FindBestLoader(file, NULL, 0)))
           {
              fprintf(stderr, "No loader found for file %s\n", file);
              free(url);
@@ -567,14 +561,18 @@ load2(ImlibImage * im, int load_data)
 
         rc = __imlib_LoadEmbedded(loader, im, file, load_data);
 
+#if USE_TAGS
         if (!im->loader)
            __imlib_AttachTag(im, "id3-link-url", 0, url, destructor_data);
         else
+#endif
            free(url);
      }
 
+#if USE_TAGS
    if (!im->loader)
       write_tags(im, &opt);
+#endif
 
 #ifdef DEBUG
    if (!im->loader)

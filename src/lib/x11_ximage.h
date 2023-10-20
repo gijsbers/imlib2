@@ -4,8 +4,6 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/XShm.h>
 
-#include "common.h"
-
 void                __imlib_SetXImageCacheCountMax(Display * d, int num);
 int                 __imlib_GetXImageCacheCountMax(Display * d);
 int                 __imlib_GetXImageCacheCountUsed(Display * d);

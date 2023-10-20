@@ -2,13 +2,7 @@
 #define __COMMON 1
 
 #include "config.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <math.h>
-#include <time.h>
+#include "types.h"
 
 #if __GNUC__
 #define __PRINTF_N__(no)  __attribute__((__format__(__printf__, (no), (no)+1)))
@@ -19,12 +13,6 @@
 #define __PRINTF_2__ __PRINTF_N__(2)
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
-
-#define DATABIG unsigned long long
-#define DATA64  unsigned long long
-#define DATA32  unsigned int
-#define DATA16  unsigned short
-#define DATA8   unsigned char
 
 #define SWAP32(x) \
     ((((x) & 0x000000ff ) << 24) | \
@@ -55,6 +43,18 @@
 #define PIXEL_G(argb)  (((argb) >>  8) & 0xff)
 #define PIXEL_B(argb)  (((argb)      ) & 0xff)
 
+#ifndef WORDS_BIGENDIAN
+#define A_VAL(p) ((DATA8 *)(p))[3]
+#define R_VAL(p) ((DATA8 *)(p))[2]
+#define G_VAL(p) ((DATA8 *)(p))[1]
+#define B_VAL(p) ((DATA8 *)(p))[0]
+#else
+#define A_VAL(p) ((DATA8 *)(p))[0]
+#define R_VAL(p) ((DATA8 *)(p))[1]
+#define G_VAL(p) ((DATA8 *)(p))[2]
+#define B_VAL(p) ((DATA8 *)(p))[3]
+#endif
+
 #define CLIP(x, y, w, h, xx, yy, ww, hh) \
     if (x < (xx)) { w += (x - (xx)); x = (xx); } \
     if (y < (yy)) { h += (y - (yy)); y = (yy); } \
@@ -63,7 +63,5 @@
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
-
-#define round(x) ((x) >=0 ? (int)((x) + 0.5) : (int)((x) - 0.5))
 
 #endif

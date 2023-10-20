@@ -92,7 +92,6 @@ host_triplet = @host@
 @BUILD_X11_TRUE@am__append_1 = \
 @BUILD_X11_TRUE@x11_color.c	x11_color.h	\
 @BUILD_X11_TRUE@x11_context.c	x11_context.h	\
-@BUILD_X11_TRUE@x11_draw.c	x11_draw.h	\
 @BUILD_X11_TRUE@x11_grab.c	x11_grab.h	\
 @BUILD_X11_TRUE@x11_pixmap.c	x11_pixmap.h	\
 @BUILD_X11_TRUE@x11_rend.c	x11_rend.h	\
@@ -161,15 +160,15 @@ am__libImlib2_la_SOURCES_DIST = api.c api_obsolete.c asm.h asm_c.c \
 	font_query.c grad.c grad.h image.c image.h image_tags.c line.c \
 	loaders.c loaders.h modules.c object.c object.h polygon.c \
 	rectangle.c rgbadraw.c rgbadraw.h rotate.c rotate.h scale.c \
-	scale.h script.c script.h span.c span.h updates.c updates.h \
-	x11_color.c x11_color.h x11_context.c x11_context.h x11_draw.c \
-	x11_draw.h x11_grab.c x11_grab.h x11_pixmap.c x11_pixmap.h \
-	x11_rend.c x11_rend.h x11_rgba.c x11_rgba.h x11_ximage.c \
-	x11_ximage.h asm_blend.S asm_blend_cmod.S asm_rgba.S \
-	asm_rotate.S asm_scale.S amd64_blend.S amd64_blend_cmod.S
+	scale.h script.c script.h span.c span.h types.h updates.c \
+	updates.h x11_color.c x11_color.h x11_context.c x11_context.h \
+	x11_grab.c x11_grab.h x11_pixmap.c x11_pixmap.h x11_rend.c \
+	x11_rend.h x11_rgba.c x11_rgba.h x11_ximage.c x11_ximage.h \
+	asm_blend.S asm_blend_cmod.S asm_rgba.S asm_rotate.S \
+	asm_scale.S amd64_blend.S amd64_blend_cmod.S
 @BUILD_X11_TRUE@am__objects_1 = x11_color.lo x11_context.lo \
-@BUILD_X11_TRUE@	x11_draw.lo x11_grab.lo x11_pixmap.lo \
-@BUILD_X11_TRUE@	x11_rend.lo x11_rgba.lo x11_ximage.lo
+@BUILD_X11_TRUE@	x11_grab.lo x11_pixmap.lo x11_rend.lo \
+@BUILD_X11_TRUE@	x11_rgba.lo x11_ximage.lo
 am__objects_2 = asm_blend.lo asm_blend_cmod.lo asm_rgba.lo \
 	asm_rotate.lo asm_scale.lo
 @BUILD_MMX_TRUE@am__objects_3 = $(am__objects_2)
@@ -225,9 +224,9 @@ am__depfiles_remade = ./$(DEPDIR)/amd64_blend.Plo \
 	./$(DEPDIR)/scale.Plo ./$(DEPDIR)/script.Plo \
 	./$(DEPDIR)/span.Plo ./$(DEPDIR)/updates.Plo \
 	./$(DEPDIR)/x11_color.Plo ./$(DEPDIR)/x11_context.Plo \
-	./$(DEPDIR)/x11_draw.Plo ./$(DEPDIR)/x11_grab.Plo \
-	./$(DEPDIR)/x11_pixmap.Plo ./$(DEPDIR)/x11_rend.Plo \
-	./$(DEPDIR)/x11_rgba.Plo ./$(DEPDIR)/x11_ximage.Plo
+	./$(DEPDIR)/x11_grab.Plo ./$(DEPDIR)/x11_pixmap.Plo \
+	./$(DEPDIR)/x11_rend.Plo ./$(DEPDIR)/x11_rgba.Plo \
+	./$(DEPDIR)/x11_ximage.Plo
 am__mv = mv -f
 CPPASCOMPILE = $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
@@ -474,7 +473,7 @@ libImlib2_la_SOURCES = api.c api_obsolete.c asm.h asm_c.c asm_c.h \
 	grad.h image.c image.h image_tags.c line.c loaders.c loaders.h \
 	modules.c object.c object.h polygon.c rectangle.c rgbadraw.c \
 	rgbadraw.h rotate.c rotate.h scale.c scale.h script.c script.h \
-	span.c span.h updates.c updates.h $(am__append_1) \
+	span.c span.h types.h updates.c updates.h $(am__append_1) \
 	$(am__append_4) $(am__append_5)
 MMX_SRCS = \
 asm_blend.S \
@@ -611,7 +610,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/updates.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_color.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_context.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_draw.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_grab.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_pixmap.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_rend.Plo@am__quote@ # am--include-marker
@@ -860,7 +858,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/updates.Plo
 	-rm -f ./$(DEPDIR)/x11_color.Plo
 	-rm -f ./$(DEPDIR)/x11_context.Plo
-	-rm -f ./$(DEPDIR)/x11_draw.Plo
 	-rm -f ./$(DEPDIR)/x11_grab.Plo
 	-rm -f ./$(DEPDIR)/x11_pixmap.Plo
 	-rm -f ./$(DEPDIR)/x11_rend.Plo
@@ -950,7 +947,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/updates.Plo
 	-rm -f ./$(DEPDIR)/x11_color.Plo
 	-rm -f ./$(DEPDIR)/x11_context.Plo
-	-rm -f ./$(DEPDIR)/x11_draw.Plo
 	-rm -f ./$(DEPDIR)/x11_grab.Plo
 	-rm -f ./$(DEPDIR)/x11_pixmap.Plo
 	-rm -f ./$(DEPDIR)/x11_rend.Plo

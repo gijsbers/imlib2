@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include <stdlib.h>
+
 #include "asm_c.h"
 
 #if defined(DO_MMX_ASM) || defined(DO_AMD64_ASM)

@@ -3,45 +3,23 @@
 
 #include <X11/Xlib.h>
 
-#include "image.h"
+#include "types.h"
 
-typedef struct _ImlibImagePixmap {
-   int                 w, h;
-   Pixmap              pixmap, mask;
-   Display            *display;
-   Visual             *visual;
-   int                 depth;
-   int                 source_x, source_y, source_w, source_h;
-   Colormap            colormap;
-   char                antialias, hi_quality, dither_mask;
-   ImlibBorder         border;
-   ImlibImage         *image;
-   char               *file;
-   char                dirty;
-   int                 references;
-   DATABIG             modification_count;
-   struct _ImlibImagePixmap *next;
-} ImlibImagePixmap;
-
-ImlibImagePixmap   *__imlib_FindCachedImagePixmap(ImlibImage * im, int w, int h,
-                                                  Display * d, Visual * v,
-                                                  int depth, int sx, int sy,
-                                                  int sw, int sh, Colormap cm,
-                                                  char aa, char hiq, char dmask,
-                                                  DATABIG modification_count);
-ImlibImagePixmap   *__imlib_AddImagePixmapToCache(ImlibImage * im,
-                                                  Pixmap p, Pixmap m,
-                                                  int w, int h,
-                                                  Display * d, Visual * v,
-                                                  int depth, int sx, int sy,
-                                                  int sw, int sh, Colormap cm,
-                                                  char aa, char hiq, char dmask,
-                                                  DATABIG modification_count);
 void                __imlib_CleanupImagePixmapCache(void);
 int                 __imlib_PixmapCacheSize(void);
 
 void                __imlib_FreePixmap(Display * d, Pixmap p);
 void                __imlib_DirtyPixmapsForImage(const ImlibImage * im);
 void                __imlib_PixmapUnrefImage(const ImlibImage * im);
+
+char                __imlib_CreatePixmapsForImage(Display * d, Drawable w,
+                                                  Visual * v, int depth,
+                                                  Colormap cm, ImlibImage * im,
+                                                  Pixmap * p, Mask * m, int sx,
+                                                  int sy, int sw, int sh,
+                                                  int dw, int dh,
+                                                  char anitalias, char hiq,
+                                                  char dither_mask, int mat,
+                                                  ImlibColorModifier * cmod);
 
 #endif /* X11_PIXMAP_H */

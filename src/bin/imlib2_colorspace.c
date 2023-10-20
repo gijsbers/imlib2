@@ -1,11 +1,10 @@
 #include "config.h"
+#include <Imlib2.h>
 
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <Imlib2.h>
 
 Display            *disp;
 Window              win;

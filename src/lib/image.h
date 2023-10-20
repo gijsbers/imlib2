@@ -1,33 +1,26 @@
 #ifndef __IMAGE
 #define __IMAGE 1
 
-#include "common.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#include "types.h"
 
 typedef struct _imlibldctx ImlibLdCtx;
-typedef struct _imlibloader ImlibLoader;
 
-typedef struct _ImlibImage ImlibImage;
-
-typedef int         (*ImlibProgressFunction)(ImlibImage * im, char percent,
-                                             int update_x, int update_y,
-                                             int update_w, int update_h);
 typedef void        (*ImlibDataDestructorFunction)(ImlibImage * im, void *data);
 typedef void       *(*ImlibImageDataMemoryFunction)(void *, size_t size);
 
 enum _iflags {
    F_NONE = 0,
    F_HAS_ALPHA = (1 << 0),
-   F_UNLOADED = (1 << 1),
-   F_UNCACHEABLE = (1 << 2),
-   F_ALWAYS_CHECK_DISK = (1 << 3),
-   F_INVALID = (1 << 4),
-   F_DONT_FREE_DATA = (1 << 5),
-   F_FORMAT_IRRELEVANT = (1 << 6),
-   F_BORDER_IRRELEVANT = (1 << 7),
-   F_ALPHA_IRRELEVANT = (1 << 8)
+   F_UNCACHEABLE = (1 << 1),
+   F_ALWAYS_CHECK_DISK = (1 << 2),
+   F_INVALID = (1 << 3),
+   F_DONT_FREE_DATA = (1 << 4),
+   F_FORMAT_IRRELEVANT = (1 << 5),
 };
-
-typedef enum _iflags ImlibImageFlags;
 
 /* Must match the ones in Imlib2.h.in */
 #define FF_IMAGE_ANIMATED       (1 << 0)        /* Frames are an animated sequence    */
@@ -85,15 +78,9 @@ typedef struct {
    int                 frame;
 } ImlibLoadArgs;
 
-void                __imlib_RemoveAllLoaders(void);
-ImlibLoader       **__imlib_GetLoaderList(void);
-ImlibLoader        *__imlib_FindBestLoaderForFile(const char *file,
-                                                  int for_save);
-ImlibLoader        *__imlib_FindBestLoaderForFormat(const char *format,
-                                                    int for_save);
-ImlibLoader        *__imlib_FindBestLoaderForFileFormat(const char *file,
-                                                        const char *format,
-                                                        int for_save);
+ImlibLoader        *__imlib_FindBestLoader(const char *file, const char *format,
+                                           int for_save);
+
 void                __imlib_LoaderSetFormats(ImlibLoader * l,
                                              const char *const *fmt,
                                              unsigned int num);
@@ -120,6 +107,8 @@ int                 __imlib_LoadProgress(ImlibImage * im,
 int                 __imlib_LoadProgressRows(ImlibImage * im,
                                              int row, int nrows);
 
+const char         *__imlib_GetKey(const ImlibImage * im);
+
 void                __imlib_AttachTag(ImlibImage * im, const char *key,
                                       int val, void *data,
                                       ImlibDataDestructorFunction destructor);
@@ -132,17 +121,11 @@ void                __imlib_SetCacheSize(int size);
 int                 __imlib_GetCacheSize(void);
 int                 __imlib_CurrentCacheSize(void);
 
-#define IMAGE_HAS_ALPHA(im) ((im)->flags & F_HAS_ALPHA)
-#define IMAGE_IS_UNLOADED(im) ((im)->flags & F_UNLOADED)
-#define IMAGE_IS_UNCACHEABLE(im) ((im)->flags & F_UNCACHEABLE)
-#define IMAGE_ALWAYS_CHECK_DISK(im) ((im)->flags & F_ALWAYS_CHECK_DISK)
-#define IMAGE_IS_VALID(im) (!((im)->flags & F_INVALID))
-#define IMAGE_FREE_DATA(im) (!((im)->flags & F_DONT_FREE_DATA))
-
-#define SET_FLAG(flags, f) ((flags) |= (f))
-#define UNSET_FLAG(flags, f) ((flags) &= (~f))
-#define UPDATE_FLAG(flags, f, set) \
-   do { if (set) SET_FLAG(flags, f); else UNSET_FLAG(flags, f); } while(0)
+#define IM_FLAG_SET(im, f)      ((im)->flags |= (f))
+#define IM_FLAG_CLR(im, f)      ((im)->flags &= ~(f))
+#define IM_FLAG_UPDATE(im, f, set) \
+   do { if (set) IM_FLAG_SET(im, f); else IM_FLAG_CLR(im, f); } while(0)
+#define IM_FLAG_ISSET(im, f)    (((im)->flags & (f)) != 0)
 
 #define LOAD_BREAK       2      /* Break signaled by progress callback */
 #define LOAD_SUCCESS     1      /* Image loaded successfully           */

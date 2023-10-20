@@ -2,7 +2,6 @@
 
 #include <png.h>
 #include <stdint.h>
-#include <sys/mman.h>
 #include <arpa/inet.h>
 
 #define DBG_PFX "LDR-png"
@@ -154,7 +153,7 @@ info_callback(png_struct * png_ptr, png_info * info_ptr)
       hasa = 1;
    if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
       hasa = 1;
-   UPDATE_FLAG(im->flags, F_HAS_ALPHA, hasa);
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA, hasa);
 
    if (!ctx->load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -617,7 +616,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
      }
 
    png_init_io(png_ptr, f);
-   has_alpha = IMAGE_HAS_ALPHA(im);
+   has_alpha = IM_FLAG_ISSET(im, F_HAS_ALPHA);
    if (has_alpha)
      {
         png_set_IHDR(png_ptr, info_ptr, im->w, im->h, 8,

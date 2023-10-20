@@ -1,7 +1,5 @@
 #include "loader_common.h"
 
-#include <sys/mman.h>
-
 int
 decompress_load(ImlibImage * im, int load_data, const char *const *pext,
                 int next, imlib_decompress_load_f * fdec)
@@ -43,7 +41,7 @@ decompress_load(ImlibImage * im, int load_data, const char *const *pext,
    if (!(real_ext = strndup(q, p - q - 1)))
       return LOAD_OOM;
 
-   loader = __imlib_FindBestLoaderForFormat(real_ext, 0);
+   loader = __imlib_FindBestLoader(NULL, real_ext, 0);
    free(real_ext);
    if (!loader)
       return rc;

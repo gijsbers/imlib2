@@ -1,7 +1,7 @@
 #ifndef __SPAN
 #define __SPAN 1
 
-#include "common.h"
+#include "types.h"
 
 typedef void        (*ImlibPointDrawFunction)(DATA32, DATA32 *);
 

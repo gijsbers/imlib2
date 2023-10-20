@@ -1,11 +1,10 @@
 #include "config.h"
+#include <Imlib2.h>
 
 #include <X11/Xlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-#include <Imlib2.h>
 
 Display            *disp;
 int                 image_width = 0, image_height = 0;

@@ -7,6 +7,7 @@ SUBDIRS_TEST = test
 endif
 
 SUBDIRS = src data doc $(SUBDIRS_TEST)
+DIST_SUBDIRS = src data doc
 
 CLEANFILES = $(PACKAGE).spec
 

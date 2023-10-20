@@ -1,7 +1,6 @@
 #include "common.h"
 
 #include "blend.h"
-#include "colormod.h"
 #include "image.h"
 #include "rgbadraw.h"
 #include "span.h"
@@ -689,18 +688,18 @@ __imlib_Ellipse_DrawToImage(int xc, int yc, int a, int b, DATA32 color,
      }
    if (blend && (!A_VAL(&color)))
       return;
-   if (clw < 0)
-      return;
+
    if (clw == 0)
      {
+        clx = cly = 0;
         clw = im->w;
-        clx = 0;
         clh = im->h;
-        cly = 0;
      }
-
-   CLIP_RECT_TO_RECT(clx, cly, clw, clh, 0, 0, im->w, im->h);
-   if ((clw < 1) || (clh < 1))
+   else
+     {
+        CLIP(clx, cly, clw, clh, 0, 0, im->w, im->h);
+     }
+   if (clw <= 0 || clh <= 0)
       return;
 
    if (a < 0)
@@ -724,21 +723,21 @@ __imlib_Ellipse_DrawToImage(int xc, int yc, int a, int b, DATA32 color,
         y--;
      }
 
-   CLIP_RECT_TO_RECT(x, y, w, h, clx, cly, clw, clh);
-   if ((w < 1) || (h < 1))
+   CLIP(x, y, w, h, clx, cly, clw, clh);
+   if (w <= 0 || h <= 0)
       return;
 
-   if (blend && IMAGE_HAS_ALPHA(im))
+   if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
       __imlib_build_pow_lut();
 
    if (anti_alias)
       __imlib_Ellipse_DrawToData_AA(xc, yc, a, b, color,
                                     im->data, im->w, clx, cly, clw, clh,
-                                    op, IMAGE_HAS_ALPHA(im), blend);
+                                    op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
    else
       __imlib_Ellipse_DrawToData(xc, yc, a, b, color,
                                  im->data, im->w, clx, cly, clw, clh,
-                                 op, IMAGE_HAS_ALPHA(im), blend);
+                                 op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
 }
 
 void
@@ -757,18 +756,18 @@ __imlib_Ellipse_FillToImage(int xc, int yc, int a, int b, DATA32 color,
      }
    if (blend && (!A_VAL(&color)))
       return;
-   if (clw < 0)
-      return;
+
    if (clw == 0)
      {
+        clx = cly = 0;
         clw = im->w;
-        clx = 0;
         clh = im->h;
-        cly = 0;
      }
-
-   CLIP_RECT_TO_RECT(clx, cly, clw, clh, 0, 0, im->w, im->h);
-   if ((clw < 1) || (clh < 1))
+   else
+     {
+        CLIP(clx, cly, clw, clh, 0, 0, im->w, im->h);
+     }
+   if (clw <= 0 || clh <= 0)
       return;
 
    if (a < 0)
@@ -792,19 +791,19 @@ __imlib_Ellipse_FillToImage(int xc, int yc, int a, int b, DATA32 color,
         y--;
      }
 
-   CLIP_RECT_TO_RECT(x, y, w, h, clx, cly, clw, clh);
-   if ((w < 1) || (h < 1))
+   CLIP(x, y, w, h, clx, cly, clw, clh);
+   if (w <= 0 || h <= 0)
       return;
 
-   if (blend && IMAGE_HAS_ALPHA(im))
+   if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
       __imlib_build_pow_lut();
 
    if (anti_alias)
       __imlib_Ellipse_FillToData_AA(xc, yc, a, b, color,
                                     im->data, im->w, clx, cly, clw, clh,
-                                    op, IMAGE_HAS_ALPHA(im), blend);
+                                    op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
    else
       __imlib_Ellipse_FillToData(xc, yc, a, b, color,
                                  im->data, im->w, clx, cly, clw, clh,
-                                 op, IMAGE_HAS_ALPHA(im), blend);
+                                 op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
 }

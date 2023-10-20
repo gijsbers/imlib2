@@ -1,20 +1,23 @@
 #include "config.h"
+#include <Imlib2.h>
+#include "common.h"
 
 #include <math.h>
-#include <string.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-#include "Imlib2.h"
 #include "blend.h"
 #include "colormod.h"
 #include "color_helpers.h"
-#include "common.h"
 #include "dynamic_filters.h"
 #include "file.h"
 #include "filter.h"
 #include "font.h"
 #include "grad.h"
 #include "image.h"
+#include "loaders.h"
 #include "rgbadraw.h"
 #include "rotate.h"
 #include "scale.h"
@@ -23,7 +26,6 @@
 #include "updates.h"
 #ifdef BUILD_X11
 #include "x11_color.h"
-#include "x11_draw.h"
 #include "x11_grab.h"
 #include "x11_pixmap.h"
 #include "x11_rend.h"
@@ -1393,7 +1395,7 @@ imlib_free_image_and_decache(void)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   SET_FLAG(im->flags, F_INVALID);
+   IM_FLAG_SET(im, F_INVALID);
    __imlib_FreeImage(im);
    ctx->image = NULL;
 }
@@ -1530,7 +1532,7 @@ imlib_image_has_alpha(void)
 
    CHECK_PARAM_POINTER_RETURN("image", ctx->image, 0);
    CAST_IMAGE(im, ctx->image);
-   if (IMAGE_HAS_ALPHA(im))
+   if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
       return 1;
    return 0;
 }
@@ -1551,7 +1553,7 @@ imlib_image_set_changes_on_disk(void)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   SET_FLAG(im->flags, F_ALWAYS_CHECK_DISK);
+   IM_FLAG_SET(im, F_ALWAYS_CHECK_DISK);
 }
 
 /**
@@ -1623,7 +1625,7 @@ imlib_image_set_format(const char *format)
    CAST_IMAGE(im, ctx->image);
    free(im->format);
    im->format = (format) ? strdup(format) : NULL;
-   if (!(im->flags & F_FORMAT_IRRELEVANT))
+   if (!IM_FLAG_ISSET(im, F_FORMAT_IRRELEVANT))
      {
         __imlib_DirtyImage(im);
      }
@@ -1643,42 +1645,7 @@ imlib_image_set_irrelevant_format(char irrelevant)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   UPDATE_FLAG(im->flags, F_FORMAT_IRRELEVANT, irrelevant);
-}
-
-/**
- * @param irrelevant Irrelevant border flag.
- *
- * Sets if the border of the current image is irrelevant for caching
- * purposes. By default it is. Set irrelevant to 1 to make it
- * irrelevant, and 0 to make it relevant.
- */
-EAPI void
-imlib_image_set_irrelevant_border(char irrelevant)
-{
-   ImlibImage         *im;
-
-   CHECK_PARAM_POINTER("image", ctx->image);
-   CAST_IMAGE(im, ctx->image);
-   UPDATE_FLAG(im->flags, F_BORDER_IRRELEVANT, irrelevant);
-}
-
-/**
- * @param irrelevant Irrelevant alpha flag.
- *
- * Sets if the alpha channel status of the current image (i.e. if
- * there is or is not one) is important for caching purposes. By
- * default it is not. Set irrelevant to 1 to make it irrelevant and 0
- * to make it relevant.
- */
-EAPI void
-imlib_image_set_irrelevant_alpha(char irrelevant)
-{
-   ImlibImage         *im;
-
-   CHECK_PARAM_POINTER("image", ctx->image);
-   CAST_IMAGE(im, ctx->image);
-   UPDATE_FLAG(im->flags, F_ALPHA_IRRELEVANT, irrelevant);
+   IM_FLAG_UPDATE(im, F_FORMAT_IRRELEVANT, irrelevant);
 }
 
 /**
@@ -1710,7 +1677,7 @@ imlib_image_set_has_alpha(char has_alpha)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   UPDATE_FLAG(im->flags, F_HAS_ALPHA, has_alpha);
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA, has_alpha);
 }
 
 #ifdef BUILD_X11
@@ -1989,7 +1956,7 @@ imlib_create_image_using_data(int width, int height, DATA32 * data)
       return NULL;
    im = __imlib_CreateImage(width, height, data);
    if (im)
-      SET_FLAG(im->flags, F_DONT_FREE_DATA);
+      IM_FLAG_SET(im, F_DONT_FREE_DATA);
    return (Imlib_Image) im;
 }
 
@@ -2102,7 +2069,7 @@ imlib_create_image_from_drawable(Pixmap mask, int x, int y, int width,
                                   ctx->colormap, ctx->depth, x, y, width,
                                   height, &domask, need_to_grab_x))
      {
-        UPDATE_FLAG(im->flags, F_HAS_ALPHA, domask);
+        IM_FLAG_UPDATE(im, F_HAS_ALPHA, domask);
      }
    else
      {
@@ -2196,7 +2163,7 @@ imlib_create_scaled_image_from_drawable(Pixmap mask, int source_x,
                                     source_width, source_height,
                                     &domask, need_to_grab_x);
 
-   UPDATE_FLAG(im->flags, F_HAS_ALPHA, domask);
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA, domask);
 
    return (Imlib_Image) im;
 }
@@ -2322,7 +2289,7 @@ imlib_clone_image(void)
      }
    memcpy(im->data, im_old->data, im->w * im->h * sizeof(DATA32));
    im->flags = im_old->flags;
-   SET_FLAG(im->flags, F_UNCACHEABLE);
+   IM_FLAG_SET(im, F_UNCACHEABLE);
    im->moddate = im_old->moddate;
    im->border = im_old->border;
    im->loader = im_old->loader;
@@ -2363,9 +2330,9 @@ imlib_create_cropped_image(int x, int y, int width, int height)
         __imlib_FreeImage(im);
         return NULL;
      }
-   if (IMAGE_HAS_ALPHA(im_old))
+   if (IM_FLAG_ISSET(im_old, F_HAS_ALPHA))
      {
-        SET_FLAG(im->flags, F_HAS_ALPHA);
+        IM_FLAG_SET(im, F_HAS_ALPHA);
         __imlib_BlendImageToImage(im_old, im, 0, 0, 1, x, y, abs(width),
                                   abs(height), 0, 0, width, height, NULL,
                                   (ImlibOp) IMLIB_OP_COPY,
@@ -2419,9 +2386,9 @@ imlib_create_cropped_scaled_image(int source_x, int source_y,
         __imlib_FreeImage(im);
         return NULL;
      }
-   if (IMAGE_HAS_ALPHA(im_old))
+   if (IM_FLAG_ISSET(im_old, F_HAS_ALPHA))
      {
-        SET_FLAG(im->flags, F_HAS_ALPHA);
+        IM_FLAG_SET(im, F_HAS_ALPHA);
         __imlib_BlendImageToImage(im_old, im, ctx->anti_alias, 0, 1, source_x,
                                   source_y, source_width, source_height, 0, 0,
                                   destination_width, destination_height, NULL,
@@ -4427,7 +4394,7 @@ imlib_create_rotated_image(double angle)
         __imlib_RotateSample(im_old->data, im->data, im_old->w, im_old->w,
                              im_old->h, im->w, sz, sz, x, y, dx, dy, -dy, dx);
      }
-   SET_FLAG(im->flags, F_HAS_ALPHA);
+   IM_FLAG_SET(im, F_HAS_ALPHA);
 
    return (Imlib_Image) im;
 }
@@ -4486,7 +4453,7 @@ imlib_rotate_image_from_buffer(double angle, Imlib_Image source_image)
         __imlib_RotateSample(im_old->data, im->data, im_old->w, im_old->w,
                              im_old->h, im->w, sz, sz, x, y, dx, dy, -dy, dx);
      }
-   SET_FLAG(im->flags, F_HAS_ALPHA);
+   IM_FLAG_SET(im, F_HAS_ALPHA);
 
    return;
 }

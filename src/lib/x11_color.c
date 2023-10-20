@@ -1,12 +1,12 @@
 #include "common.h"
 
+#include <stdlib.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
 #include "x11_color.h"
 
-DATA8               _pal_type = 0;
-DATA16              _max_colors = 256;
+unsigned short      _max_colors = 256;
 
 int
 __imlib_XActualDepth(Display * d, Visual * v)
@@ -70,62 +70,7 @@ __imlib_BestVisual(Display * d, int screen, int *depth_return)
    return v;
 }
 
-DATA8              *
-__imlib_AllocColorTable(Display * d, Colormap cmap, DATA8 * type_return,
-                        Visual * v)
-{
-   DATA8              *color_lut = NULL;
-
-   if (v->bits_per_rgb > 1)
-     {
-        if ((_max_colors >= 256)
-            && (color_lut = __imlib_AllocColors332(d, cmap, v)))
-          {
-             *type_return = _pal_type;
-             return color_lut;
-          }
-        if ((_max_colors >= 216)
-            && (color_lut = __imlib_AllocColors666(d, cmap, v)))
-          {
-             *type_return = _pal_type;
-             return color_lut;
-          }
-        if ((_max_colors >= 128)
-            && (color_lut = __imlib_AllocColors232(d, cmap, v)))
-          {
-             *type_return = _pal_type;
-             return color_lut;
-          }
-        if ((_max_colors >= 64)
-            && (color_lut = __imlib_AllocColors222(d, cmap, v)))
-          {
-             *type_return = _pal_type;
-             return color_lut;
-          }
-        if ((_max_colors >= 32)
-            && (color_lut = __imlib_AllocColors221(d, cmap, v)))
-          {
-             *type_return = _pal_type;
-             return color_lut;
-          }
-        if ((_max_colors >= 16)
-            && (color_lut = __imlib_AllocColors121(d, cmap, v)))
-          {
-             *type_return = _pal_type;
-             return color_lut;
-          }
-     }
-   if ((_max_colors >= 8) && (color_lut = __imlib_AllocColors111(d, cmap, v)))
-     {
-        *type_return = _pal_type;
-        return color_lut;
-     }
-   color_lut = __imlib_AllocColors1(d, cmap, v);
-   *type_return = _pal_type;
-   return color_lut;
-}
-
-DATA8              *
+static DATA8       *
 __imlib_AllocColors332(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
@@ -178,11 +123,10 @@ __imlib_AllocColors332(Display * d, Colormap cmap, Visual * v)
                }
           }
      }
-   _pal_type = 0;
    return color_lut;
 }
 
-DATA8              *
+static DATA8       *
 __imlib_AllocColors666(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
@@ -235,11 +179,10 @@ __imlib_AllocColors666(Display * d, Colormap cmap, Visual * v)
                }
           }
      }
-   _pal_type = 7;
    return color_lut;
 }
 
-DATA8              *
+static DATA8       *
 __imlib_AllocColors232(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
@@ -292,11 +235,10 @@ __imlib_AllocColors232(Display * d, Colormap cmap, Visual * v)
                }
           }
      }
-   _pal_type = 1;
    return color_lut;
 }
 
-DATA8              *
+static DATA8       *
 __imlib_AllocColors222(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
@@ -349,11 +291,10 @@ __imlib_AllocColors222(Display * d, Colormap cmap, Visual * v)
                }
           }
      }
-   _pal_type = 2;
    return color_lut;
 }
 
-DATA8              *
+static DATA8       *
 __imlib_AllocColors221(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
@@ -407,11 +348,10 @@ __imlib_AllocColors221(Display * d, Colormap cmap, Visual * v)
                }
           }
      }
-   _pal_type = 3;
    return color_lut;
 }
 
-DATA8              *
+static DATA8       *
 __imlib_AllocColors121(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
@@ -466,11 +406,10 @@ __imlib_AllocColors121(Display * d, Colormap cmap, Visual * v)
                }
           }
      }
-   _pal_type = 4;
    return color_lut;
 }
 
-DATA8              *
+static DATA8       *
 __imlib_AllocColors111(Display * d, Colormap cmap, Visual * v)
 {
    int                 r, g, b, i;
@@ -526,11 +465,10 @@ __imlib_AllocColors111(Display * d, Colormap cmap, Visual * v)
                }
           }
      }
-   _pal_type = 5;
    return color_lut;
 }
 
-DATA8              *
+static DATA8       *
 __imlib_AllocColors1(Display * d, Colormap cmap, Visual * v)
 {
    XColor              xcl;
@@ -547,6 +485,62 @@ __imlib_AllocColors1(Display * d, Colormap cmap, Visual * v)
    xcl.blue = (unsigned short)(0xffff);
    XAllocColor(d, cmap, &xcl);
    color_lut[1] = xcl.pixel;
-   _pal_type = 6;
+   return color_lut;
+}
+
+DATA8              *
+__imlib_AllocColorTable(Display * d, Colormap cmap,
+                        unsigned char *type_return, Visual * v)
+{
+   DATA8              *color_lut = NULL;
+
+   if (v->bits_per_rgb > 1)
+     {
+        if ((_max_colors >= 256)
+            && (color_lut = __imlib_AllocColors332(d, cmap, v)))
+          {
+             *type_return = PAL_TYPE_332;
+             return color_lut;
+          }
+        if ((_max_colors >= 216)
+            && (color_lut = __imlib_AllocColors666(d, cmap, v)))
+          {
+             *type_return = PAL_TYPE_666;
+             return color_lut;
+          }
+        if ((_max_colors >= 128)
+            && (color_lut = __imlib_AllocColors232(d, cmap, v)))
+          {
+             *type_return = PAL_TYPE_232;
+             return color_lut;
+          }
+        if ((_max_colors >= 64)
+            && (color_lut = __imlib_AllocColors222(d, cmap, v)))
+          {
+             *type_return = PAL_TYPE_222;
+             return color_lut;
+          }
+        if ((_max_colors >= 32)
+            && (color_lut = __imlib_AllocColors221(d, cmap, v)))
+          {
+             *type_return = PAL_TYPE_221;
+             return color_lut;
+          }
+        if ((_max_colors >= 16)
+            && (color_lut = __imlib_AllocColors121(d, cmap, v)))
+          {
+             *type_return = PAL_TYPE_121;
+             return color_lut;
+          }
+     }
+
+   if ((_max_colors >= 8) && (color_lut = __imlib_AllocColors111(d, cmap, v)))
+     {
+        *type_return = PAL_TYPE_111;
+        return color_lut;
+     }
+
+   color_lut = __imlib_AllocColors1(d, cmap, v);
+   *type_return = PAL_TYPE_1;
    return color_lut;
 }

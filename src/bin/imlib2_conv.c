@@ -1,17 +1,17 @@
-#include "config.h"
-/* Convert images between formats, using Imlib2's API. Smart enough to know
- * about edb files; defaults to jpg's.
+/*
+ * Convert images between formats, using Imlib2's API.
+ * Defaults to jpg's.
  */
+#include "config.h"
+#ifndef X_DISPLAY_MISSING
+#define X_DISPLAY_MISSING
+#endif
+#include <Imlib2.h>
 
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-#ifndef X_DISPLAY_MISSING
-#define X_DISPLAY_MISSING
-#endif
-#include <Imlib2.h>
 
 #define PROG_NAME "imlib2_conv"
 

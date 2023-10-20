@@ -2,7 +2,6 @@
 
 #include <ctype.h>
 #include <stdbool.h>
-#include <sys/mman.h>
 
 #define DBG_PFX "LDR-pnm"
 
@@ -33,7 +32,7 @@ mm_read(void *dst, unsigned int len)
 static int
 mm_getc(void)
 {
-   int                 ch;
+   unsigned char       ch;
 
    if (mdata.dptr + 1 > mdata.data + mdata.size)
       return -1;                /* Out of data */
@@ -189,7 +188,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(w, h))
       goto quit;
 
-   UPDATE_FLAG(im->flags, F_HAS_ALPHA, p == '8');
+   IM_FLAG_UPDATE(im, F_HAS_ALPHA, p == '8');
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -493,7 +492,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    ptr = im->data;
 
    /* if the image has a useful alpha channel */
-   if (im->flags & F_HAS_ALPHA)
+   if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
      {
         fprintf(f, "P8\n" "# PNM File written by Imlib2\n" "%i %i\n" "255\n",
                 im->w, im->h);
