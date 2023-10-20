@@ -102,7 +102,7 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
                   if (img->rgba.orientation == ORIENTATION_TOPRIGHT)
                      k = image_width - 1 - k;
                   buffer_pixel = PIM(k, image_height - 1 - (y - j));
-                  *buffer_pixel = (a << 24) | (r << 16) | (g << 8) | b;
+                  *buffer_pixel = PIXEL_ARGB(a, r, g, b);
                }
           }
         break;
@@ -129,7 +129,7 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
                   if (img->rgba.orientation == ORIENTATION_BOTRIGHT)
                      k = image_width - 1 - k;
                   buffer_pixel = PIM(k, image_height - 1 - (y + j));
-                  *buffer_pixel = (a << 24) | (r << 16) | (g << 8) | b;
+                  *buffer_pixel = PIXEL_ARGB(a, r, g, b);
                }
           }
         break;
@@ -157,7 +157,7 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
                   if (img->rgba.orientation == ORIENTATION_LEFTTOP)
                      k = image_width - 1 - k;
                   buffer_pixel = PIM(k, x + j);
-                  *buffer_pixel = (a << 24) | (r << 16) | (g << 8) | b;
+                  *buffer_pixel = PIXEL_ARGB(a, r, g, b);
                }
           }
         break;
@@ -184,7 +184,7 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
                   if (img->rgba.orientation == ORIENTATION_RIGHTBOT)
                      k = image_width - 1 - k;
                   buffer_pixel = PIM(k, image_height - 1 - (x + j));
-                  *buffer_pixel = (a << 24) | (r << 16) | (g << 8) | b;
+                  *buffer_pixel = PIXEL_ARGB(a, r, g, b);
                }
           }
         break;
@@ -271,9 +271,6 @@ load(ImlibImage * im, ImlibProgressFunction progress,
 
    ok = 0;
 
-   if (im->data)
-      return 0;
-
    file = fopen(im->real_file, "rb");
    if (!file)
       return 0;
@@ -309,6 +306,12 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    if (!TIFFRGBAImageBegin((TIFFRGBAImage *) & rgba_image, tif, 1, txt))
       goto quit1;
 
+   if (!rgba_image.rgba.put.any)
+     {
+        fprintf(stderr, "imlib2-tiffloader: No put function");
+        goto quit2;
+     }
+
    rgba_image.image = im;
    switch (rgba_image.rgba.orientation)
      {
@@ -338,37 +341,21 @@ load(ImlibImage * im, ImlibProgressFunction progress,
       SET_FLAG(im->flags, F_HAS_ALPHA);
    else
       UNSET_FLAG(im->flags, F_HAS_ALPHA);
-   if (!im->format)
-      im->format = strdup("tiff");
 
-   if ((im->loader) || (immediate_load) || (progress))
+   if (im->loader || immediate_load || progress)
      {
         rgba_image.progress = progress;
         rgba_image.pper = rgba_image.py = 0;
         rgba_image.progress_granularity = progress_granularity;
-        rast = (uint32 *) _TIFFmalloc(sizeof(uint32) * num_pixels);
-        im->data = (DATA32 *) malloc(sizeof(DATA32) * num_pixels);
 
-        if ((!rast) || (!im->data))     /* Error checking */
+        if (!__imlib_AllocateData(im))
+           goto quit2;
+
+        rast = (uint32 *) _TIFFmalloc(sizeof(uint32) * num_pixels);
+        if (!rast)
           {
              fprintf(stderr, "imlib2-tiffloader: Out of memory\n");
-
-             if (rast)
-                _TIFFfree(rast);
-             free(im->data);
-             im->data = NULL;
-             im->w = 0;
-             goto quit2;
-          }
-
-        if (!rgba_image.rgba.put.any)
-          {
-             fprintf(stderr, "imlib2-tiffloader: No put function");
-
-             _TIFFfree(rast);
-             free(im->data);
-             im->data = NULL;
-             im->w = 0;
+             __imlib_FreeData(im);
              goto quit2;
           }
 
@@ -387,9 +374,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                               rgba_image.rgba.width, rgba_image.rgba.height))
           {
              _TIFFfree(rast);
-             free(im->data);
-             im->data = NULL;
-             im->w = 0;
+             __imlib_FreeData(im);
              goto quit2;
           }
 
@@ -536,13 +521,13 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
           {
              pixel = data[(y * im->w) + x];
 
-             r = (pixel >> 16) & 0xff;
-             g = (pixel >> 8) & 0xff;
-             b = pixel & 0xff;
+             r = PIXEL_R(pixel);
+             g = PIXEL_G(pixel);
+             b = PIXEL_B(pixel);
              if (has_alpha)
                {
                   /* TIFF makes you pre-mutiply the rgb components by alpha */
-                  a = (pixel >> 24) & 0xff;
+                  a = PIXEL_A(pixel);
                   alpha_factor = ((double)a / 255.0);
                   r *= alpha_factor;
                   g *= alpha_factor;

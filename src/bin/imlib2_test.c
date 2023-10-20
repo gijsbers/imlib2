@@ -1,19 +1,14 @@
 #include "config.h"
-/* include X11 stuff */
+
 #include <X11/Xlib.h>
-/* include Imlib2 stuff */
-#include <Imlib2.h>
-/* needed for sprintf and fprintf */
 #include <stdio.h>
-/* needed for getenv */
 #include <stdlib.h>
+
+#include "Imlib2.h"
 
 /* some globals for our window & X display */
 Display            *disp;
 Window              win;
-Visual             *vis;
-Colormap            cm;
-int                 depth;
 
 /* the program... */
 int
@@ -37,22 +32,16 @@ main(int argc, char **argv)
    /* our mouse x, y coordinates */
    int                 mouse_x = 0, mouse_y = 0;
 
-   const char         *display_name = getenv("DISPLAY");
-
    /* connect to X */
-   if (!display_name)
-      display_name = ":0";
-   disp = XOpenDisplay(display_name);
+   disp = XOpenDisplay(NULL);
    if (!disp)
      {
-        fprintf(stderr, "Can't open display %s\n", display_name);
+        fprintf(stderr, "Cannot open display\n");
         return 1;
      }
+
    /* get default visual , colormap etc. you could ask imlib2 for what it */
    /* thinks is the best, but this example is intended to be simple */
-   vis = DefaultVisual(disp, DefaultScreen(disp));
-   depth = DefaultDepth(disp, DefaultScreen(disp));
-   cm = DefaultColormap(disp, DefaultScreen(disp));
    /* create a window 640x480 */
    win = XCreateSimpleWindow(disp, DefaultRootWindow(disp),
                              0, 0, 640, 480, 0, 0, 0);
@@ -75,8 +64,8 @@ main(int argc, char **argv)
    imlib_context_set_dither(1);
    /* set the display , visual, colormap and drawable we are using */
    imlib_context_set_display(disp);
-   imlib_context_set_visual(vis);
-   imlib_context_set_colormap(cm);
+   imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
+   imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
    imlib_context_set_drawable(win);
    /* infinite event loop */
    for (;;)

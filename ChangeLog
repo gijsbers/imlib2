@@ -1,5 +1,86 @@
 
 ***
+*** Version 1.6.0 ***
+***
+
+Alexander Volkov (1):
+      Allow to use custom memory management functions for loaded images
+
+Kim Woelders (64):
+      Add __imlib_LoadImageWrapper() handling all load() calls
+      imlib2_conv: Report error on save failure
+      Autofoo cosmetics
+      Trivial cleanups in imlib2_... test programs
+      Add imlib2_test_load program
+      Cleanups in load() functions
+      Centralize handling of im->format
+      Sort loaders in Makefile.am
+      Remove obsolete dmalloc stuff
+      Move SWAP.. macro definitions to common.h
+      Use common PIXEL_ARGB() macro to compose pixels
+      Add new ICO loader
+      Spec file simlifications and cleanups
+      Fix memory leak in imlib_list_fonts()
+      XPM loader: Refactor exit cleanup handling
+      XPM loader: Fix potentially uninitialized pixel data
+      XPM loader: Fixup after "Refactor exit cleanup handling"
+      Revert "XPM loader: Fix potentially uninitialized pixel data"
+      XPM loader: Cosmetics (reduce indent level)
+      XPM loader: Fix several colormap issues
+      XPM loader: Simplify pixel value handling
+      XPM loader: Add missing pixels (malformed xpm)
+      XPM loader: More simplifications
+      JPG loader: Refactor
+      JPG loader: Do proper CMYK conversion
+      Add new WebP loader
+      Remove pointless im->data checks in loaders
+      WepP loader: Fix memory leak in error path
+      JPG loader: Fix memory leaks in error paths
+      Fix ABI break
+      ICO loader: Add binary flag to fopen()
+      JPG loader: Refactor error handling
+      Rename/add byte swap macros
+      BMP loader: Major makeover - numerous bug fixes and feature enhancements
+      Miscellaneous imlib_test_load tweaks
+      GZIP loader: Check filename before uncompress
+      imlib2_test_load: Fixup after recent change
+      Re-indent everything using indent-2.2.12
+      TGA loader: Refactor
+      Eliminate WRITE_RGBA()
+      Simplify autogen.sh
+      Simplify pixel color handling in api.c
+      Use pixel instead of r,b,g,a in __imlib_render_str()
+      Use macro for pixel color access in savers
+      Eliminate READ_RGBA()
+      XPM loader: Accept signature not at the very start of the file
+      Simplify loader lookup functions
+      imlib2_view: Enable selecting next/prev using keys too
+      imlib2_view: Fix event processing bug
+      imlib2_test_load: Fixup recent breakage for real
+      imlib2_test_load: Check progress conditionally
+      imlib2_view: Add verbose option, quit on Escape too
+      TGA loader - Mostly cosmetic refactoring
+      TGA loader: More mostly cosmetic changes
+      TGA loader: Support horiontal flip
+      TGA loader: Add simple 16 bpp handling
+      TGA loader: Tweak error handling
+      ICO loader: Fix non-immediate loading
+      Remove __imlib_AllocateData() w,h args
+      imlib2_view: Fix next/prev selection if last/first image is bad
+      ICO loader: Fix memory leak in error path
+      XPM loader: Correct signature check (avoid accessing unset data)
+      gz, bz2 loaders: Simplify, eliminate unnecessary strdups, cosmetics
+      Bump minor version (new functions)
+
+Olof-Joachim Frahm (欧雅福) (2):
+      Check filename before opening archive file.
+      tga loader: implement handling of palette
+
+Ralph Siemsen (1):
+      loader_tga: fix regression in RLE raw byte handling
+
+
+***
 *** Version 1.5.1 ***
 ***
 

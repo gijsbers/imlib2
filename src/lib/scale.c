@@ -16,7 +16,6 @@ struct _imlib_scale_info {
    DATA32             *pix_assert;
 };
 
-#define RGBA_COMPOSE(r, g, b, a)  ((a) << 24) | ((r) << 16) | ((g) << 8) | (b)
 #define INV_XAP                   (256 - xapoints[x])
 #define XAP                       (xapoints[x])
 #define INV_YAP                   (256 - yapoints[dyy + y])
@@ -362,7 +361,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             g = ((gg * YAP) + (g * INV_YAP)) >> 16;
                             b = ((bb * YAP) + (b * INV_YAP)) >> 16;
                             a = ((aa * YAP) + (a * INV_YAP)) >> 16;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, a);
+                            *dptr++ = PIXEL_ARGB(a, r, g, b);
                          }
                        else
                          {
@@ -380,7 +379,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             g >>= 8;
                             b >>= 8;
                             a >>= 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, a);
+                            *dptr++ = PIXEL_ARGB(a, r, g, b);
                          }
                     }
                }
@@ -407,7 +406,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             g >>= 8;
                             b >>= 8;
                             a >>= 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, a);
+                            *dptr++ = PIXEL_ARGB(a, r, g, b);
                          }
                        else
                           *dptr++ = sptr[xpoints[x]];
@@ -496,7 +495,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                        b >>= 4;
                        a >>= 4;
                     }
-                  *dptr = RGBA_COMPOSE(r, g, b, a);
+                  *dptr = PIXEL_ARGB(a, r, g, b);
                   dptr++;
                }
           }
@@ -544,7 +543,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             g = (g + ((gg * XAP) / yap)) >> 8;
                             b = (b + ((bb * XAP) / yap)) >> 8;
                             a = (a + ((aa * XAP) / yap)) >> 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, a);
+                            *dptr++ = PIXEL_ARGB(a, r, g, b);
                          }
                        else
                          {
@@ -561,7 +560,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             g /= yap;
                             b /= yap;
                             a /= yap;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, a);
+                            *dptr++ = PIXEL_ARGB(a, r, g, b);
                          }
                     }
                }
@@ -589,7 +588,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             g >>= 8;
                             b >>= 8;
                             a >>= 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, a);
+                            *dptr++ = PIXEL_ARGB(a, r, g, b);
                          }
                        else
                           *dptr++ = sptr[xpoints[x]];
@@ -679,7 +678,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                        b >>= 4;
                        a >>= 4;
                     }
-                  *dptr = RGBA_COMPOSE(r, g, b, a);
+                  *dptr = PIXEL_ARGB(a, r, g, b);
                   dptr++;
                }
           }
@@ -728,7 +727,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             g = (g + ((gg * YAP) / xap)) >> 8;
                             b = (b + ((bb * YAP) / xap)) >> 8;
                             a = (a + ((aa * YAP) / xap)) >> 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, a);
+                            *dptr++ = PIXEL_ARGB(a, r, g, b);
                          }
                        else
                          {
@@ -746,7 +745,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             g >>= 8;
                             b >>= 8;
                             a >>= 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, a);
+                            *dptr++ = PIXEL_ARGB(a, r, g, b);
                          }
                     }
                }
@@ -773,7 +772,7 @@ __imlib_ScaleAARGBA(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             g /= xap;
                             b /= xap;
                             a /= xap;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, a);
+                            *dptr++ = PIXEL_ARGB(a, r, g, b);
                          }
                        else
                           *dptr++ = sptr[xpoints[x]];
@@ -1006,7 +1005,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             r = ((rr * YAP) + (r * INV_YAP)) >> 16;
                             g = ((gg * YAP) + (g * INV_YAP)) >> 16;
                             b = ((bb * YAP) + (b * INV_YAP)) >> 16;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, 0xff);
+                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                          }
                        else
                          {
@@ -1021,7 +1020,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             r >>= 8;
                             g >>= 8;
                             b >>= 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, 0xff);
+                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                          }
                     }
                }
@@ -1045,7 +1044,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             r >>= 8;
                             g >>= 8;
                             b >>= 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, 0xff);
+                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                          }
                        else
                           *dptr++ = sptr[xpoints[x]];
@@ -1123,7 +1122,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                        g >>= 4;
                        b >>= 4;
                     }
-                  *dptr = RGBA_COMPOSE(r, g, b, 0xff);
+                  *dptr = PIXEL_ARGB(0xff, r, g, b);
                   dptr++;
                }
           }
@@ -1167,7 +1166,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             r = (r + ((rr * XAP) / yap)) >> 8;
                             g = (g + ((gg * XAP) / yap)) >> 8;
                             b = (b + ((bb * XAP) / yap)) >> 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, 0xff);
+                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                          }
                        else
                          {
@@ -1182,7 +1181,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             r /= yap;
                             g /= yap;
                             b /= yap;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, 0xff);
+                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                          }
                     }
                }
@@ -1206,7 +1205,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             r >>= 8;
                             g >>= 8;
                             b >>= 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, 0xff);
+                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                          }
                        else
                           *dptr++ = sptr[xpoints[x]];
@@ -1285,7 +1284,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                        g >>= 4;
                        b >>= 4;
                     }
-                  *dptr = RGBA_COMPOSE(r, g, b, 0xff);
+                  *dptr = PIXEL_ARGB(0xff, r, g, b);
                   dptr++;
                }
           }
@@ -1330,7 +1329,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             r = (r + ((rr * YAP) / xap)) >> 8;
                             g = (g + ((gg * YAP) / xap)) >> 8;
                             b = (b + ((bb * YAP) / xap)) >> 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, 0xff);
+                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                          }
                        else
                          {
@@ -1345,7 +1344,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             r >>= 8;
                             g >>= 8;
                             b >>= 8;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, 0xff);
+                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                          }
                     }
                }
@@ -1370,7 +1369,7 @@ __imlib_ScaleAARGB(ImlibScaleInfo * isi, DATA32 * dest, int dxx, int dyy,
                             r /= xap;
                             g /= xap;
                             b /= xap;
-                            *dptr++ = RGBA_COMPOSE(r, g, b, 0xff);
+                            *dptr++ = PIXEL_ARGB(0xff, r, g, b);
                          }
                        else
                           *dptr++ = sptr[xpoints[x]];

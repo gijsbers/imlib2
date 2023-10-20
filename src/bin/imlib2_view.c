@@ -1,24 +1,16 @@
 #include "config.h"
+
 #include <X11/Xlib.h>
-#include <X11/extensions/XShm.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/shape.h>
-#include <X11/Xatom.h>
-#include <X11/Xos.h>
+#include <X11/keysym.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <errno.h>
+
 #include "Imlib2.h"
 
 Display            *disp;
 Window              win;
 Pixmap              pm = 0;
-Visual             *vis;
-Colormap            cm;
 int                 depth;
 int                 image_width = 0, image_height = 0;
 int                 window_width = 0, window_height = 0;
@@ -126,11 +118,18 @@ main(int argc, char **argv)
    char               *s;
    Imlib_Image        *im = NULL;
    char               *file = NULL;
-   int                 no = 1;
+   int                 no, inc;
+   int                 verbose;
 
-   for (no = 1; no < argc; no++)
+   verbose = 0;
+
+   for (;;)
      {
-        s = argv[no];
+        argv++;
+        argc--;
+        if (argc <= 0)
+           break;
+        s = argv[0];
         if (*s++ != '-')
            break;
         switch (*s)
@@ -138,13 +137,18 @@ main(int argc, char **argv)
           default:
              break;
           case 's':            /* Scale (window size wrt. image size) */
-             if (++no < argc)
-                scale_x = scale_y = atof(argv[no]);
+             if (argc-- < 2)
+                break;
+             argv++;
+             scale_x = scale_y = atof(argv[0]);
+             break;
+          case 'v':
+             verbose += 1;
              break;
           }
      }
 
-   if (no >= argc)
+   if (argc <= 0)
      {
         fprintf(stderr, "imlib2_view [-s <scale factor>] file...\n");
         return 1;
@@ -157,9 +161,7 @@ main(int argc, char **argv)
         return 1;
      }
 
-   vis = DefaultVisual(disp, DefaultScreen(disp));
    depth = DefaultDepth(disp, DefaultScreen(disp));
-   cm = DefaultColormap(disp, DefaultScreen(disp));
 
    win = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0, 10, 10,
                              0, 0, 0);
@@ -171,32 +173,30 @@ main(int argc, char **argv)
    XSetWMProtocols(disp, win, &ATOM_WM_DELETE_WINDOW, 1);
 
    imlib_context_set_display(disp);
-   imlib_context_set_visual(vis);
-   imlib_context_set_colormap(cm);
+   imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
+   imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
    imlib_context_set_progress_function(progress);
    imlib_context_set_progress_granularity(10);
    imlib_context_set_drawable(win);
 
-   file = argv[no];
-   im = imlib_load_image(file);
-   while (!im)
+   no = -1;
+   for (im = NULL; !im;)
      {
         no++;
         if (no == argc)
           {
-             fprintf(stderr, "Image format not available\n");
+             fprintf(stderr, "No loadable image\n");
              exit(0);
           }
         file = argv[no];
+        if (verbose)
+           printf("Show  %d: '%s'\n", no, file);
         image_width = 0;
         im = imlib_load_image(file);
-        imlib_context_set_image(im);
      }
-   if (!im)
-     {
-        fprintf(stderr, "Image format not available\n");
-        exit(0);
-     }
+
+   imlib_context_set_image(im);
+
    for (;;)
      {
         int                 x, y, b, count, fdsize, xfd, timeout = 0;
@@ -212,6 +212,9 @@ main(int argc, char **argv)
         XNextEvent(disp, &ev);
         switch (ev.type)
           {
+          default:
+             break;
+
           case ClientMessage:
              if (ev.xclient.message_type == ATOM_WM_PROTOCOLS &&
                  (Atom) ev.xclient.data.l[0] == ATOM_WM_DELETE_WINDOW)
@@ -219,8 +222,12 @@ main(int argc, char **argv)
              break;
           case KeyPress:
              key = XLookupKeysym(&ev.xkey, 0);
-             if (key == XK_q)
+             if (key == XK_q || key == XK_Escape)
                 return 0;
+             if (key == XK_Right)
+                goto show_next;
+             if (key == XK_Left)
+                goto show_prev;
              break;
           case ButtonPress:
              b = ev.xbutton.button;
@@ -249,51 +256,9 @@ main(int argc, char **argv)
              if (b == 3)
                 zoom_mode = 0;
              if (b == 1)
-               {
-                  no++;
-                  if (no == argc)
-                     no = argc - 1;
-                  file = argv[no];
-                  image_width = 0;
-                  zoom = 1.0;
-                  zoom_mode = 0;
-                  imlib_context_set_image(im);
-                  imlib_free_image_and_decache();
-                  im = imlib_load_image(file);
-                  while (!im)
-                    {
-                       no++;
-                       if (no == argc)
-                          exit(0);
-                       file = argv[no];
-                       image_width = 0;
-                       im = imlib_load_image(file);
-                    }
-                  imlib_context_set_image(im);
-               }
+                goto show_next;
              if (b == 2)
-               {
-                  no--;
-                  if (no == 0)
-                     no = 1;
-                  file = argv[no];
-                  image_width = 0;
-                  zoom = 1.0;
-                  zoom_mode = 0;
-                  imlib_context_set_image(im);
-                  imlib_free_image_and_decache();
-                  im = imlib_load_image(file);
-                  while (!im)
-                    {
-                       no--;
-                       if (no == 0)
-                          no = 1;
-                       file = argv[no];
-                       image_width = 0;
-                       im = imlib_load_image(file);
-                    }
-                  imlib_context_set_image(im);
-               }
+                goto show_prev;
              break;
           case MotionNotify:
              while (XCheckTypedWindowEvent(disp, win, MotionNotify, &ev));
@@ -344,9 +309,45 @@ main(int argc, char **argv)
                   XFlush(disp);
                   timeout = 1;
                }
-          default:
+             break;
+
+           show_next:
+             inc = 1;
+             goto show_next_prev;
+           show_prev:
+             inc = -1;
+             goto show_next_prev;
+           show_next_prev:
+             zoom = 1.0;
+             zoom_mode = 0;
+             imlib_context_set_image(im);
+             imlib_free_image_and_decache();
+             for (im = NULL; !im;)
+               {
+                  no += inc;
+                  if (no >= argc)
+                    {
+                       inc = -1;
+                       continue;
+                    }
+                  else if (no < 0)
+                    {
+                       inc = 1;
+                       continue;
+                    }
+                  file = argv[no];
+                  if (verbose)
+                     printf("Show  %d: '%s'\n", no, file);
+                  image_width = 0;
+                  im = imlib_load_image(file);
+               }
+             imlib_context_set_image(im);
              break;
           }
+
+        if (XPending(disp))
+           continue;
+
         t1 = 0.2;
         tval.tv_sec = (long)t1;
         tval.tv_usec = (long)((t1 - ((double)tval.tv_sec)) * 1000000);
@@ -354,10 +355,12 @@ main(int argc, char **argv)
         fdsize = xfd + 1;
         FD_ZERO(&fdset);
         FD_SET(xfd, &fdset);
+
         if (timeout)
            count = select(fdsize, &fdset, NULL, NULL, &tval);
         else
            count = select(fdsize, &fdset, NULL, NULL, NULL);
+
         if (count < 0)
           {
              if ((errno == ENOMEM) || (errno == EINVAL) || (errno == EBADF))

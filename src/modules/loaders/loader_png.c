@@ -23,87 +23,72 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    png_structp         png_ptr = NULL;
    png_infop           info_ptr = NULL;
    int                 bit_depth, color_type, interlace_type;
+   unsigned char       buf[PNG_BYTES_TO_CHECK];
 
-   /* if immediate_load is 1, then don't delay image loading as below, or */
-   /* already data in this image - don't load it again */
-   if (im->data)
-      return 0;
    f = fopen(im->real_file, "rb");
    if (!f)
       return 0;
 
    /* read header */
    hasa = 0;
-   if (!im->data)
-     {
-        unsigned char       buf[PNG_BYTES_TO_CHECK];
 
-        /* if we haven't read the header before, set the header data */
-        if (fread(buf, 1, PNG_BYTES_TO_CHECK, f) != PNG_BYTES_TO_CHECK)
-          {
-             fclose(f);
-             return 0;
-          }
-        if (png_sig_cmp(buf, 0, PNG_BYTES_TO_CHECK))
-          {
-             fclose(f);
-             return 0;
-          }
-        rewind(f);
-        png_ptr =
-           png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-        if (!png_ptr)
-          {
-             fclose(f);
-             return 0;
-          }
-        info_ptr = png_create_info_struct(png_ptr);
-        if (!info_ptr)
-          {
-             png_destroy_read_struct(&png_ptr, NULL, NULL);
-             fclose(f);
-             return 0;
-          }
-        if (setjmp(png_jmpbuf(png_ptr)))
-          {
-             im->w = 0;
-             png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-             fclose(f);
-             return 0;
-          }
-        png_init_io(png_ptr, f);
-        png_read_info(png_ptr, info_ptr);
-        png_get_IHDR(png_ptr, info_ptr, (png_uint_32 *) (&w32),
-                     (png_uint_32 *) (&h32), &bit_depth, &color_type,
-                     &interlace_type, NULL, NULL);
-        if (!IMAGE_DIMENSIONS_OK(w32, h32))
-          {
-             im->w = 0;
-             png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
-             fclose(f);
-             return 0;
-          }
-        im->w = (int)w32;
-        im->h = (int)h32;
-        if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
-           hasa = 1;
-        if (color_type == PNG_COLOR_TYPE_RGB_ALPHA)
-           hasa = 1;
-        if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
-           hasa = 1;
-        if (hasa)
-           SET_FLAG(im->flags, F_HAS_ALPHA);
-        else
-           UNSET_FLAG(im->flags, F_HAS_ALPHA);
-        /* set the format string member to the lower-case full extension */
-        /* name for the format - so example names would be: */
-        /* "png", "jpeg", "tiff", "ppm", "pgm", "pbm", "gif", "xpm" ... */
-        if (!im->loader)
-           im->format = strdup("png");
+   if (fread(buf, 1, PNG_BYTES_TO_CHECK, f) != PNG_BYTES_TO_CHECK)
+     {
+        fclose(f);
+        return 0;
      }
-   /* if its the second phase load OR its immediate load or a progress */
-   /* callback is set then load the data */
-   if ((im->loader) || (immediate_load) || (progress))
+   if (png_sig_cmp(buf, 0, PNG_BYTES_TO_CHECK))
+     {
+        fclose(f);
+        return 0;
+     }
+   rewind(f);
+   png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+   if (!png_ptr)
+     {
+        fclose(f);
+        return 0;
+     }
+   info_ptr = png_create_info_struct(png_ptr);
+   if (!info_ptr)
+     {
+        png_destroy_read_struct(&png_ptr, NULL, NULL);
+        fclose(f);
+        return 0;
+     }
+   if (setjmp(png_jmpbuf(png_ptr)))
+     {
+        im->w = 0;
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        fclose(f);
+        return 0;
+     }
+   png_init_io(png_ptr, f);
+   png_read_info(png_ptr, info_ptr);
+   png_get_IHDR(png_ptr, info_ptr, (png_uint_32 *) (&w32),
+                (png_uint_32 *) (&h32), &bit_depth, &color_type,
+                &interlace_type, NULL, NULL);
+   if (!IMAGE_DIMENSIONS_OK(w32, h32))
+     {
+        im->w = 0;
+        png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
+        fclose(f);
+        return 0;
+     }
+   im->w = (int)w32;
+   im->h = (int)h32;
+   if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+      hasa = 1;
+   if (color_type == PNG_COLOR_TYPE_RGB_ALPHA)
+      hasa = 1;
+   if (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+      hasa = 1;
+   if (hasa)
+      SET_FLAG(im->flags, F_HAS_ALPHA);
+   else
+      UNSET_FLAG(im->flags, F_HAS_ALPHA);
+
+   if (im->loader || immediate_load || progress)
      {
         unsigned char     **lines;
         int                 i;
@@ -147,12 +132,8 @@ load(ImlibImage * im, ImlibProgressFunction progress,
            png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
 #endif
 
-        if (im->data)
-           free(im->data);
-        im->data = malloc(w * h * sizeof(DATA32));
-        if (!im->data)
+        if (!__imlib_AllocateData(im))
           {
-             im->w = 0;
              png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
              fclose(f);
              return 0;
@@ -161,9 +142,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
 
         if (!lines)
           {
-             free(im->data);
-             im->data = NULL;
-             im->w = 0;
+             __imlib_FreeData(im);
              png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
              fclose(f);
              return 0;
@@ -366,13 +345,16 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
                {
                   for (j = 0, x = 0; x < im->w; x++)
                     {
-                       data[j++] = (ptr[x] >> 16) & 0xff;
-                       data[j++] = (ptr[x] >> 8) & 0xff;
-                       data[j++] = (ptr[x]) & 0xff;
+                       DATA32              pixel = ptr[x];
+
+                       data[j++] = PIXEL_R(pixel);
+                       data[j++] = PIXEL_G(pixel);
+                       data[j++] = PIXEL_B(pixel);
                     }
                   row_ptr = (png_bytep) data;
                }
              png_write_rows(png_ptr, &row_ptr, 1);
+
              if (progress)
                {
                   char                per;

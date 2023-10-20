@@ -20,11 +20,11 @@ typedef struct _imlibloader ImlibLoader;
 typedef struct _imlibimagetag ImlibImageTag;
 typedef enum _imlib_load_error ImlibLoadError;
 
-typedef int         (*ImlibProgressFunction) (ImlibImage * im, char percent,
-                                              int update_x, int update_y,
-                                              int update_w, int update_h);
-typedef void        (*ImlibDataDestructorFunction) (ImlibImage * im,
-                                                    void *data);
+typedef int         (*ImlibProgressFunction)(ImlibImage * im, char percent,
+                                             int update_x, int update_y,
+                                             int update_w, int update_h);
+typedef void        (*ImlibDataDestructorFunction)(ImlibImage * im, void *data);
+typedef void       *(*ImlibImageDataMemoryFunction)(void *, size_t size);
 
 enum _iflags {
    F_NONE = 0,
@@ -49,7 +49,7 @@ struct _imlibimagetag {
    char               *key;
    int                 val;
    void               *data;
-   void                (*destructor) (ImlibImage * im, void *data);
+   void                (*destructor)(ImlibImage * im, void *data);
    ImlibImageTag      *next;
 };
 
@@ -67,6 +67,7 @@ struct _imlibimage {
    ImlibImageTag      *tags;
    char               *real_file;
    char               *key;
+   ImlibImageDataMemoryFunction data_memory_func;
 };
 
 #ifdef BUILD_X11
@@ -94,14 +95,18 @@ struct _imlibloader {
    int                 num_formats;
    char              **formats;
    void               *handle;
-   char                (*load) (ImlibImage * im,
-                                ImlibProgressFunction progress,
-                                char progress_granularity, char immediate_load);
-   char                (*save) (ImlibImage * im,
-                                ImlibProgressFunction progress,
-                                char progress_granularity);
+   char                (*load)(ImlibImage * im,
+                               ImlibProgressFunction progress,
+                               char progress_granularity, char immediate_load);
+   char                (*save)(ImlibImage * im,
+                               ImlibProgressFunction progress,
+                               char progress_granularity);
    ImlibLoader        *next;
 };
+
+DATA32             *__imlib_AllocateData(ImlibImage * im);
+void                __imlib_FreeData(ImlibImage * im);
+void                __imlib_ReplaceData(ImlibImage * im, DATA32 * new_data);
 
 void                __imlib_AttachTag(ImlibImage * im, const char *key,
                                       int val, void *data,
@@ -138,9 +143,8 @@ void                __imlib_CleanupImagePixmapCache(void);
 void                __imlib_RemoveAllLoaders(void);
 ImlibLoader        *__imlib_FindBestLoaderForFile(const char *file,
                                                   int for_save);
-ImlibLoader        *__imlib_FindBestLoaderForFileFormat(const char *file,
-                                                        char *format,
-                                                        int for_save);
+ImlibLoader        *__imlib_FindBestLoaderForFormat(const char *format,
+                                                    int for_save);
 void                __imlib_SetImageAlphaFlag(ImlibImage * im, char alpha);
 ImlibImage         *__imlib_CreateImage(int w, int h, DATA32 * data);
 ImlibImage         *__imlib_LoadImage(const char *file,

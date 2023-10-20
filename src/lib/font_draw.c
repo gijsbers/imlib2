@@ -68,14 +68,14 @@ __imlib_font_cache_glyph_get(ImlibFont * fn, FT_UInt index)
 
 void
 __imlib_render_str(ImlibImage * im, ImlibFont * fn, int drx, int dry,
-                   const char *text, DATA8 r, DATA8 g, DATA8 b, DATA8 a,
-                   char dir, double angle, int *retw, int *reth, int blur,
+                   const char *text, DATA32 pixel, int dir, double angle,
+                   int *retw, int *reth, int blur,
                    int *nextx, int *nexty, ImlibOp op, int clx, int cly,
                    int clw, int clh)
 {
    int                 w, h, ascent;
    ImlibImage         *im2;
-   DATA32             *data, col;
+   DATA32             *data;
    int                 nx, ny;
 
    __imlib_font_query_advance(fn, text, &w, NULL);
@@ -95,12 +95,9 @@ __imlib_render_str(ImlibImage * im, ImlibFont * fn, int drx, int dry,
      }
    SET_FLAG(im2->flags, F_HAS_ALPHA);
 
-   /* TODO check for endianess */
-   col = (a << 24) | (r << 16) | (g << 8) | b;
-
    ascent = __imlib_font_max_ascent_get(fn);
 
-   __imlib_font_draw(im2, col, fn, 0, ascent, text, &nx, &ny, 0, 0, w, h);
+   __imlib_font_draw(im2, pixel, fn, 0, ascent, text, &nx, &ny, 0, 0, w, h);
 
    /* OK, now we have small ImlibImage with text rendered, 
     * have to blend it on im */

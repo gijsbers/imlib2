@@ -23,35 +23,22 @@ load(ImlibImage * im, ImlibProgressFunction progress,
      }
 
    /* read and check the header */
-   if (!im->data)
+   if (fread(hdr, sizeof(uint32_t), LEN(hdr), f) != LEN(hdr) ||
+       memcmp("farbfeld", hdr, sizeof("farbfeld") - 1))
      {
-        if (fread(hdr, sizeof(uint32_t), LEN(hdr), f) != LEN(hdr) ||
-            memcmp("farbfeld", hdr, sizeof("farbfeld") - 1))
-          {
-             fclose(f);
-             return 0;
-          }
-        im->w = ntohl(hdr[2]);
-        im->h = ntohl(hdr[3]);
-        if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
-          {
-             im->w = 0;
-             fclose(f);
-             return 0;
-          }
-
-        /* set format */
-        if (!im->loader)
-          {
-             if (!(im->format = strdup("ff")))
-               {
-                  im->w = 0;
-                  fclose(f);
-                  return 0;
-               }
-          }
-        SET_FLAG(im->flags, F_HAS_ALPHA);
+        fclose(f);
+        return 0;
      }
+   im->w = ntohl(hdr[2]);
+   im->h = ntohl(hdr[3]);
+   if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
+     {
+        im->w = 0;
+        fclose(f);
+        return 0;
+     }
+
+   SET_FLAG(im->flags, F_HAS_ALPHA);
 
    /* load the data */
    if (im->loader || immediate_load || progress)
@@ -60,13 +47,10 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         h = im->h;
         rowlen = w * (sizeof("RGBA") - 1);
 
-        free(im->data);
-        if (!(im->data = malloc(rowlen * h)) ||
+        if (!(__imlib_AllocateData(im)) ||
             !(row = malloc(rowlen * sizeof(uint16_t))))
           {
-             free(im->data);
-             im->data = NULL;
-             im->w = 0;
+             __imlib_FreeData(im);
              free(row);
              fclose(f);
              return 0;
@@ -77,9 +61,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
           {
              if (fread(row, sizeof(uint16_t), rowlen, f) != rowlen)
                {
-                  free(im->data);
-                  im->data = NULL;
-                  im->w = 0;
+                  __imlib_FreeData(im);
                   free(row);
                   fclose(f);
                   return 0;

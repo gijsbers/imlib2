@@ -27,6 +27,53 @@ static ImlibImagePixmap *pixmaps = NULL;
 static ImlibLoader *loaders = NULL;
 static int          cache_size = 4096 * 1024;
 
+__EXPORT__ DATA32  *
+__imlib_AllocateData(ImlibImage * im)
+{
+   int                 w = im->w;
+   int                 h = im->h;
+
+   if (w <= 0 || h <= 0)
+      return NULL;
+
+   if (im->data_memory_func)
+      im->data = im->data_memory_func(NULL, w * h * sizeof(DATA32));
+   else
+      im->data = malloc(w * h * sizeof(DATA32));
+
+   return im->data;
+}
+
+__EXPORT__ void
+__imlib_FreeData(ImlibImage * im)
+{
+   if (im->data)
+     {
+        if (im->data_memory_func)
+           im->data_memory_func(im->data, im->w * im->h * sizeof(DATA32));
+        else
+           free(im->data);
+
+        im->data = NULL;
+     }
+   im->w = 0;
+   im->h = 0;
+}
+
+__EXPORT__ void
+__imlib_ReplaceData(ImlibImage * im, unsigned int *new_data)
+{
+   if (im->data)
+     {
+        if (im->data_memory_func)
+           im->data_memory_func(im->data, im->w * im->h * sizeof(DATA32));
+        else
+           free(im->data);
+     }
+   im->data = new_data;
+   im->data_memory_func = NULL;
+}
+
 /* attach a string key'd data and/or int value to an image that cna be */
 /* looked up later by its string key */
 __EXPORT__ void
@@ -175,7 +222,7 @@ __imlib_ConsumeImage(ImlibImage * im)
    if (im->key)
       free(im->key);
    if ((IMAGE_FREE_DATA(im)) && (im->data))
-      free(im->data);
+      __imlib_FreeData(im);
    if (im->format)
       free(im->format);
    free(im);
@@ -566,7 +613,7 @@ static ImlibLoader *
 __imlib_ProduceLoader(char *file)
 {
    ImlibLoader        *l;
-   void                (*l_formats) (ImlibLoader * l);
+   void                (*l_formats)(ImlibLoader * l);
 
    l = malloc(sizeof(ImlibLoader));
    l->num_formats = 0;
@@ -695,28 +742,13 @@ __imlib_LoadAllLoaders(void)
 }
 
 __EXPORT__ ImlibLoader *
-__imlib_FindBestLoaderForFile(const char *file, int for_save)
+__imlib_FindBestLoaderForFormat(const char *format, int for_save)
 {
-   char               *extension, *lower, *rfile;
-   ImlibLoader        *l = NULL;
+   ImlibLoader        *l;
 
-   /* use the file extension for a "best guess" as to what loader to try */
-   /* first at any rate */
-
-   rfile = __imlib_FileRealFile(file);
-   extension = __imlib_FileExtension(rfile);
-   free(rfile);
-   /* change the extensiont o all lower case as all "types" are listed as */
-   /* lower case strings from the loader that represent all the possible */
-   /* extensions that file format could have */
-   lower = extension;
-   while (*lower)
-     {
-        *lower = tolower(*lower);
-        lower++;
-     }
-   if (!extension)
+   if (!format || format[0] == '\0')
       return NULL;
+
    /* go through the loaders - first loader that claims to handle that */
    /* image type (extension wise) wins as a first guess to use - NOTE */
    /* this is an OPTIMISATION - it is possible the file has no extension */
@@ -729,8 +761,7 @@ __imlib_FindBestLoaderForFile(const char *file, int for_save)
    /* to be used first next time in this search mechanims - this */
    /* assumes you tend to laod a few image types and ones generally */
    /* of the same format */
-   l = loaders;
-   while (l)
+   for (l = loaders; l; l = l->next)
      {
         int                 i;
 
@@ -738,83 +769,44 @@ __imlib_FindBestLoaderForFile(const char *file, int for_save)
         for (i = 0; i < l->num_formats; i++)
           {
              /* does it match ? */
-             if (!strcmp(l->formats[i], extension))
+             if (strcasecmp(l->formats[i], format) == 0)
                {
                   /* does it provide the function we need? */
                   if ((for_save && l->save) || (!for_save && l->load))
-                    {
-                       /* free the memory allocated for the extension */
-                       free(extension);
-                       /* return the loader */
-                       return l;
-                    }
+                     goto done;
                }
           }
-        l = l->next;
      }
-   /* free the memory allocated for the extension */
-   free(extension);
-   /* return the loader */
+
+ done:
    return l;
 }
 
-ImlibLoader        *
+__EXPORT__ ImlibLoader *
+__imlib_FindBestLoaderForFile(const char *file, int for_save)
+{
+   char               *extension;
+   ImlibLoader        *l;
+
+   extension = __imlib_FileExtension(file);
+
+   l = __imlib_FindBestLoaderForFormat(extension, for_save);
+
+   free(extension);
+
+   return l;
+}
+
+static ImlibLoader *
 __imlib_FindBestLoaderForFileFormat(const char *file, char *format,
                                     int for_save)
 {
-   char               *extension, *lower;
-   ImlibLoader        *l = NULL;
-
    /* if the format is provided ("png" "jpg" etc.) use that */
+   /* otherwise us the file extension */
    if (format)
-      extension = strdup(format);
-   /* otherwise us the extension */
+      return __imlib_FindBestLoaderForFormat(format, for_save);
    else
-     {
-        extension = __imlib_FileExtension(file);
-        /* change the extension to all lower case as all "types" are listed as */
-        /* lower case strings from the loader that represent all the possible */
-        /* extensions that file format could have */
-        if (extension)
-          {
-             lower = extension;
-             while (*lower)
-               {
-                  *lower = tolower(*lower);
-                  lower++;
-               }
-          }
-     }
-   if (!extension)
-      return NULL;
-   /* look through the loaders one by one to see if one matches that format */
-   l = loaders;
-   while (l)
-     {
-        int                 i;
-
-        /* go through all the formats that loader supports */
-        for (i = 0; i < l->num_formats; i++)
-          {
-             /* does it match ? */
-             if (!strcmp(l->formats[i], extension))
-               {
-                  /* does it provide the function we need? */
-                  if ((for_save && l->save) || (!for_save && l->load))
-                    {
-                       /* free the memory allocated for the extension */
-                       free(extension);
-                       /* return the loader */
-                       return l;
-                    }
-               }
-          }
-        l = l->next;
-     }
-   /* free the memory allocated for the extension */
-   free(extension);
-   /* return the loader */
-   return l;
+      return __imlib_FindBestLoaderForFile(file, for_save);
 }
 
 /* set or unset the alpha flag on the umage (alpha = 1 / 0 ) */
@@ -841,6 +833,41 @@ __imlib_CreateImage(int w, int h, DATA32 * data)
    im->references = 1;
    SET_FLAG(im->flags, F_UNCACHEABLE);
    return im;
+}
+
+static int
+__imlib_LoadImageWrapper(const ImlibLoader * l, ImlibImage * im,
+                         ImlibProgressFunction progress,
+                         char progress_granularity, char immediate_load)
+{
+   int                 rc;
+
+   im->data_memory_func = imlib_context_get_image_data_memory_function();
+   rc = l->load(im, progress, progress_granularity, immediate_load);
+   if (rc == 0)
+     {
+        /* Failed - clean up */
+        if (im->w != 0 || im->h != 0)
+          {
+             im->w = im->h = 0;
+          }
+        if (im->data)
+          {
+             __imlib_FreeData(im);
+          }
+        if (im->format)
+          {
+             free(im->format);
+             im->format = NULL;
+          }
+     }
+   else
+     {
+        if (!im->format && l->formats && l->formats[0])
+           im->format = strdup(l->formats[0]);
+     }
+
+   return rc;
 }
 
 ImlibImage         *
@@ -910,7 +937,9 @@ __imlib_LoadImage(const char *file, ImlibProgressFunction progress,
    errno = 0;
    if (best_loader)
       loader_ret =
-         best_loader->load(im, progress, progress_granularity, immediate_load);
+         __imlib_LoadImageWrapper(best_loader, im,
+                                  progress, progress_granularity,
+                                  immediate_load);
    /* width is still 0 - the loader didn't manage to do anything */
    if (im->w == 0)
      {
@@ -924,7 +953,9 @@ __imlib_LoadImage(const char *file, ImlibProgressFunction progress,
              /* if its not the best loader that already failed - try load */
              if (l != best_loader)
                 loader_ret =
-                   l->load(im, progress, progress_granularity, immediate_load);
+                   __imlib_LoadImageWrapper(l, im,
+                                            progress, progress_granularity,
+                                            immediate_load);
              /* if it failed - advance */
              if (im->w == 0)
                {
@@ -1013,7 +1044,7 @@ int
 __imlib_LoadImageData(ImlibImage * im)
 {
    if ((!(im->data)) && (im->loader) && (im->loader->load))
-      if (im->loader->load(im, NULL, 0, 1) == 0)
+      if (__imlib_LoadImageWrapper(im->loader, im, NULL, 0, 1) == 0)
          return 1;              /* Load failed */
    return im->data == NULL;
 }

@@ -19,35 +19,6 @@
 
 #endif
 
-/* FIXME: endian dependent */
-#define READ_RGB(p, r, g, b)  \
-   (r) = R_VAL(p); \
-   (g) = G_VAL(p); \
-   (b) = B_VAL(p);
-
-#define READ_ALPHA(p, a) \
-   (a) = A_VAL(p);
-
-#define READ_RGBA(p, r, g, b, a) \
-   (r) = R_VAL(p); \
-   (g) = G_VAL(p); \
-   (b) = B_VAL(p); \
-   (a) = A_VAL(p);
-
-#define WRITE_RGB(p, r, g, b) \
-   R_VAL(p) = (r); \
-   G_VAL(p) = (g); \
-   B_VAL(p) = (b);
-
-#define WRITE_RGB_PRESERVE_ALPHA(p, r, g, b) \
-   WRITE_RGB(p, r, g, b)
-
-#define WRITE_RGBA(p, r, g, b, a) \
-   R_VAL(p) = (r); \
-   G_VAL(p) = (g); \
-   B_VAL(p) = (b); \
-   A_VAL(p) = (a);
-
 #define INTERSECTS(x, y, w, h, xx, yy, ww, hh) \
    ((x < (xx + ww)) && \
        (y < (yy + hh)) && \
@@ -385,8 +356,8 @@ enum _imlibop {
 
 typedef enum _imlibop ImlibOp;
 
-typedef void        (*ImlibBlendFunction) (DATA32 *, int, DATA32 *, int, int,
-                                           int, ImlibColorModifier *);
+typedef void        (*ImlibBlendFunction)(DATA32 *, int, DATA32 *, int, int,
+                                          int, ImlibColorModifier *);
 
 ImlibBlendFunction  __imlib_GetBlendFunction(ImlibOp op, char merge_alpha,
                                              char blend, char rgb_src,

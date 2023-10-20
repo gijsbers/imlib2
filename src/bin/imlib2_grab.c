@@ -1,23 +1,13 @@
 #include "config.h"
+
 #include <X11/Xlib.h>
-#include <X11/extensions/XShm.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/shape.h>
-#include <X11/Xatom.h>
-#include <X11/Xos.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <errno.h>
+
 #include "Imlib2.h"
 
 Display            *disp;
-Visual             *vis;
-Colormap            cm;
-unsigned int        depth;
 int                 image_width = 0, image_height = 0;
 
 static void
@@ -40,6 +30,7 @@ main(int argc, char **argv)
    int                 x, y;
    unsigned int        w, h, bw;
    unsigned int        wo, ho;
+   unsigned int        depth;
    Window              rr;
 
    verbose = 0;
@@ -111,12 +102,9 @@ main(int argc, char **argv)
         return 1;
      }
 
-   vis = DefaultVisual(disp, DefaultScreen(disp));
-   depth = DefaultDepth(disp, DefaultScreen(disp));
-   cm = DefaultColormap(disp, DefaultScreen(disp));
    imlib_context_set_display(disp);
-   imlib_context_set_visual(vis);
-   imlib_context_set_colormap(cm);
+   imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
+   imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
 
    if (draw == None)
       draw = DefaultRootWindow(disp);

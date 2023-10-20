@@ -103,11 +103,12 @@ struct _imlib_color {
 };
 
 /* Progressive loading callbacks */
-typedef int         (*Imlib_Progress_Function) (Imlib_Image im, char percent,
-                                                int update_x, int update_y,
-                                                int update_w, int update_h);
-typedef void        (*Imlib_Data_Destructor_Function) (Imlib_Image im,
-                                                       void *data);
+typedef int         (*Imlib_Progress_Function)(Imlib_Image im, char percent,
+                                               int update_x, int update_y,
+                                               int update_w, int update_h);
+typedef void        (*Imlib_Data_Destructor_Function)(Imlib_Image im,
+                                                      void *data);
+typedef void       *(*Imlib_Image_Data_Memory_Function)(void *, size_t size);
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus
@@ -154,6 +155,8 @@ EAPI void           imlib_context_set_color_cmya(int cyan, int magenta,
                                                  int yellow, int alpha);
 EAPI void           imlib_context_set_color_range(Imlib_Color_Range
                                                   color_range);
+EAPI void           imlib_context_set_image_data_memory_function
+   (Imlib_Image_Data_Memory_Function memory_function);
 EAPI void           imlib_context_set_progress_function(Imlib_Progress_Function
                                                         progress_function);
 EAPI void           imlib_context_set_progress_granularity(char
@@ -190,6 +193,8 @@ EAPI void           imlib_context_get_color_cmya(int *cyan, int *magenta,
                                                  int *yellow, int *alpha);
 EAPI Imlib_Color   *imlib_context_get_imlib_color(void);
 EAPI Imlib_Color_Range imlib_context_get_color_range(void);
+EAPI                Imlib_Image_Data_Memory_Function
+imlib_context_get_image_data_memory_function(void);
 EAPI Imlib_Progress_Function imlib_context_get_progress_function(void);
 EAPI char           imlib_context_get_progress_granularity(void);
 EAPI Imlib_Image    imlib_context_get_image(void);
@@ -288,8 +293,10 @@ EAPI void           imlib_blend_image_onto_image(Imlib_Image source_image,
 EAPI Imlib_Image    imlib_create_image(int width, int height);
 EAPI Imlib_Image    imlib_create_image_using_data(int width, int height,
                                                   DATA32 * data);
-EAPI Imlib_Image    imlib_create_image_using_copied_data(int width,
-                                                         int height,
+EAPI Imlib_Image    imlib_create_image_using_data_and_memory_function
+   (int width, int height, DATA32 * data,
+    Imlib_Image_Data_Memory_Function func);
+EAPI Imlib_Image    imlib_create_image_using_copied_data(int width, int height,
                                                          DATA32 * data);
 #ifndef X_DISPLAY_MISSING
 EAPI Imlib_Image    imlib_create_image_from_drawable(Pixmap mask,

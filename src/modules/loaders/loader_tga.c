@@ -17,7 +17,7 @@
 #include "blend.h"
 
 /* flip an inverted image - see RLE reading below */
-static void         tgaflip(DATA32 * in, int w, int h);
+static void         tgaflip(DATA32 * in, int w, int h, int fliph, int flipv);
 
 /* TGA pixel formats */
 #define TGA_TYPE_MAPPED      1
@@ -122,27 +122,17 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    for (y = 0; y < im->h; y++)
      {
         int                 x;
-        unsigned char       r, g, b, a;
 
         /* for each pixel in the row */
         for (x = 0; x < im->w; x++)
           {
+             DATA32              pixel = *dataptr++;
+
+             *bufptr++ = PIXEL_B(pixel);
+             *bufptr++ = PIXEL_G(pixel);
+             *bufptr++ = PIXEL_R(pixel);
              if (im->flags & F_HAS_ALPHA)
-               {
-                  READ_RGBA(dataptr, r, g, b, a);
-                  *bufptr++ = b;
-                  *bufptr++ = g;
-                  *bufptr++ = r;
-                  *bufptr++ = a;
-               }
-             else
-               {
-                  READ_RGB(dataptr, r, g, b);
-                  *bufptr++ = b;
-                  *bufptr++ = g;
-                  *bufptr++ = r;
-               }
-             dataptr++;
+                *bufptr++ = PIXEL_A(pixel);
           }                     /* end for (each pixel in row) */
 
         /* report progress every row */
@@ -192,60 +182,49 @@ char
 load(ImlibImage * im, ImlibProgressFunction progress,
      char progress_granularity, char immediate_load)
 {
-   int                 fd;
+   int                 fd, rc;
    void               *seg, *filedata;
    struct stat         ss;
-   int                 bpp, vinverted = 0;
-   int                 rle = 0, footer_present = 0;
-
    tga_header         *header;
    tga_footer         *footer;
-
-   if (im->data)
-      return 0;
+   int                 footer_present;
+   int                 rle, bpp, hasa, hasc, fliph, flipv;
+   unsigned long       datasize;
+   unsigned char      *bufptr, *bufend, *palette = 0;
+   DATA32             *dataptr;
+   int                 palcnt = 0, palbpp = 0;
+   unsigned char       a, r, g, b;
+   unsigned int        pix16;
 
    fd = open(im->real_file, O_RDONLY);
    if (fd < 0)
       return 0;
 
+   rc = 0;                      /* Error */
+   seg = MAP_FAILED;
+
    if (fstat(fd, &ss) < 0)
-     {
-        close(fd);
-        return 0;
-     }
+      goto quit;
 
    if (ss.st_size < (long)(sizeof(tga_header) + sizeof(tga_footer)) ||
        (uintmax_t) ss.st_size > SIZE_MAX)
-     {
-        close(fd);
-        return 0;
-     }
+      goto quit;
+
    seg = mmap(0, ss.st_size, PROT_READ, MAP_SHARED, fd, 0);
    if (seg == MAP_FAILED)
-     {
-        close(fd);
-        return 0;
-     }
+      goto quit;
 
    filedata = seg;
    header = (tga_header *) filedata;
    footer = (tga_footer *) ((char *)filedata + ss.st_size - sizeof(tga_footer));
 
    /* check the footer to see if we have a v2.0 TGA file */
-   if (memcmp(footer->signature, TGA_SIGNATURE, sizeof(footer->signature)) == 0)
-      footer_present = 1;
+   footer_present =
+      memcmp(footer->signature, TGA_SIGNATURE, sizeof(footer->signature)) == 0;
 
-   if (!footer_present)
-     {
-     }
-
-   if ((size_t) ss.st_size < sizeof(tga_header) + header->idLength +
+   if ((size_t)ss.st_size < sizeof(tga_header) + header->idLength +
        (footer_present ? sizeof(tga_footer) : 0))
-     {
-        munmap(seg, ss.st_size);
-        close(fd);
-        return 0;
-     }
+      goto quit;
 
    /* skip over header */
    filedata = (char *)filedata + sizeof(tga_header);
@@ -256,35 +235,58 @@ load(ImlibImage * im, ImlibProgressFunction progress,
 
    /* now parse the header */
 
-   /* this flag indicated bottom-up pixel storage */
-   vinverted = !(header->descriptor & TGA_DESC_VERTICAL);
+   /* this flag indicates right-to-left pixel storage */
+   fliph = !!(header->descriptor & TGA_DESC_HORIZONTAL);
+   /* this flag indicates bottom-up pixel storage */
+   flipv = !(header->descriptor & TGA_DESC_VERTICAL);
+
+   rle = 0;                     /* RLE compressed */
+   hasc = 0;                    /* Has color */
 
    switch (header->imageType)
      {
+     default:
+        goto quit;
+
+     case TGA_TYPE_MAPPED:
+        break;
+     case TGA_TYPE_COLOR:
+        hasc = 1;
+        break;
+     case TGA_TYPE_GRAY:
+        break;
+
+     case TGA_TYPE_MAPPED_RLE:
+        rle = 1;
+        break;
      case TGA_TYPE_COLOR_RLE:
+        hasc = 1;
+        rle = 1;
+        break;
      case TGA_TYPE_GRAY_RLE:
         rle = 1;
         break;
-
-     case TGA_TYPE_COLOR:
-     case TGA_TYPE_GRAY:
-        rle = 0;
-        break;
-
-     default:
-        munmap(seg, ss.st_size);
-        close(fd);
-        return 0;
      }
 
-   /* bits per pixel */
-   bpp = header->bpp;
+   bpp = header->bpp;           /* Bits per pixel */
+   hasa = 0;                    /* Has alpha */
 
-   if (!((bpp == 32) || (bpp == 24) || (bpp == 8)))
+   switch (bpp)
      {
-        munmap(seg, ss.st_size);
-        close(fd);
-        return 0;
+     default:
+        goto quit;
+     case 32:
+        if (header->descriptor & TGA_DESC_ABITS)
+           hasa = 1;
+        break;
+     case 24:
+        break;
+     case 16:
+        if (header->descriptor & TGA_DESC_ABITS)
+           hasa = 1;
+        break;
+     case 8:
+        break;
      }
 
    /* endian-safe loading of 16-bit sizes */
@@ -292,262 +294,297 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    im->h = (header->heightHi << 8) | header->heightLo;
 
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
+      goto quit;
+
+   if (hasa)
+      SET_FLAG(im->flags, F_HAS_ALPHA);
+   else
+      UNSET_FLAG(im->flags, F_HAS_ALPHA);
+
+   if (!(im->loader || immediate_load || progress))
      {
-        munmap(seg, ss.st_size);
-        im->w = 0;
-        close(fd);
-        return 0;
+        rc = 1;
+        goto quit;
      }
 
-   if (!im->format)
+   /* find out how much data must be read from the file */
+   /* (this is NOT simply width*height*4, due to compression) */
+
+   datasize = ss.st_size - sizeof(tga_header) - header->idLength -
+      (footer_present ? sizeof(tga_footer) : 0);
+
+   if (header->imageType == TGA_TYPE_MAPPED ||
+       header->imageType == TGA_TYPE_MAPPED_RLE)
      {
-        if (bpp == 32)
-           SET_FLAG(im->flags, F_HAS_ALPHA);
-        else
-           UNSET_FLAG(im->flags, F_HAS_ALPHA);
-        im->format = strdup("tga");
+        if (bpp != 8)
+           goto quit;
+        palette = filedata;
+        palcnt = (header->colorMapLengthHi << 8) | header->colorMapLengthLo;
+        palbpp = header->colorMapSize / 8;      /* bytes per palette entry */
+        if (palbpp < 3 || palbpp > 4)
+           goto quit;           /* only supporting 24/32bit palettes */
+        int                 palbytes = palcnt * palbpp;
+
+        filedata = ((unsigned char *)filedata) + palbytes;
+        datasize -= palbytes;
      }
 
-   /* if we need to actually read the pixel data... */
-   if (((!im->data) && (im->loader)) || (immediate_load) || (progress))
+   /* buffer is ready for parsing */
+
+   /* bufptr is the next byte to be read from the buffer */
+   bufptr = filedata;
+   bufend = bufptr + datasize;
+
+   /* Load data */
+
+   /* allocate the destination buffer */
+   if (!__imlib_AllocateData(im))
+      goto quit;
+
+   /* dataptr is the next 32-bit pixel to be filled in */
+   dataptr = im->data;
+
+   if (!rle)
      {
-        unsigned long       datasize;
-        unsigned char      *bufptr, *bufend;
-        DATA32             *dataptr;
-
-        int                 y;
-
-        /* allocate the destination buffer */
-        im->data = malloc(im->w * im->h * sizeof(DATA32));
-        if (!im->data)
-          {
-             munmap(seg, ss.st_size);
-             im->w = 0;
-             close(fd);
-             return 0;
-          }
-
-        /* first we read the file data into a buffer for parsing */
-        /* then we decode from RAM */
-
-        /* find out how much data must be read from the file */
-        /* (this is NOT simply width*height*4, due to compression) */
-
-        datasize = ss.st_size - sizeof(tga_header) - header->idLength -
-           (footer_present ? sizeof(tga_footer) : 0);
-
-        /* buffer is ready for parsing */
-
-        /* bufptr is the next byte to be read from the buffer */
-        bufptr = filedata;
-        bufend = bufptr + datasize;
-
-        /* dataptr is the next 32-bit pixel to be filled in */
-        dataptr = im->data;
+        int                 x, y;
 
         /* decode uncompressed BGRA data */
-        if (!rle)
+        for (y = 0; y < im->h; y++)     /* for each row */
           {
-             for (y = 0; y < im->h; y++)        /* for each row */
+             /* point dataptr at the beginning of the row */
+             if (flipv)
+                /* some TGA's are stored upside-down! */
+                dataptr = im->data + ((im->h - y - 1) * im->w);
+             else
+                dataptr = im->data + (y * im->w);
+
+             for (x = 0; (x < im->w); x++)      /* for each pixel in the row */
                {
-                  int                 x;
+                  if (bufptr + bpp / 8 > bufend)
+                     goto quit;
 
-                  /* point dataptr at the beginning of the row */
-                  if (vinverted)
-                     /* some TGA's are stored upside-down! */
-                     dataptr = im->data + ((im->h - y - 1) * im->w);
-                  else
-                     dataptr = im->data + (y * im->w);
-
-                  for (x = 0; (x < im->w); x++) /* for each pixel in the row */
+                  switch (bpp)
                     {
-                       if (bufptr + bpp / 8 > bufend)
+                    case 32:   /* 32-bit BGRA pixels */
+                       b = *bufptr++;
+                       g = *bufptr++;
+                       r = *bufptr++;
+                       a = *bufptr++;
+                       *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       break;
+
+                    case 24:   /* 24-bit BGR pixels */
+                       b = *bufptr++;
+                       g = *bufptr++;
+                       r = *bufptr++;
+                       a = 0xff;
+                       *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       break;
+
+                    case 16:
+                       b = *bufptr++;
+                       a = *bufptr++;
+                       if (hasc)
                          {
-                            munmap(seg, ss.st_size);
-                            free(im->data);
-                            im->data = NULL;
-                            im->w = 0;
-                            close(fd);
-                            return 0;
+                            pix16 = b | ((unsigned short)a << 8);
+                            r = (pix16 >> 7) & 0xf8;
+                            g = (pix16 >> 2) & 0xf8;
+                            b = (pix16 << 3) & 0xf8;
+                            a = (hasa && !(pix16 & 0x8000)) ? 0x00 : 0xff;
                          }
-                       switch (bpp)
+                       else
                          {
-
-                            /* 32-bit BGRA pixels */
-                         case 32:
-                            WRITE_RGBA(dataptr, *(bufptr + 2),  /* R */
-                                       *(bufptr + 1),   /* G */
-                                       *(bufptr + 0),   /* B */
-                                       *(bufptr + 3)    /* A */
-                               );
-                            dataptr++;
-                            bufptr += 4;
-                            break;
-
-                            /* 24-bit BGR pixels */
-                         case 24:
-                            WRITE_RGBA(dataptr, *(bufptr + 2),  /* R */
-                                       *(bufptr + 1),   /* G */
-                                       *(bufptr + 0),   /* B */
-                                       (char)0xff       /* A */
-                               );
-                            dataptr++;
-                            bufptr += 3;
-                            break;
-
-                            /* 8-bit grayscale */
-                         case 8:
-                            WRITE_RGBA(dataptr, /* grayscale */
-                                       *bufptr, *bufptr, *bufptr, (char)0xff);
-                            dataptr++;
-                            bufptr += 1;
-                            break;
+                            r = g = b;
                          }
+                       *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       break;
 
-                    }           /* end for (each pixel) */
-               }
-             if (progress)
-               {
-                  progress(im, 100, 0, 0, im->w, im->h);
-               }                /* end for (each row) */
-          }
-        /* end if (!RLE) */
-        /* decode RLE compressed data */
-        else
-          {
-             unsigned char       curbyte, red, green, blue, alpha;
-             DATA32             *final_pixel = dataptr + im->w * im->h;
-
-             /* loop until we've got all the pixels or run out of input */
-             while ((dataptr < final_pixel))
-               {
-                  int                 count;
-
-                  if ((bufptr + 1 + (bpp / 8)) > bufend)
-                    {
-                       munmap(seg, ss.st_size);
-                       free(im->data);
-                       im->data = NULL;
-                       im->w = 0;
-                       close(fd);
-                       return 0;
+                    case 8:    /* 8-bit grayscale or palette */
+                       b = *bufptr++;
+                       a = 0xff;
+                       if (palette)
+                         {
+                            if (b >= palcnt)
+                               goto quit;
+                            r = palette[b * palbpp + 2];
+                            g = palette[b * palbpp + 1];
+                            b = palette[b * palbpp + 0];
+                         }
+                       else
+                         {
+                            r = g = b;
+                         }
+                       *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       break;
                     }
 
-                  curbyte = *bufptr++;
-                  count = (curbyte & 0x7F) + 1;
+               }                /* end for (each pixel) */
+          }
 
-                  if (curbyte & 0x80)   /* RLE packet */
+        if (fliph)
+           tgaflip(im->data, im->w, im->h, fliph, 0);
+     }
+   else
+     {
+        /* decode RLE compressed data */
+        DATA32             *final_pixel = dataptr + im->w * im->h;
+
+        /* loop until we've got all the pixels or run out of input */
+        while ((dataptr < final_pixel))
+          {
+             int                 i, count;
+             unsigned char       curbyte;
+
+             if ((bufptr + 1 + (bpp / 8)) > bufend)
+                goto quit;
+
+             curbyte = *bufptr++;
+             count = (curbyte & 0x7F) + 1;
+
+             if (curbyte & 0x80)        /* RLE packet */
+               {
+                  switch (bpp)
                     {
-                       int                 i;
+                    case 32:
+                       b = *bufptr++;
+                       g = *bufptr++;
+                       r = *bufptr++;
+                       a = *bufptr++;
+                       for (i = 0; (i < count) && (dataptr < final_pixel); i++)
+                          *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       break;
+
+                    case 24:
+                       b = *bufptr++;
+                       g = *bufptr++;
+                       r = *bufptr++;
+                       a = 0xff;
+                       for (i = 0; (i < count) && (dataptr < final_pixel); i++)
+                          *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       break;
+
+                    case 16:
+                       b = *bufptr++;
+                       a = *bufptr++;
+                       if (hasc)
+                         {
+                            pix16 = b | ((unsigned short)a << 8);
+                            r = (pix16 >> 7) & 0xf8;
+                            g = (pix16 >> 2) & 0xf8;
+                            b = (pix16 << 3) & 0xf8;
+                            a = (hasa && !(pix16 & 0x8000)) ? 0x00 : 0xff;
+                         }
+                       else
+                         {
+                            r = g = b;
+                         }
+                       for (i = 0; (i < count) && (dataptr < final_pixel); i++)
+                          *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       break;
+
+                    case 8:
+                       b = *bufptr++;
+                       a = 0xff;
+                       if (palette)
+                         {
+                            if (b >= palcnt)
+                               goto quit;
+                            r = palette[b * palbpp + 2];
+                            g = palette[b * palbpp + 1];
+                            b = palette[b * palbpp + 0];
+                         }
+                       else
+                         {
+                            r = g = b;
+                         }
+                       for (i = 0; (i < count) && (dataptr < final_pixel); i++)
+                          *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                       break;
+                    }
+               }                /* end if (RLE packet) */
+             else               /* raw packet */
+               {
+                  for (i = 0; (i < count) && (dataptr < final_pixel); i++)
+                    {
+                       if ((bufptr + bpp / 8) > bufend)
+                          goto quit;
 
                        switch (bpp)
                          {
-                         case 32:
-                            blue = *bufptr++;
-                            green = *bufptr++;
-                            red = *bufptr++;
-                            alpha = *bufptr++;
-                            for (i = 0; (i < count) && (dataptr < final_pixel);
-                                 i++)
-                              {
-                                 WRITE_RGBA(dataptr, red, green, blue, alpha);
-                                 dataptr++;
-                              }
+                         case 32:      /* 32-bit BGRA pixels */
+                            b = *bufptr++;
+                            g = *bufptr++;
+                            r = *bufptr++;
+                            a = *bufptr++;
+                            *dataptr++ = PIXEL_ARGB(a, r, g, b);
                             break;
 
-                         case 24:
-                            blue = *bufptr++;
-                            green = *bufptr++;
-                            red = *bufptr++;
-                            for (i = 0; (i < count) && (dataptr < final_pixel);
-                                 i++)
-                              {
-                                 WRITE_RGBA(dataptr, red, green, blue,
-                                            (char)0xff);
-                                 dataptr++;
-                              }
+                         case 24:      /* 24-bit BGR pixels */
+                            b = *bufptr++;
+                            g = *bufptr++;
+                            r = *bufptr++;
+                            a = 0xff;
+                            *dataptr++ = PIXEL_ARGB(a, r, g, b);
                             break;
 
-                         case 8:
-                            alpha = *bufptr++;
-                            for (i = 0; (i < count) && (dataptr < final_pixel);
-                                 i++)
+                         case 16:
+                            b = *bufptr++;
+                            a = *bufptr++;
+                            if (hasc)
                               {
-                                 WRITE_RGBA(dataptr, alpha, alpha, alpha,
-                                            (char)0xff);
-                                 dataptr++;
+                                 pix16 = b | ((unsigned short)a << 8);
+                                 r = (pix16 >> 7) & 0xf8;
+                                 g = (pix16 >> 2) & 0xf8;
+                                 b = (pix16 << 3) & 0xf8;
+                                 a = (hasa && !(pix16 & 0x8000)) ? 0x00 : 0xff;
                               }
+                            else
+                              {
+                                 r = g = b;
+                              }
+                            *dataptr++ = PIXEL_ARGB(a, r, g, b);
+                            break;
+
+                         case 8:       /* 8-bit grayscale or palette */
+                            b = *bufptr++;
+                            a = 0xff;
+                            if (palette)
+                              {
+                                 if (b >= palcnt)
+                                    goto quit;
+                                 r = palette[b * palbpp + 2];
+                                 g = palette[b * palbpp + 1];
+                                 b = palette[b * palbpp + 0];
+                              }
+                            else
+                              {
+                                 r = g = b;
+                              }
+                            *dataptr++ = PIXEL_ARGB(a, r, g, b);
                             break;
                          }
+                    }
+               }                /* end if (raw packet) */
+          }                     /* end for (each packet) */
 
-                    }           /* end if (RLE packet) */
-
-                  else          /* raw packet */
-                    {
-                       int                 i;
-
-                       for (i = 0; (i < count) && (dataptr < final_pixel); i++)
-                         {
-                            if ((bufptr + 1 + (bpp / 8)) > bufend)
-                              {
-                                 munmap(seg, ss.st_size);
-                                 free(im->data);
-                                 im->data = NULL;
-                                 im->w = 0;
-                                 close(fd);
-                                 return 0;
-                              }
-                            switch (bpp)
-                              {
-
-                                 /* 32-bit BGRA pixels */
-                              case 32:
-                                 WRITE_RGBA(dataptr, *(bufptr + 2),     /* R */
-                                            *(bufptr + 1),      /* G */
-                                            *(bufptr + 0),      /* B */
-                                            *(bufptr + 3)       /* A */
-                                    );
-                                 dataptr++;
-                                 bufptr += 4;
-                                 break;
-
-                                 /* 24-bit BGR pixels */
-                              case 24:
-                                 WRITE_RGBA(dataptr, *(bufptr + 2),     /* R */
-                                            *(bufptr + 1),      /* G */
-                                            *(bufptr + 0),      /* B */
-                                            (char)0xff  /* A */
-                                    );
-                                 dataptr++;
-                                 bufptr += 3;
-                                 break;
-
-                                 /* 8-bit grayscale */
-                              case 8:
-                                 WRITE_RGBA(dataptr, *bufptr,   /* pseudo-grayscale */
-                                            *bufptr, *bufptr, (char)0xff);
-                                 dataptr++;
-                                 bufptr += 1;
-                                 break;
-                              }
-                         }
-                    }           /* end if (raw packet) */
-               }                /* end for (each packet) */
-             /* must now flip a bottom-up image */
-             if (vinverted)
-                tgaflip(im->data, im->w, im->h);
-             if (progress)
-               {
-                  progress(im, 100, 0, 0, im->w, im->h);
-               }                /* end for (each row) */
-          }
-        /* end if (image is RLE) */
+        if (fliph || flipv)
+           tgaflip(im->data, im->w, im->h, fliph, flipv);
      }
-   /* end if (loading pixel data) */
 
-   munmap(seg, ss.st_size);
+   if (progress)
+     {
+        progress(im, 100, 0, 0, im->w, im->h);
+     }
+
+   rc = 1;                      /* Success */
+
+ quit:
+   if (rc == 0)
+      __imlib_FreeData(im);
+   if (seg != MAP_FAILED)
+      munmap(seg, ss.st_size);
    close(fd);
-   return 1;
+   return rc;
 }
 
 void
@@ -565,28 +602,27 @@ formats(ImlibLoader * l)
 
 /**********************/
 
-/* flip a DATA32 image block vertically in place */
-
-static void
-tgaflip(DATA32 * in, int w, int h)
+/* flip a DATA32 image block in place */
+void
+tgaflip(DATA32 * in, int w, int h, int fliph, int flipv)
 {
-   DATA32             *adv, *adv2;
-   int                 x, y;
+   DATA32              tmp;
+   int                 x, y, x2, y2, dx, dy, nx, ny;
 
-   adv = in;
-   adv2 = in + (w * (h - 1));
+   dx = fliph ? -1 : 1;
+   dy = flipv ? -1 : 1;
+   nx = fliph ? w / 2 : w;
+   ny = flipv && !fliph ? h / 2 : h;
 
-   for (y = 0; y < (h / 2); y++)
+   y2 = flipv ? h - 1 : 0;
+   for (y = 0; y < ny; y++, y2 += dy)
      {
-        DATA32              tmp;
-
-        for (x = 0; x < w; x++)
+        x2 = fliph ? w - 1 : 0;
+        for (x = 0; x < nx; x++, x2 += dx)
           {
-             tmp = adv[x];
-             adv[x] = adv2[x];
-             adv2[x] = tmp;
+             tmp = in[y * h + x];
+             in[y * h + x] = in[y2 * h + x2];
+             in[y2 * h + x2] = tmp;
           }
-        adv2 -= w;
-        adv += w;
      }
 }

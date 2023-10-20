@@ -21,10 +21,10 @@ struct _imlib_external_filter {
    char               *filename;
    void               *handle;
    char              **filters;
-   void                (*init_filter) (struct imlib_filter_info * info);
-   void                (*deinit_filter) (void);
-   void               *(*exec_filter) (char *filter, void *im,
-                                       pIFunctionParam params);
+   void                (*init_filter)(struct imlib_filter_info * info);
+   void                (*deinit_filter)(void);
+   void               *(*exec_filter)(char *filter, void *im,
+                                      pIFunctionParam params);
    ImlibExternalFilter *next;
 };
 

@@ -36,8 +36,6 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    char                buf[256];
    FILE               *f = NULL;
 
-   if (im->data)
-      return 0;
    f = fopen(im->real_file, "rb");
    if (!f)
       return 0;
@@ -123,18 +121,14 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    if (!IMAGE_DIMENSIONS_OK(w, h))
       goto quit;
 
-   if (!im->format)
-     {
-        if (p == '8')
-           SET_FLAG(im->flags, F_HAS_ALPHA);
-        else
-           UNSET_FLAG(im->flags, F_HAS_ALPHA);
-        im->format = strdup("pnm");
-     }
+   if (p == '8')
+      SET_FLAG(im->flags, F_HAS_ALPHA);
+   else
+      UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
    rc = 1;                      /* Ok */
 
-   if (((!im->data) && (im->loader)) || (immediate_load) || (progress))
+   if (im->loader || immediate_load || progress)
      {
         DATA8              *data = NULL;        /* for the binary versions */
         DATA8              *ptr = NULL;
@@ -143,9 +137,8 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         int                 i, j, x, y, pl = 0;
         char                pper = 0;
 
-        /* must set the im->data member before callign progress function */
-        ptr2 = im->data = malloc(w * h * sizeof(DATA32));
-        if (!im->data)
+        ptr2 = __imlib_AllocateData(im);
+        if (!ptr2)
            goto quit_error;
 
         /* start reading the data */
@@ -393,9 +386,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                     {
                        for (x = 0; x < w; x++)
                          {
-                            *ptr2 =
-                               (ptr[3] << 24) | (ptr[0] << 16) |
-                               (ptr[1] << 8) | ptr[2];
+                            *ptr2 = PIXEL_ARGB(ptr[3], ptr[0], ptr[1], ptr[2]);
                             ptr2++;
                             ptr += 4;
                          }
@@ -405,10 +396,10 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                        for (x = 0; x < w; x++)
                          {
                             *ptr2 =
-                               (((ptr[3] * 255) / v) << 24) |
-                               (((ptr[0] * 255) / v) << 16) |
-                               (((ptr[1] * 255) / v) << 8) |
-                               ((ptr[2] * 255) / v);
+                               PIXEL_ARGB((ptr[3] * 255) / v,
+                                          (ptr[0] * 255) / v,
+                                          (ptr[1] * 255) / v,
+                                          (ptr[2] * 255) / v);
                             ptr2++;
                             ptr += 4;
                          }
@@ -435,11 +426,8 @@ load(ImlibImage * im, ImlibProgressFunction progress,
  quit:
    fclose(f);
    if (rc == 0)
-     {
-        free(im->data);
-        im->data = NULL;
-        im->w = 0;
-     }
+      __imlib_FreeData(im);
+
    return rc;
 }
 
@@ -478,12 +466,13 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
              bptr = buf;
              for (x = 0; x < im->w; x++)
                {
-                  bptr[0] = ((*ptr) >> 16) & 0xff;
-                  bptr[1] = ((*ptr) >> 8) & 0xff;
-                  bptr[2] = ((*ptr)) & 0xff;
-                  bptr[3] = ((*ptr) >> 24) & 0xff;
+                  DATA32              pixel = *ptr++;
+
+                  bptr[0] = PIXEL_R(pixel);
+                  bptr[1] = PIXEL_G(pixel);
+                  bptr[2] = PIXEL_B(pixel);
+                  bptr[3] = PIXEL_A(pixel);
                   bptr += 4;
-                  ptr++;
                }
              fwrite(buf, im->w * 4, 1, f);
              if (progress &&
@@ -506,11 +495,12 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
              bptr = buf;
              for (x = 0; x < im->w; x++)
                {
-                  bptr[0] = ((*ptr) >> 16) & 0xff;
-                  bptr[1] = ((*ptr) >> 8) & 0xff;
-                  bptr[2] = ((*ptr)) & 0xff;
+                  DATA32              pixel = *ptr++;
+
+                  bptr[0] = PIXEL_R(pixel);
+                  bptr[1] = PIXEL_G(pixel);
+                  bptr[2] = PIXEL_B(pixel);
                   bptr += 3;
-                  ptr++;
                }
              fwrite(buf, im->w * 3, 1, f);
              if (progress &&

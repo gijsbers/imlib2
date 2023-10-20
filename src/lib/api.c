@@ -69,9 +69,9 @@ if (!(param)) \
 }
 
 /* internal typedefs for function pointers */
-typedef void        (*Imlib_Internal_Progress_Function) (void *, char, int, int,
-                                                         int, int);
-typedef void        (*Imlib_Internal_Data_Destructor_Function) (void *, void *);
+typedef void        (*Imlib_Internal_Progress_Function)(void *, char, int, int,
+                                                        int, int);
+typedef void        (*Imlib_Internal_Data_Destructor_Function)(void *, void *);
 
 struct _imlibcontext;
 typedef struct _imlibcontext ImlibContext;
@@ -94,8 +94,10 @@ struct _imlibcontext {
    Imlib_Text_Direction direction;
    double              angle;
    Imlib_Color         color;
+   DATA32              pixel;
    Imlib_Color_Range   color_range;
    Imlib_Image         image;
+   Imlib_Image_Data_Memory_Function image_data_memory_func;
    Imlib_Progress_Function progress_func;
    char                progress_granularity;
    char                dither_mask;
@@ -186,8 +188,10 @@ imlib_context_new(void)
    context->color.red = 255;
    context->color.green = 255;
    context->color.blue = 255;
+   context->pixel = 0xffffffff;
    context->color_range = NULL;
    context->image = NULL;
+   context->image_data_memory_func = NULL;
    context->progress_func = NULL;
    context->progress_granularity = 0;
    context->dither_mask = 0;
@@ -840,11 +844,21 @@ imlib_context_get_direction(void)
 EAPI void
 imlib_context_set_color(int red, int green, int blue, int alpha)
 {
+   DATA8               r, g, b, a;
+
    CHECK_CONTEXT(ctx);
-   ctx->color.red = red;
-   ctx->color.green = green;
-   ctx->color.blue = blue;
-   ctx->color.alpha = alpha;
+
+   r = red;
+   g = green;
+   b = blue;
+   a = alpha;
+
+   ctx->color.red = r;
+   ctx->color.green = g;
+   ctx->color.blue = b;
+   ctx->color.alpha = a;
+
+   ctx->pixel = PIXEL_ARGB(a, r, g, b);
 }
 
 /**
@@ -971,11 +985,21 @@ imlib_context_get_color_hlsa(float *hue, float *lightness, float *saturation,
 EAPI void
 imlib_context_set_color_cmya(int cyan, int magenta, int yellow, int alpha)
 {
+   DATA8               r, g, b, a;
+
    CHECK_CONTEXT(ctx);
-   ctx->color.red = 255 - cyan;
-   ctx->color.green = 255 - magenta;
-   ctx->color.blue = 255 - yellow;
-   ctx->color.alpha = alpha;
+
+   r = 255 - cyan;
+   g = 255 - magenta;
+   b = 255 - yellow;
+   a = alpha;
+
+   ctx->color.red = r;
+   ctx->color.green = g;
+   ctx->color.blue = b;
+   ctx->color.alpha = a;
+
+   ctx->pixel = PIXEL_ARGB(a, r, g, b);
 }
 
 /**
@@ -1022,6 +1046,19 @@ imlib_context_get_color_range(void)
 }
 
 /**
+ * @param memory_function An image data memory management function.
+ *
+ * Sets the image data memory management function.
+ */
+EAPI void
+imlib_context_set_image_data_memory_function(Imlib_Image_Data_Memory_Function
+                                             memory_function)
+{
+   CHECK_CONTEXT(ctx);
+   ctx->image_data_memory_func = memory_function;
+}
+
+/**
  * @param progress_function A progress function.
  *
  * Sets the progress function to be called back whilst loading
@@ -1033,6 +1070,18 @@ imlib_context_set_progress_function(Imlib_Progress_Function progress_function)
 {
    CHECK_CONTEXT(ctx);
    ctx->progress_func = progress_function;
+}
+
+/**
+ * @return The image data memory management function.
+ *
+ * Returns the current image data memeory management function being used.
+ */
+EAPI                Imlib_Image_Data_Memory_Function
+imlib_context_get_image_data_memory_function(void)
+{
+   CHECK_CONTEXT(ctx);
+   return ctx->image_data_memory_func;
 }
 
 /**
@@ -1661,12 +1710,8 @@ imlib_image_set_format(const char *format)
    CHECK_PARAM_POINTER("imlib_image_set_format", "image", ctx->image);
    CHECK_PARAM_POINTER("imlib_image_set_format", "format", format);
    CAST_IMAGE(im, ctx->image);
-   if (im->format)
-      free(im->format);
-   if (format)
-      im->format = strdup(format);
-   else
-      im->format = NULL;
+   free(im->format);
+   im->format = (format) ? strdup(format) : NULL;
    if (!(im->flags & F_FORMAT_IRRELEVANT))
      {
         __imlib_DirtyImage(im);
@@ -2090,6 +2135,38 @@ imlib_create_image_using_data(int width, int height, DATA32 * data)
  * @param width The width of the image.
  * @param height The height of the image.
  * @param data The data.
+ * @param func The memory management function.
+ * @return A valid image, otherwise NULL.
+ *
+ * Creates an image from the image data specified with the width @p width and
+ * the height @p height specified. The image data @p data must be in the same format as
+ * imlib_image_get_data() would return. The memory management function @p func is
+ * responsible for freeing this image data once the image is freed. Imlib2 returns a
+ * valid image handle on success or NULL on failure.
+ *
+ **/
+EAPI                Imlib_Image
+   imlib_create_image_using_data_and_memory_function
+   (int width, int height, DATA32 * data, Imlib_Image_Data_Memory_Function func)
+{
+   ImlibImage         *im;
+
+   CHECK_CONTEXT(ctx);
+   CHECK_PARAM_POINTER_RETURN
+      ("imlib_create_image_using_data_and_memory_function", "data", data, NULL);
+   if (!IMAGE_DIMENSIONS_OK(width, height))
+      return NULL;
+   im = __imlib_CreateImage(width, height, data);
+   if (im)
+      im->data_memory_func = func;
+
+   return (Imlib_Image) im;
+}
+
+/**
+ * @param width The width of the image.
+ * @param height The height of the image.
+ * @param data The data.
  * @return A valid image, otherwise NULL.
  *
  * Works the same way as imlib_create_image_using_data() but Imlib2
@@ -2499,15 +2576,9 @@ imlib_clone_image(void)
    im->border = im_old->border;
    im->loader = im_old->loader;
    if (im_old->format)
-     {
-        im->format = malloc(strlen(im_old->format) + 1);
-        strcpy(im->format, im_old->format);
-     }
+      im->format = strdup(im_old->format);
    if (im_old->file)
-     {
-        im->file = malloc(strlen(im_old->file) + 1);
-        strcpy(im->file, im_old->file);
-     }
+      im->file = strdup(im_old->file);
    return (Imlib_Image) im;
 }
 
@@ -3228,9 +3299,7 @@ imlib_text_draw_with_return_metrics(int x, int y, const char *text,
    if (ctx->direction == IMLIB_TEXT_TO_ANGLE && ctx->angle == 0.0)
       dir = IMLIB_TEXT_TO_RIGHT;
 
-   __imlib_render_str(im, fn, x, y, text, (DATA8) ctx->color.red,
-                      (DATA8) ctx->color.green, (DATA8) ctx->color.blue,
-                      (DATA8) ctx->color.alpha, (char)dir,
+   __imlib_render_str(im, fn, x, y, text, ctx->pixel, dir,
                       ctx->angle, width_return, height_return, 0,
                       horizontal_advance_return, vertical_advance_return,
                       ctx->operation,
@@ -3979,7 +4048,6 @@ EAPI                Imlib_Updates
 imlib_image_draw_pixel(int x, int y, char make_updates)
 {
    ImlibImage         *im;
-   DATA32              color;
 
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_image_draw_pixel", "image", ctx->image,
@@ -3988,11 +4056,7 @@ imlib_image_draw_pixel(int x, int y, char make_updates)
    if (__imlib_LoadImageData(im))
       return NULL;
    __imlib_DirtyImage(im);
-   A_VAL(&color) = (DATA8) ctx->color.alpha;
-   R_VAL(&color) = (DATA8) ctx->color.red;
-   G_VAL(&color) = (DATA8) ctx->color.green;
-   B_VAL(&color) = (DATA8) ctx->color.blue;
-   return (Imlib_Updates) __imlib_Point_DrawToImage(x, y, color, im,
+   return (Imlib_Updates) __imlib_Point_DrawToImage(x, y, ctx->pixel, im,
                                                     ctx->cliprect.x,
                                                     ctx->cliprect.y,
                                                     ctx->cliprect.w,
@@ -4019,7 +4083,6 @@ EAPI                Imlib_Updates
 imlib_image_draw_line(int x1, int y1, int x2, int y2, char make_updates)
 {
    ImlibImage         *im;
-   DATA32              color;
 
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_image_draw_line", "image", ctx->image,
@@ -4028,12 +4091,8 @@ imlib_image_draw_line(int x1, int y1, int x2, int y2, char make_updates)
    if (__imlib_LoadImageData(im))
       return NULL;
    __imlib_DirtyImage(im);
-   A_VAL(&color) = (DATA8) ctx->color.alpha;
-   R_VAL(&color) = (DATA8) ctx->color.red;
-   G_VAL(&color) = (DATA8) ctx->color.green;
-   B_VAL(&color) = (DATA8) ctx->color.blue;
-   return (Imlib_Updates) __imlib_Line_DrawToImage(x1, y1, x2, y2, color, im,
-                                                   ctx->cliprect.x,
+   return (Imlib_Updates) __imlib_Line_DrawToImage(x1, y1, x2, y2, ctx->pixel,
+                                                   im, ctx->cliprect.x,
                                                    ctx->cliprect.y,
                                                    ctx->cliprect.w,
                                                    ctx->cliprect.h,
@@ -4057,7 +4116,6 @@ EAPI void
 imlib_image_draw_rectangle(int x, int y, int width, int height)
 {
    ImlibImage         *im;
-   DATA32              color;
 
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_draw_rectangle", "image", ctx->image);
@@ -4065,11 +4123,7 @@ imlib_image_draw_rectangle(int x, int y, int width, int height)
    if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
-   A_VAL(&color) = (DATA8) ctx->color.alpha;
-   R_VAL(&color) = (DATA8) ctx->color.red;
-   G_VAL(&color) = (DATA8) ctx->color.green;
-   B_VAL(&color) = (DATA8) ctx->color.blue;
-   __imlib_Rectangle_DrawToImage(x, y, width, height, color,
+   __imlib_Rectangle_DrawToImage(x, y, width, height, ctx->pixel,
                                  im, ctx->cliprect.x, ctx->cliprect.y,
                                  ctx->cliprect.w, ctx->cliprect.h,
                                  ctx->operation, ctx->blend);
@@ -4089,7 +4143,6 @@ EAPI void
 imlib_image_fill_rectangle(int x, int y, int width, int height)
 {
    ImlibImage         *im;
-   DATA32              color;
 
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_fill_rectangle", "image", ctx->image);
@@ -4097,11 +4150,7 @@ imlib_image_fill_rectangle(int x, int y, int width, int height)
    if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
-   A_VAL(&color) = (DATA8) ctx->color.alpha;
-   R_VAL(&color) = (DATA8) ctx->color.red;
-   G_VAL(&color) = (DATA8) ctx->color.green;
-   B_VAL(&color) = (DATA8) ctx->color.blue;
-   __imlib_Rectangle_FillToImage(x, y, width, height, color,
+   __imlib_Rectangle_FillToImage(x, y, width, height, ctx->pixel,
                                  im, ctx->cliprect.x, ctx->cliprect.y,
                                  ctx->cliprect.w, ctx->cliprect.h,
                                  ctx->operation, ctx->blend);
@@ -5241,7 +5290,6 @@ EAPI void
 imlib_image_draw_polygon(ImlibPolygon poly, unsigned char closed)
 {
    ImlibImage         *im;
-   DATA32              color;
 
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_draw_polygon", "image", ctx->image);
@@ -5249,11 +5297,7 @@ imlib_image_draw_polygon(ImlibPolygon poly, unsigned char closed)
    if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
-   A_VAL(&color) = (DATA8) ctx->color.alpha;
-   R_VAL(&color) = (DATA8) ctx->color.red;
-   G_VAL(&color) = (DATA8) ctx->color.green;
-   B_VAL(&color) = (DATA8) ctx->color.blue;
-   __imlib_Polygon_DrawToImage((ImlibPoly) poly, closed, color,
+   __imlib_Polygon_DrawToImage((ImlibPoly) poly, closed, ctx->pixel,
                                im, ctx->cliprect.x, ctx->cliprect.y,
                                ctx->cliprect.w, ctx->cliprect.h,
                                ctx->operation, ctx->blend, ctx->anti_alias);
@@ -5269,7 +5313,6 @@ EAPI void
 imlib_image_fill_polygon(ImlibPolygon poly)
 {
    ImlibImage         *im;
-   DATA32              color;
 
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_fill_polygon", "image", ctx->image);
@@ -5277,11 +5320,7 @@ imlib_image_fill_polygon(ImlibPolygon poly)
    if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
-   A_VAL(&color) = (DATA8) ctx->color.alpha;
-   R_VAL(&color) = (DATA8) ctx->color.red;
-   G_VAL(&color) = (DATA8) ctx->color.green;
-   B_VAL(&color) = (DATA8) ctx->color.blue;
-   __imlib_Polygon_FillToImage((ImlibPoly) poly, color,
+   __imlib_Polygon_FillToImage((ImlibPoly) poly, ctx->pixel,
                                im, ctx->cliprect.x, ctx->cliprect.y,
                                ctx->cliprect.w, ctx->cliprect.h,
                                ctx->operation, ctx->blend, ctx->anti_alias);
@@ -5323,7 +5362,6 @@ EAPI void
 imlib_image_draw_ellipse(int xc, int yc, int a, int b)
 {
    ImlibImage         *im;
-   DATA32              color;
 
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_draw_ellipse", "image", ctx->image);
@@ -5331,11 +5369,7 @@ imlib_image_draw_ellipse(int xc, int yc, int a, int b)
    if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
-   A_VAL(&color) = (DATA8) ctx->color.alpha;
-   R_VAL(&color) = (DATA8) ctx->color.red;
-   G_VAL(&color) = (DATA8) ctx->color.green;
-   B_VAL(&color) = (DATA8) ctx->color.blue;
-   __imlib_Ellipse_DrawToImage(xc, yc, a, b, color,
+   __imlib_Ellipse_DrawToImage(xc, yc, a, b, ctx->pixel,
                                im, ctx->cliprect.x, ctx->cliprect.y,
                                ctx->cliprect.w, ctx->cliprect.h,
                                ctx->operation, ctx->blend, ctx->anti_alias);
@@ -5358,7 +5392,6 @@ EAPI void
 imlib_image_fill_ellipse(int xc, int yc, int a, int b)
 {
    ImlibImage         *im;
-   DATA32              color;
 
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_fill_ellipse", "image", ctx->image);
@@ -5366,11 +5399,7 @@ imlib_image_fill_ellipse(int xc, int yc, int a, int b)
    if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
-   A_VAL(&color) = (DATA8) ctx->color.alpha;
-   R_VAL(&color) = (DATA8) ctx->color.red;
-   G_VAL(&color) = (DATA8) ctx->color.green;
-   B_VAL(&color) = (DATA8) ctx->color.blue;
-   __imlib_Ellipse_FillToImage(xc, yc, a, b, color,
+   __imlib_Ellipse_FillToImage(xc, yc, a, b, ctx->pixel,
                                im, ctx->cliprect.x, ctx->cliprect.y,
                                ctx->cliprect.w, ctx->cliprect.h,
                                ctx->operation, ctx->blend, ctx->anti_alias);
@@ -5421,7 +5450,7 @@ imlib_image_clear_color(int r, int g, int b, int a)
       return;
    __imlib_DirtyImage(im);
    max = im->w * im->h;
-   WRITE_RGBA(&col, r, g, b, a);
+   col = PIXEL_ARGB(a, r, g, b);
    for (i = 0; i < max; i++)
       im->data[i] = col;
 }

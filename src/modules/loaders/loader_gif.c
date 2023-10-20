@@ -26,11 +26,6 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
    rows = NULL;
    transp = -1;
 
-   /* if immediate_load is 1, then dont delay image laoding as below, or */
-   /* already data in this image - dont load it again */
-   if (im->data)
-      return 0;
-
    fd = open(im->real_file, O_RDONLY);
    if (fd < 0)
       return 0;
@@ -131,13 +126,8 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
         goto quit2;
      }
 
-   /* set the format string member to the lower-case full extension */
-   /* name for the format - so example names would be: */
-   /* "png", "jpeg", "tiff", "ppm", "pgm", "pbm", "gif", "xpm" ... */
    im->w = w;
    im->h = h;
-   if (!im->format)
-      im->format = strdup("gif");
 
    if (im->loader || immediate_load || progress)
      {
@@ -153,18 +143,18 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
                   r = cmap->Colors[i].Red;
                   g = cmap->Colors[i].Green;
                   b = cmap->Colors[i].Blue;
-                  colormap[i] = (0xff << 24) | (r << 16) | (g << 8) | b;
+                  colormap[i] = PIXEL_ARGB(0xff, r, g, b);
                }
              /* if bg > cmap->ColorCount, it is transparent black already */
              if (transp >= 0 && transp < 256)
                 colormap[transp] = bg >= 0 && bg < 256 ?
                    colormap[bg] & 0x00ffffff : 0x00000000;
           }
-        im->data = (DATA32 *) malloc(sizeof(DATA32) * w * h);
-        if (!im->data)
+
+        ptr = __imlib_AllocateData(im);
+        if (!ptr)
            goto quit;
 
-        ptr = im->data;
         per_inc = 100.0 / (float)h;
         for (i = 0; i < h; i++)
           {
@@ -205,11 +195,8 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
 #endif
 
    if (rc == 0)
-     {
-        free(im->data);
-        im->data = NULL;
-        im->w = 0;
-     }
+      __imlib_FreeData(im);
+
    return rc;
 }
 

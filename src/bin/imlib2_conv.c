@@ -22,16 +22,20 @@ main(int argc, char **argv)
 {
    char               *dot, *colon, *n, *oldn;
    Imlib_Image         im;
+   Imlib_Load_Error    lerr;
 
    /* I'm just plain being lazy here.. get our basename. */
    for (oldn = n = argv[0]; n; oldn = n)
       n = strchr(++oldn, '/');
    if (argc < 3 || !strcmp(argv[1], "-h"))
       usage(-1);
-   if (!(im = imlib_load_image(argv[1])))
+
+   im = imlib_load_image_with_error_return(argv[1], &lerr);
+   if (!im)
      {
-        fprintf(stderr, PROG_NAME ": Error loading image: %s\n", argv[1]);
-        exit(-1);
+        fprintf(stderr, PROG_NAME ": Error %d loading image: %s\n",
+                lerr, argv[1]);
+        return lerr;
      }
 
    /* we only care what format the export format is. */
@@ -66,14 +70,25 @@ main(int argc, char **argv)
              imlib_image_set_format(p);
              free(p);
           }
-        dot--;
      }
    else
       imlib_image_set_format("jpg");
 
-   imlib_save_image(argv[2]);
+   imlib_save_image_with_error_return(argv[2], &lerr);
+   switch (lerr)
+     {
+     case IMLIB_LOAD_ERROR_NONE:
+        break;
+     case IMLIB_LOAD_ERROR_NO_LOADER_FOR_FILE_FORMAT:
+        fprintf(stderr, "No saver for format: %s\n", imlib_image_format());
+        /* FALLTHROUGH */
+     default:
+        fprintf(stderr, "%s: Error %d saving image: %s\n",
+                PROG_NAME, lerr, argv[2]);
+        break;
+     }
 
-   return 0;
+   return lerr;
 }
 
 static void

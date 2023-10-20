@@ -1,32 +1,13 @@
 #include "config.h"
-#include <X11/Xlib.h>
-#include <X11/extensions/XShm.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/shape.h>
-#include <X11/Xatom.h>
-#include <X11/Xos.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <math.h>
 
-/*
-#include <sys/time.h>
-#include "common.h"
-#include "image.h"
-#include "rend.h"
-#include "rgba.h"
-#include "ximage.h"
-#include "color.h"
- */
+#include <X11/Xlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "Imlib2.h"
 
 Display            *disp;
 Window              win;
-Visual             *vis;
-Colormap            cm;
-int                 depth;
 
 int
 main(int argc, char **argv)
@@ -34,7 +15,6 @@ main(int argc, char **argv)
    int                 w, h, x, y;
    Imlib_Image         im_bg;
    XEvent              ev;
-   const char         *display_name = getenv("DISPLAY");
 
    /**
     * Initialization according to options
@@ -44,17 +24,13 @@ main(int argc, char **argv)
    /**
     * First tests to determine which rendering task to perform
     */
-   if (!display_name)
-      display_name = ":0";
-   disp = XOpenDisplay(display_name);
+   disp = XOpenDisplay(NULL);
    if (!disp)
      {
-        fprintf(stderr, "Can't open display %s\n", display_name);
+        fprintf(stderr, "Cannot open display\n");
         return 1;
      }
-   vis = DefaultVisual(disp, DefaultScreen(disp));
-   depth = DefaultDepth(disp, DefaultScreen(disp));
-   cm = DefaultColormap(disp, DefaultScreen(disp));
+
    win = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0, 100, 100,
                              0, 0, 0);
    XSelectInput(disp, win,
@@ -66,8 +42,8 @@ main(int argc, char **argv)
     */
    printf("Rendering\n");
    imlib_context_set_display(disp);
-   imlib_context_set_visual(vis);
-   imlib_context_set_colormap(cm);
+   imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
+   imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
    imlib_context_set_drawable(win);
    imlib_context_set_dither(1);
    imlib_context_set_blend(0);

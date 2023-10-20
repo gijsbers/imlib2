@@ -1,23 +1,14 @@
 #include "config.h"
+
 #include <X11/Xlib.h>
-#include <X11/extensions/XShm.h>
 #include <X11/Xutil.h>
-#include <X11/extensions/shape.h>
-#include <X11/Xatom.h>
-#include <X11/Xos.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <math.h>
 
 #include "Imlib2.h"
 
 Display            *disp;
 Window              win;
-Visual             *vis;
-Colormap            cm;
-int                 depth;
 
 int
 main(int argc, char **argv)
@@ -28,22 +19,17 @@ main(int argc, char **argv)
    KeySym              keysym;
    static char         kbuf[20];
    ImlibPolygon        poly, poly1, poly2;
-   const char         *display_name = getenv("DISPLAY");
 
    /**
     * First tests to determine which rendering task to perform
     */
-   if (!display_name)
-      display_name = ":0";
-   disp = XOpenDisplay(display_name);
+   disp = XOpenDisplay(NULL);
    if (!disp)
      {
-        fprintf(stderr, "Can't open display %s\n", display_name);
+        fprintf(stderr, "Cannot open display\n");
         return 1;
      }
-   vis = DefaultVisual(disp, DefaultScreen(disp));
-   depth = DefaultDepth(disp, DefaultScreen(disp));
-   cm = DefaultColormap(disp, DefaultScreen(disp));
+
    win = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0, 100, 100,
                              0, 0, 0);
    XSelectInput(disp, win,
@@ -54,8 +40,8 @@ main(int argc, char **argv)
     * Start rendering
     */
    imlib_context_set_display(disp);
-   imlib_context_set_visual(vis);
-   imlib_context_set_colormap(cm);
+   imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
+   imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
    imlib_context_set_drawable(win);
    imlib_context_set_blend(0);
    imlib_context_set_color_modifier(NULL);

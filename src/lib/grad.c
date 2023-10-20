@@ -8,6 +8,14 @@
 #include "grad.h"
 #include "image.h"
 
+#define ARGB_TO_R_G_B_A(argb, r, g, b, a) \
+    do { \
+        r = PIXEL_R(argb); \
+        g = PIXEL_G(argb); \
+        b = PIXEL_B(argb); \
+        a = PIXEL_A(argb); \
+    } while(0)
+
 ImlibRange         *
 __imlib_CreateRange(void)
 {
@@ -100,7 +108,7 @@ __imlib_MapRange(ImlibRange * rg, int len)
                   g = ((p->green * v2) + (p->next->green * v1)) >> 16;
                   b = ((p->blue * v2) + (p->next->blue * v1)) >> 16;
                   a = ((p->alpha * v2) + (p->next->alpha * v1)) >> 16;
-                  pmap[i++] = (a << 24) | (r << 16) | (g << 8) | b;
+                  pmap[i++] = PIXEL_ARGB(a, r, g, b);
                }
           }
         else
@@ -109,7 +117,7 @@ __imlib_MapRange(ImlibRange * rg, int len)
              g = p->green;
              b = p->blue;
              a = p->alpha;
-             pmap[i++] = (a << 24) | (r << 16) | (g << 8) | b;
+             pmap[i++] = PIXEL_ARGB(a, r, g, b);
           }
      }
    inc = ((ll - 1) << 16) / (len - 1);
@@ -135,7 +143,7 @@ __imlib_MapRange(ImlibRange * rg, int len)
         g = ((g * v2) + (gg * v1)) >> 16;
         b = ((b * v2) + (bb * v1)) >> 16;
         a = ((a * v2) + (aa * v1)) >> 16;
-        map[i] = (a << 24) | (r << 16) | (g << 8) | b;
+        map[i] = PIXEL_ARGB(a, r, g, b);
         l += inc;
      }
    free(pmap);
@@ -182,7 +190,7 @@ __imlib_MapHsvaRange(ImlibRange * rg, int len)
                   __imlib_hsv_to_rgb(h, s, v, &r, &g, &b);
                   a = (unsigned long int)((p->alpha * k2) +
                                           (p->next->alpha * k1)) >> 16;
-                  pmap[i++] = (a << 24) | (r << 16) | (g << 8) | b;
+                  pmap[i++] = PIXEL_ARGB(a, r, g, b);
                }
           }
         else
@@ -191,7 +199,7 @@ __imlib_MapHsvaRange(ImlibRange * rg, int len)
              g = p->green;
              b = p->blue;
              a = p->alpha;
-             pmap[i++] = (a << 24) | (r << 16) | (g << 8) | b;
+             pmap[i++] = PIXEL_ARGB(a, r, g, b);
           }
      }
    inc = ((ll - 1) << 16) / (len - 1);
@@ -220,7 +228,7 @@ __imlib_MapHsvaRange(ImlibRange * rg, int len)
         v = ((v1 * k2) + (v2 * k1)) / 65536.0;
         __imlib_hsv_to_rgb(h, s, v, &r, &g, &b);
         a = (unsigned long int)((a * k2) + (aa * k1)) >> 16;
-        map[i] = (a << 24) | (r << 16) | (g << 8) | b;
+        map[i] = PIXEL_ARGB(a, r, g, b);
         l += inc;
      }
    free(pmap);
@@ -334,7 +342,7 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
                           i = 0;
                        else if (i >= len)
                           i = len - 1;
-                       READ_RGBA(&(map[i]), r, g, b, a);
+                       ARGB_TO_R_G_B_A(map[i], r, g, b, a);
                        BLEND_DST_ALPHA(r, g, b, a, p);
                        p++;
                     }
@@ -352,7 +360,7 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
                           i = 0;
                        else if (i >= len)
                           i = len - 1;
-                       READ_RGBA(&(map[i]), r, g, b, a);
+                       ARGB_TO_R_G_B_A(map[i], r, g, b, a);
                        BLEND(r, g, b, a, p);
                        p++;
                     }
@@ -370,7 +378,7 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
                      i = 0;
                   else if (i >= len)
                      i = len - 1;
-                  READ_RGBA(&(map[i]), r, g, b, a);
+                  ARGB_TO_R_G_B_A(map[i], r, g, b, a);
                   BLEND_SUB(r, g, b, a, p);
                   p++;
                }
@@ -387,7 +395,7 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
                      i = 0;
                   else if (i >= len)
                      i = len - 1;
-                  READ_RGBA(&(map[i]), r, g, b, a);
+                  ARGB_TO_R_G_B_A(map[i], r, g, b, a);
                   BLEND_SUB(r, g, b, a, p);
                   p++;
                }
@@ -404,7 +412,7 @@ __imlib_DrawGradient(ImlibImage * im, int x, int y, int w, int h,
                      i = 0;
                   else if (i >= len)
                      i = len - 1;
-                  READ_RGBA(&(map[i]), r, g, b, a);
+                  ARGB_TO_R_G_B_A(map[i], r, g, b, a);
                   BLEND_RE(r, g, b, a, p);
                   p++;
                }
@@ -527,7 +535,7 @@ __imlib_DrawHsvaGradient(ImlibImage * im, int x, int y, int w, int h,
                           i = 0;
                        else if (i >= len)
                           i = len - 1;
-                       READ_RGBA(&(map[i]), r, g, b, a);
+                       ARGB_TO_R_G_B_A(map[i], r, g, b, a);
                        BLEND_DST_ALPHA(r, g, b, a, p);
                        p++;
                     }
@@ -545,7 +553,7 @@ __imlib_DrawHsvaGradient(ImlibImage * im, int x, int y, int w, int h,
                           i = 0;
                        else if (i >= len)
                           i = len - 1;
-                       READ_RGBA(&(map[i]), r, g, b, a);
+                       ARGB_TO_R_G_B_A(map[i], r, g, b, a);
                        BLEND(r, g, b, a, p);
                        p++;
                     }
@@ -563,7 +571,7 @@ __imlib_DrawHsvaGradient(ImlibImage * im, int x, int y, int w, int h,
                      i = 0;
                   else if (i >= len)
                      i = len - 1;
-                  READ_RGBA(&(map[i]), r, g, b, a);
+                  ARGB_TO_R_G_B_A(map[i], r, g, b, a);
                   BLEND_SUB(r, g, b, a, p);
                   p++;
                }
@@ -580,7 +588,7 @@ __imlib_DrawHsvaGradient(ImlibImage * im, int x, int y, int w, int h,
                      i = 0;
                   else if (i >= len)
                      i = len - 1;
-                  READ_RGBA(&(map[i]), r, g, b, a);
+                  ARGB_TO_R_G_B_A(map[i], r, g, b, a);
                   BLEND_SUB(r, g, b, a, p);
                   p++;
                }
@@ -597,7 +605,7 @@ __imlib_DrawHsvaGradient(ImlibImage * im, int x, int y, int w, int h,
                      i = 0;
                   else if (i >= len)
                      i = len - 1;
-                  READ_RGBA(&(map[i]), r, g, b, a);
+                  ARGB_TO_R_G_B_A(map[i], r, g, b, a);
                   BLEND_RE(r, g, b, a, p);
                   p++;
                }

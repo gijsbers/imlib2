@@ -1,33 +1,19 @@
 #include "config.h"
+
 #include <X11/Xlib.h>
-#include <X11/extensions/XShm.h>
 #include <X11/Xutil.h>
-#include <X11/extensions/shape.h>
-#include <X11/Xatom.h>
-#include <X11/Xos.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <time.h>
+#include <sys/time.h>
 #include <math.h>
 #include <locale.h>
 
-/*
-#include <sys/time.h>
-#include "common.h"
-#include "image.h"
-#include "rend.h"
-#include "rgba.h"
-#include "ximage.h"
-#include "color.h"
- */
 #include "Imlib2.h"
 
 Display            *disp;
 Window              win;
-Visual             *vis;
-Colormap            cm;
-int                 depth;
 
 void                progress(Imlib_Image * im, char percent, int update_x,
                              int update_y, int update_w, int update_h);
@@ -37,8 +23,6 @@ progress(Imlib_Image * im, char percent,
          int update_x, int update_y, int update_w, int update_h)
 {
    imlib_context_set_display(disp);
-   imlib_context_set_visual(vis);
-   imlib_context_set_colormap(cm);
    imlib_context_set_drawable(win);
    imlib_context_set_dither(0);
    imlib_context_set_blend(0);
@@ -278,9 +262,6 @@ main(int argc, char **argv)
              fprintf(stderr, "Can't open display %s\n", display_name);
              return 1;
           }
-        vis = DefaultVisual(disp, DefaultScreen(disp));
-        depth = DefaultDepth(disp, DefaultScreen(disp));
-        cm = DefaultColormap(disp, DefaultScreen(disp));
 #if 0
         /* nasty - using imlib internal function.. but it makes benchmarks fair */
         if (!interactive)
@@ -345,8 +326,8 @@ main(int argc, char **argv)
    if (!blendtest)
      {
         imlib_context_set_display(disp);
-        imlib_context_set_visual(vis);
-        imlib_context_set_colormap(cm);
+        imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
+        imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
         imlib_context_set_drawable(win);
      }
    imlib_context_set_anti_alias(aa);

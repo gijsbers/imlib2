@@ -154,8 +154,7 @@ __imlib_FlipImageDiagonal(ImlibImage * im, int direction)
           }
         to += hw;
      }
-   free(im->data);
-   im->data = data;
+   __imlib_ReplaceData(im, data);
 }
 
 void
@@ -233,7 +232,7 @@ __imlib_BlurImage(ImlibImage * im, int rad)
                   r = r / mt;
                   g = g / mt;
                   b = b / mt;
-                  *p1 = (a << 24) | (r << 16) | (g << 8) | b;
+                  *p1 = PIXEL_ARGB(a, r, g, b);
                   p1++;
                }
           }
@@ -245,8 +244,7 @@ __imlib_BlurImage(ImlibImage * im, int rad)
    free(rs);
    free(gs);
    free(bs);
-   free(im->data);
-   im->data = data;
+   __imlib_ReplaceData(im, data);
 }
 
 void
@@ -296,14 +294,13 @@ __imlib_SharpenImage(ImlibImage * im, int rad)
                   b = (b & ((~b) >> 16));
                   b = ((b | ((b & 256) - ((b & 256) >> 8))));
 
-                  *p2 = (a << 24) | (r << 16) | (g << 8) | b;
+                  *p2 = PIXEL_ARGB(a, r, g, b);
                   p2++;
                   p1++;
                }
           }
      }
-   free(im->data);
-   im->data = data;
+   __imlib_ReplaceData(im, data);
 }
 
 void
@@ -342,7 +339,7 @@ __imlib_TileImageHoriz(ImlibImage * im)
              nb = bb + ((tmp + (tmp >> 8) + 0x80) >> 8);
              tmp = (a - aa) * mix;
              na = aa + ((tmp + (tmp >> 8) + 0x80) >> 8);
-             *p = (na << 24) | (nr << 16) | (ng << 8) | nb;
+             *p = PIXEL_ARGB(na, nr, ng, nb);
              p++;
              p1++;
              p2++;
@@ -370,14 +367,13 @@ __imlib_TileImageHoriz(ImlibImage * im)
              nb = bb + ((tmp + (tmp >> 8) + 0x80) >> 8);
              tmp = (a - aa) * mix;
              na = aa + ((tmp + (tmp >> 8) + 0x80) >> 8);
-             *p = (na << 24) | (nr << 16) | (ng << 8) | nb;
+             *p = PIXEL_ARGB(na, nr, ng, nb);
              p++;
              p1++;
              p2++;
           }
      }
-   free(im->data);
-   im->data = data;
+   __imlib_ReplaceData(im, data);
 }
 
 void
@@ -422,14 +418,13 @@ __imlib_TileImageVert(ImlibImage * im)
              nb = bb + ((tmp + (tmp >> 8) + 0x80) >> 8);
              tmp = (a - aa) * mix;
              na = aa + ((tmp + (tmp >> 8) + 0x80) >> 8);
-             *p = (na << 24) | (nr << 16) | (ng << 8) | nb;
+             *p = PIXEL_ARGB(na, nr, ng, nb);
              p++;
              p1++;
              p2++;
           }
      }
-   free(im->data);
-   im->data = data;
+   __imlib_ReplaceData(im, data);
 }
 
 void

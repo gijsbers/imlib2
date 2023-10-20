@@ -129,7 +129,7 @@ loadchunks(char *name, ILBM * ilbm, int full)
                           break;        /* Out of memory. */
 
                        s = fread(c->data, 1, c->size, f);
-                       if (s != (size_t) c->size)
+                       if (s != (size_t)c->size)
                           break;        /* Error or short file. */
 
                        seek = 0;
@@ -458,12 +458,6 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
    ILBM                ilbm;
 
   /*----------
-   * Do nothing if the data is already loaded.
-   *----------*/
-   if (im->data)
-      return 0;
-
-  /*----------
    * Load the chunk(s) we're interested in. If full is not true, then we only
    * want the image size and format.
    *----------*/
@@ -509,9 +503,6 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
                 || !strcmp(env, "on")))
            UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
-        if (!im->format)
-           im->format = strdup("lbm");
-
         ilbm.ham = 0;
         ilbm.hbrite = 0;
         if (ilbm.depth <= 8)
@@ -551,7 +542,7 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
    plane[0] = NULL;
    gran = nexty = 0;
 
-   im->data = malloc(im->w * im->h * sizeof(DATA32));
+   __imlib_AllocateData(im);
    n = ilbm.depth;
    if (ilbm.mask == 1)
       n++;
@@ -604,12 +595,7 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
    * the memory for im->data or plane[0].
    *----------*/
    if (!ok)
-     {
-        im->w = im->h = 0;
-        if (im->data)
-           free(im->data);
-        im->data = NULL;
-     }
+      __imlib_FreeData(im);
 
    if (plane[0])
       free(plane[0]);

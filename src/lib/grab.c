@@ -26,7 +26,8 @@ __imlib_GrabXImageToRGBA(DATA32 * data, int ox, int oy, int ow, int oh,
                          int depth, int x, int y, int w, int h, char grab)
 {
    int                 inx, iny;
-   DATA32             *src, *ptr;
+   const DATA32       *src;
+   DATA32             *ptr;
    int                 pixel;
    int                 origx, origy;
    int                 bgr = 0;
@@ -54,14 +55,6 @@ __imlib_GrabXImageToRGBA(DATA32 * data, int ox, int oy, int ow, int oh,
    if ((depth == 24) && (xim->bits_per_pixel == 32))
       depth = 25;               /* fake depth meaning 24 bit in 32 bpp ximage */
    /* data needs swapping */
-#define SWAP32(x) (x) = \
-   ((((int)(x) & 0x000000ff ) << 24) |\
-       (((int)(x) & 0x0000ff00 ) << 8) |\
-       (((int)(x) & 0x00ff0000 ) >> 8) |\
-       (((int)(x) & 0xff000000 ) >> 24))
-#define SWAP16(x) (x) = \
-   ((((short)(x) & 0x00ff ) << 8) |\
-       (((short)(x) & 0xff00 ) >> 8))
 
 #ifdef WORDS_BIGENDIAN
    if (xim->bitmap_bit_order == LSBFirst)
@@ -91,7 +84,7 @@ __imlib_GrabXImageToRGBA(DATA32 * data, int ox, int oy, int ow, int oh,
                      (unsigned short *)(xim->data + (xim->bytes_per_line * y));
                   for (x = 0; x < w; x++)
                     {
-                       SWAP16(*tmp);
+                       *tmp = SWAP16(*tmp);
                        tmp++;
                     }
                }
@@ -106,7 +99,7 @@ __imlib_GrabXImageToRGBA(DATA32 * data, int ox, int oy, int ow, int oh,
                   tmp = (unsigned int *)(xim->data + (xim->bytes_per_line * y));
                   for (x = 0; x < w; x++)
                     {
-                       SWAP32(*tmp);
+                       *tmp = SWAP32(*tmp);
                        tmp++;
                     }
                }
@@ -661,7 +654,7 @@ __imlib_GrabDrawableToRGBA(DATA32 * data, int ox, int oy, int ow, int oh,
 
    /* Create an Ximage (shared or not) */
    xim = __imlib_ShmGetXImage(d, v, p, xatt.depth, x, y, w, h, &shminfo);
-   is_shm = ! !xim;
+   is_shm = !!xim;
 
    if (!xim)
       xim = XGetImage(d, p, x, y, w, h, 0xffffffff, ZPixmap);
@@ -676,7 +669,7 @@ __imlib_GrabDrawableToRGBA(DATA32 * data, int ox, int oy, int ow, int oh,
    if ((m) && (domask))
      {
         mxim = __imlib_ShmGetXImage(d, v, m, 1, 0, 0, w, h, &mshminfo);
-        is_mshm = ! !mxim;
+        is_mshm = !!mxim;
         if (!mxim)
            mxim = XGetImage(d, m, 0, 0, w, h, 0xffffffff, ZPixmap);
      }

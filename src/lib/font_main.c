@@ -379,9 +379,9 @@ __imlib_hash_free(Imlib_Hash * hash)
 }
 
 void
-__imlib_hash_foreach(Imlib_Hash * hash, int (*func) (Imlib_Hash * hash,
-                                                     const char *key,
-                                                     void *data, void *fdata),
+__imlib_hash_foreach(Imlib_Hash * hash, int (*func)(Imlib_Hash * hash,
+                                                    const char *key,
+                                                    void *data, void *fdata),
                      const void *fdata)
 {
    int                 i, size;

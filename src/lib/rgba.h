@@ -12,10 +12,10 @@ void                __imlib_RGBASetupContext(Context * ct);
 void                __imlib_RGBA_init(void *rd, void *gd, void *bd, int depth,
                                       DATA8 palette_type);
 
-typedef void        (*ImlibRGBAFunction) (DATA32 *, int, DATA8 *,
-                                          int, int, int, int, int);
-typedef void        (*ImlibMaskFunction) (DATA32 *, int, DATA8 *,
-                                          int, int, int, int, int, int);
+typedef void        (*ImlibRGBAFunction)(DATA32 *, int, DATA8 *,
+                                         int, int, int, int, int);
+typedef void        (*ImlibMaskFunction)(DATA32 *, int, DATA8 *,
+                                         int, int, int, int, int, int);
 ImlibRGBAFunction   __imlib_GetRGBAFunction(int depth, unsigned long rm,
                                             unsigned long gm, unsigned long bm,
                                             char hiq, DATA8 palette_type);

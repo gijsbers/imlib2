@@ -1,11 +1,5 @@
 #include "loader_common.h"
 
-#define SWAP32(x) (x) = \
-((((x) & 0x000000ff ) << 24) |\
- (((x) & 0x0000ff00 ) << 8) |\
- (((x) & 0x00ff0000 ) >> 8) |\
- (((x) & 0xff000000 ) >> 24))
-
 char
 load(ImlibImage * im, ImlibProgressFunction progress,
      char progress_granularity, char immediate_load)
@@ -13,8 +7,6 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    int                 w = 0, h = 0, alpha = 0;
    FILE               *f;
 
-   if (im->data)
-      return 0;
    f = fopen(im->real_file, "rb");
    if (!f)
       return 0;
@@ -43,24 +35,21 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         }
       im->w = w;
       im->h = h;
-      if (!im->format)
-        {
-           if (alpha)
-              SET_FLAG(im->flags, F_HAS_ALPHA);
-           else
-              UNSET_FLAG(im->flags, F_HAS_ALPHA);
-           im->format = strdup("argb");
-        }
+      if (alpha)
+         SET_FLAG(im->flags, F_HAS_ALPHA);
+      else
+         UNSET_FLAG(im->flags, F_HAS_ALPHA);
    }
-   if (((!im->data) && (im->loader)) || (immediate_load) || (progress))
+
+   if (im->loader || immediate_load || progress)
      {
         DATA32             *ptr;
-        int                 y, pl = 0;
+        int                 y, l, pl = 0;
         char                pper = 0;
 
         /* must set the im->data member before callign progress function */
-        ptr = im->data = malloc(w * h * sizeof(DATA32));
-        if (!im->data)
+        ptr = __imlib_AllocateData(im);
+        if (!ptr)
           {
              im->w = 0;
              fclose(f);
@@ -68,36 +57,20 @@ load(ImlibImage * im, ImlibProgressFunction progress,
           }
         for (y = 0; y < h; y++)
           {
-#ifdef WORDS_BIGENDIAN
-             {
-                int                 x;
-
-                if (fread(ptr, im->w, 4, f) != 4)
-                  {
-                     free(im->data);
-                     im->data = NULL;
-                     im->w = 0;
-                     fclose(f);
-                     return 0;
-                  }
-                for (x = 0; x < im->w; x++)
-                   SWAP32(ptr[x]);
-             }
-#else
              if (fread(ptr, im->w, 4, f) != 4)
                {
-                  free(im->data);
-                  im->data = NULL;
-                  im->w = 0;
+                  __imlib_FreeData(im);
                   fclose(f);
                   return 0;
                }
+#ifdef WORDS_BIGENDIAN
+             for (l = 0; l < im->w; l++)
+                SWAP_LE_32_INPLACE(ptr[l]);
 #endif
              ptr += im->w;
              if (progress)
                {
                   char                per;
-                  int                 l;
 
                   per = (char)((100 * y) / im->h);
                   if (((per - pper) >= progress_granularity) ||
@@ -149,7 +122,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 
            memcpy(buf, ptr, im->w * 4);
            for (x = 0; x < im->w; x++)
-              SWAP32(buf[x]);
+              SWAP_LE_32_INPLACE(buf[x]);
            fwrite(buf, im->w, 4, f);
         }
 #else

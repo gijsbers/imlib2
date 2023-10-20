@@ -237,6 +237,5 @@ __imlib_FilterImage(ImlibImage * im, ImlibFilter * fil)
              p2++;
           }
      }
-   free(im->data);
-   im->data = data;
+   __imlib_ReplaceData(im, data);
 }

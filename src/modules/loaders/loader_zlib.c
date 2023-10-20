@@ -3,7 +3,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <assert.h>
 
 #define OUTBUF_SIZE 16484
 
@@ -43,28 +42,28 @@ load(ImlibImage * im, ImlibProgressFunction progress,
      char progress_granularity, char immediate_load)
 {
    ImlibLoader        *loader;
-   int                 src, dest, res;
+   int                 src;
+   int                 dest, res;
    char               *file, *p, *q, tmp[] = "/tmp/imlib2_loader_zlib-XXXXXX";
    char               *real_ext;
-   struct stat         st;
 
-   assert(im);
-
-   /* check that this file ends in *.gz and that there's another ext
-    * (e.g. "foo.png.gz"
-    */
+   /* make sure this file ends in ".gz" and that there's another ext
+    * (e.g. "foo.png.gz") */
    p = strrchr(im->real_file, '.');
    q = strchr(im->real_file, '.');
    if (!p || p == im->real_file || strcasecmp(p + 1, "gz") || p == q)
       return 0;
 
-   if (stat(im->real_file, &st) < 0)
+   if (!(real_ext = strndup(q + 1, p - q - 1)))
+      return 0;
+
+   loader = __imlib_FindBestLoaderForFormat(real_ext, 0);
+   free(real_ext);
+   if (!loader)
       return 0;
 
    if ((src = open(im->real_file, O_RDONLY)) < 0)
-     {
-        return 0;
-     }
+      return 0;
 
    if ((dest = mkstemp(tmp)) < 0)
      {
@@ -82,26 +81,15 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         return 0;
      }
 
-   if (!(real_ext = strndup(im->real_file, p - im->real_file)))
-      return 0;
-
-   if (!(loader = __imlib_FindBestLoaderForFile(real_ext, 0)))
-     {
-        free(real_ext);
-        unlink(tmp);
-        return 0;
-     }
-
    /* remember the original filename */
-   file = strdup(im->real_file);
-
-   free(im->real_file);
+   file = im->real_file;
    im->real_file = strdup(tmp);
+
    loader->load(im, progress, progress_granularity, immediate_load);
 
    free(im->real_file);
    im->real_file = file;
-   free(real_ext);
+
    unlink(tmp);
 
    return 1;

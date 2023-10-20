@@ -2,7 +2,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <id3tag.h>
@@ -105,7 +104,7 @@ context_create(const char *filename)
         goto fail_close;
      }
    node->id = ptr->id + 1;
-   if (UNLIKELY(! !last))
+   if (UNLIKELY(!!last))
      {
         node->next = last->next;
         last->next = node;
@@ -496,7 +495,6 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    int                 res;
    struct stat         st;
 
-   assert(im);
    if (stat(im->real_file, &st) < 0)
       return 0;
    if (!get_options(&opt, im))
