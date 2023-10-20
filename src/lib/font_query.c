@@ -21,40 +21,25 @@ extern FT_Library   ft_lib;
 void
 __imlib_font_query_size(ImlibFont * fn, const char *text, int *w, int *h)
 {
-   int                 use_kerning;
    int                 pen_x /*, pen_y */ ;
    int                 start_x, end_x;
    int                 chr;
-   FT_UInt             prev_index;
 
    start_x = 0;
    end_x = 0;
    pen_x = 0;
 /* pen_y = 0; */
-   use_kerning = FT_HAS_KERNING(fn->ft.face);
-   prev_index = 0;
    for (chr = 0; text[chr];)
      {
         FT_UInt             index;
         Imlib_Font_Glyph   *fg;
-        ImlibFont          *fn_in_chain;
-        int                 chr_x, /*chr_y, */ chr_w;
-        int                 gl;
+        int                 chr_x, /*chr_y, */ chr_w, kern;
 
-        gl = __imlib_font_utf8_get_next((unsigned char *)text, &chr);
-        if (gl == 0)
-           break;
-        fn_in_chain = __imlib_font_find_glyph(fn, gl, &index);
-        if ((use_kerning) && (prev_index) && (index))
-          {
-             FT_Vector           delta;
-
-             FT_Get_Kerning(fn_in_chain->ft.face, prev_index, index,
-                            ft_kerning_default, &delta);
-             pen_x += delta.x << 2;
-          }
-        fg = __imlib_font_cache_glyph_get(fn_in_chain, index);
+        fg = __imlib_font_get_next_glyph(fn, text, &chr, &index, &kern);
         if (!fg)
+           break;
+        pen_x += kern;
+        if (fg == IMLIB_GLYPH_NONE)
            continue;
 
         chr_x = (pen_x >> 8) + fg->glyph_out->left;
@@ -67,7 +52,6 @@ __imlib_font_query_size(ImlibFont * fn, const char *text, int *w, int *h)
            end_x = chr_x + chr_w;
 
         pen_x += fg->glyph->advance.x >> 8;
-        prev_index = index;
      }
    if (w)
       *w = (pen_x >> 8) - start_x;
@@ -81,20 +65,16 @@ __imlib_font_query_inset(ImlibFont * fn, const char *text)
 {
    FT_UInt             index;
    Imlib_Font_Glyph   *fg;
-   ImlibFont          *fn_in_chain;
    int                 chr;
-   int                 gl;
 
    chr = 0;
    if (!text[0])
       return 0;
-   gl = __imlib_font_utf8_get_next((unsigned char *)text, &chr);
-   if (gl == 0)
+
+   fg = __imlib_font_get_next_glyph(fn, text, &chr, &index, NULL);
+   if (!fg || fg == IMLIB_GLYPH_NONE)
       return 0;
-   fn_in_chain = __imlib_font_find_glyph(fn, gl, &index);
-   fg = __imlib_font_cache_glyph_get(fn_in_chain, index);
-   if (!fg)
-      return 0;
+
    return -fg->glyph_out->left;
 }
 
@@ -103,41 +83,26 @@ void
 __imlib_font_query_advance(ImlibFont * fn, const char *text, int *h_adv,
                            int *v_adv)
 {
-   int                 use_kerning;
    int                 pen_x;
    int                 start_x;
    int                 chr;
-   FT_UInt             prev_index;
 
    start_x = 0;
    pen_x = 0;
-   use_kerning = FT_HAS_KERNING(fn->ft.face);
-   prev_index = 0;
    for (chr = 0; text[chr];)
      {
         FT_UInt             index;
         Imlib_Font_Glyph   *fg;
-        ImlibFont          *fn_in_chain;
-        int                 gl;
+        int                 kern;
 
-        gl = __imlib_font_utf8_get_next((unsigned char *)text, &chr);
-        if (gl == 0)
-           break;
-        fn_in_chain = __imlib_font_find_glyph(fn, gl, &index);
-        if ((use_kerning) && (prev_index) && (index))
-          {
-             FT_Vector           delta;
-
-             FT_Get_Kerning(fn_in_chain->ft.face, prev_index, index,
-                            ft_kerning_default, &delta);
-             pen_x += delta.x << 2;
-          }
-        fg = __imlib_font_cache_glyph_get(fn_in_chain, index);
+        fg = __imlib_font_get_next_glyph(fn, text, &chr, &index, &kern);
         if (!fg)
+           break;
+        pen_x += kern;
+        if (fg == IMLIB_GLYPH_NONE)
            continue;
 
         pen_x += fg->glyph->advance.x >> 8;
-        prev_index = index;
      }
    if (v_adv)
       *v_adv = __imlib_font_get_line_advance(fn);       /* TODO: compute this in the loop since we may be dealing with multiple fonts */
@@ -150,16 +115,12 @@ int
 __imlib_font_query_char_coords(ImlibFont * fn, const char *text, int pos,
                                int *cx, int *cy, int *cw, int *ch)
 {
-   int                 use_kerning;
    int                 pen_x;
    int                 prev_chr_end;
    int                 chr;
    int                 asc, desc;
-   FT_UInt             prev_index;
 
    pen_x = 0;
-   use_kerning = FT_HAS_KERNING(fn->ft.face);
-   prev_index = 0;
    prev_chr_end = 0;
    asc = __imlib_font_max_ascent_get(fn);
    desc = __imlib_font_max_descent_get(fn);
@@ -168,26 +129,14 @@ __imlib_font_query_char_coords(ImlibFont * fn, const char *text, int pos,
         int                 pchr;
         FT_UInt             index;
         Imlib_Font_Glyph   *fg;
-        ImlibFont          *fn_in_chain;
-        int                 chr_x, chr_w;
-        int                 gl, kern;
-        FT_Vector           delta;
+        int                 chr_x, chr_w, kern;
 
         pchr = chr;
-        gl = __imlib_font_utf8_get_next((unsigned char *)text, &chr);
-        if (gl == 0)
-           break;
-        fn_in_chain = __imlib_font_find_glyph(fn, gl, &index);
-        kern = 0;
-        if ((use_kerning) && (prev_index) && (index))
-          {
-             FT_Get_Kerning(fn_in_chain->ft.face, prev_index, index,
-                            ft_kerning_default, &delta);
-             kern = delta.x << 2;
-             pen_x += kern;
-          }
-        fg = __imlib_font_cache_glyph_get(fn_in_chain, index);
+        fg = __imlib_font_get_next_glyph(fn, text, &chr, &index, &kern);
         if (!fg)
+           break;
+        pen_x += kern;
+        if (fg == IMLIB_GLYPH_NONE)
            continue;
 
         if (kern < 0)
@@ -221,7 +170,6 @@ __imlib_font_query_char_coords(ImlibFont * fn, const char *text, int pos,
           }
         prev_chr_end = chr_x + chr_w;
         pen_x += fg->glyph->advance.x >> 8;
-        prev_index = index;
      }
    return 0;
 }
@@ -231,16 +179,12 @@ int
 __imlib_font_query_text_at_pos(ImlibFont * fn, const char *text, int x, int y,
                                int *cx, int *cy, int *cw, int *ch)
 {
-   int                 use_kerning;
    int                 pen_x;
    int                 prev_chr_end;
    int                 chr;
    int                 asc, desc;
-   FT_UInt             prev_index;
 
    pen_x = 0;
-   use_kerning = FT_HAS_KERNING(fn->ft.face);
-   prev_index = 0;
    prev_chr_end = 0;
    asc = __imlib_font_max_ascent_get(fn);
    desc = __imlib_font_max_descent_get(fn);
@@ -249,26 +193,14 @@ __imlib_font_query_text_at_pos(ImlibFont * fn, const char *text, int x, int y,
         int                 pchr;
         FT_UInt             index;
         Imlib_Font_Glyph   *fg;
-        ImlibFont          *fn_in_chain;
-        int                 chr_x, chr_w;
-        int                 gl, kern;
-        FT_Vector           delta;
+        int                 chr_x, chr_w, kern;
 
         pchr = chr;
-        gl = __imlib_font_utf8_get_next((unsigned char *)text, &chr);
-        if (gl == 0)
-           break;
-        fn_in_chain = __imlib_font_find_glyph(fn, gl, &index);
-        kern = 0;
-        if ((use_kerning) && (prev_index) && (index))
-          {
-             FT_Get_Kerning(fn_in_chain->ft.face, prev_index, index,
-                            ft_kerning_default, &delta);
-             kern = delta.x << 2;
-             pen_x += kern;
-          }
-        fg = __imlib_font_cache_glyph_get(fn_in_chain, index);
+        fg = __imlib_font_get_next_glyph(fn, text, &chr, &index, &kern);
         if (!fg)
+           break;
+        pen_x += kern;
+        if (fg == IMLIB_GLYPH_NONE)
            continue;
 
         if (kern < 0)
@@ -302,7 +234,6 @@ __imlib_font_query_text_at_pos(ImlibFont * fn, const char *text, int x, int y,
           }
         prev_chr_end = chr_x + chr_w;
         pen_x += fg->glyph->advance.x >> 8;
-        prev_index = index;
      }
    return -1;
 }

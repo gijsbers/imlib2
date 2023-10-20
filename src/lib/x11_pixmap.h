@@ -5,9 +5,7 @@
 
 #include "image.h"
 
-typedef struct _imlibimagepixmap ImlibImagePixmap;
-
-struct _imlibimagepixmap {
+typedef struct _ImlibImagePixmap {
    int                 w, h;
    Pixmap              pixmap, mask;
    Display            *display;
@@ -22,8 +20,8 @@ struct _imlibimagepixmap {
    char                dirty;
    int                 references;
    DATABIG             modification_count;
-   ImlibImagePixmap   *next;
-};
+   struct _ImlibImagePixmap *next;
+} ImlibImagePixmap;
 
 ImlibImagePixmap   *__imlib_FindCachedImagePixmap(ImlibImage * im, int w, int h,
                                                   Display * d, Visual * v,
@@ -43,7 +41,7 @@ void                __imlib_CleanupImagePixmapCache(void);
 int                 __imlib_PixmapCacheSize(void);
 
 void                __imlib_FreePixmap(Display * d, Pixmap p);
-void                __imlib_DirtyPixmapsForImage(ImlibImage * im);
-void                __imlib_PixmapUnrefImage(ImlibImage * im);
+void                __imlib_DirtyPixmapsForImage(const ImlibImage * im);
+void                __imlib_PixmapUnrefImage(const ImlibImage * im);
 
 #endif /* X11_PIXMAP_H */

@@ -175,10 +175,12 @@ load2(ImlibImage * im, int load_data)
 
    fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
-      return rc;
+      return LOAD_BADFILE;
 
    if (!memmem(fdata, im->fsize, " XPM */", 7))
       goto quit;
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
 
    mm_init(fdata, im->fsize);
 
@@ -196,7 +198,7 @@ load2(ImlibImage * im, int load_data)
    count = 0;
    line = malloc(lsz);
    if (!line)
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
    len = 0;
 
    backslash = 0;
@@ -256,7 +258,7 @@ load2(ImlibImage * im, int load_data)
 
                   cmap = calloc(ncolors, sizeof(cmap_t));
                   if (!cmap)
-                     goto quit;
+                     QUIT_WITH_RC(LOAD_OOM);
 
                   pixels = w * h;
 
@@ -363,14 +365,11 @@ load2(ImlibImage * im, int load_data)
                        UPDATE_FLAG(im->flags, F_HAS_ALPHA, transp >= 0);
 
                        if (!load_data)
-                         {
-                            rc = LOAD_SUCCESS;
-                            goto quit;
-                         }
+                          QUIT_WITH_RC(LOAD_SUCCESS);
 
                        ptr = __imlib_AllocateData(im);
                        if (!ptr)
-                          goto quit;
+                          QUIT_WITH_RC(LOAD_OOM);
                     }
                }
              else
@@ -410,10 +409,8 @@ load2(ImlibImage * im, int load_data)
                   if (im->lc && i > last_row)
                     {
                        if (__imlib_LoadProgressRows(im, last_row, i - last_row))
-                         {
-                            rc = LOAD_BREAK;
-                            goto quit;
-                         }
+                          QUIT_WITH_RC(LOAD_BREAK);
+
                        last_row = i;
                     }
                }
@@ -451,7 +448,7 @@ load2(ImlibImage * im, int load_data)
              lsz += 256;
              nline = realloc(line, lsz);
              if (!nline)
-                goto quit;
+                QUIT_WITH_RC(LOAD_OOM);
              line = nline;
           }
 
@@ -477,8 +474,7 @@ load2(ImlibImage * im, int load_data)
 
    xpm_parse_done();
 
-   if (fdata != MAP_FAILED)
-      munmap(fdata, im->fsize);
+   munmap(fdata, im->fsize);
 
    return rc;
 }

@@ -21,6 +21,7 @@ __attribute__((constructor))
    if (!s)
       return;
 
+   p1 = p2 = 0;
    sscanf(s, "%d:%d", &p1, &p2);
 
    __imlib_debug = p1;

@@ -3,37 +3,47 @@
 #include <Imlib2.h>
 #include <fcntl.h>
 
-int                 debug = 0;
-
-#define D(...)  if (debug) printf(__VA_ARGS__)
-#define D2(...) if (debug > 1) printf(__VA_ARGS__)
+#include "config.h"
+#include "test.h"
 
 #define EXPECT_OK(x)  EXPECT_FALSE(x)
 #define EXPECT_ERR(x) EXPECT_TRUE(x)
 
-#define TOPDIR  	SRC_DIR
-#define IMGDIR		TOPDIR "/test/images"
 #define FILE_REF	"icon-64.png"
 
 static const char  *const pfxs[] = {
    "argb",
    "bmp",
-   "ff.bz2",                    // bz2
    "ff",
    "gif",
+#ifdef BUILD_HEIF_LOADER
+   "heif",
+#endif
    "ico",
    "jpg.mp3",                   // id3
-   "jpeg",
+   "jpg",
    "ilbm",                      // lbm
    "png",
-   "pbm",                       // pnm
    "ppm",                       // pnm
+   "pgm",                       // pnm
+   "pbm",                       // pnm
    "tga",
+#ifdef BUILD_SVG_LOADER
+   "svg",
+#endif
    "tiff",
    "webp",
    "xbm",
    "xpm",
+#ifdef BUILD_BZ2_LOADER
+   "ff.bz2",                    // bz2
+#endif
+#ifdef BUILD_ZLIB_LOADER
    "ff.gz",                     // zlib
+#endif
+#ifdef BUILD_LZMA_LOADER
+   "ff.xz",                     // lzma
+#endif
 };
 #define N_PFX (sizeof(pfxs) / sizeof(char*))
 
@@ -66,7 +76,7 @@ test_load(void)
    int                 fd;
    int                 err;
 
-   snprintf(filei, sizeof(filei), "%s/%s", IMGDIR, FILE_REF);
+   snprintf(filei, sizeof(filei), "%s/%s", IMG_SRC, FILE_REF);
    D("Load '%s'\n", filei);
    im = imlib_load_image(filei);
 
@@ -77,7 +87,7 @@ test_load(void)
    for (i = 0; i < N_PFX; i++)
      {
         // Load files of all types
-        snprintf(fileo, sizeof(fileo), "%s/%s.%s", IMGDIR, "icon-64", pfxs[i]);
+        snprintf(fileo, sizeof(fileo), "%s/%s.%s", IMG_SRC, "icon-64", pfxs[i]);
         D("Load '%s'\n", fileo);
         im = imlib_load_image_with_error_return(fileo, &lerr);
         EXPECT_TRUE(im);
@@ -91,11 +101,12 @@ test_load(void)
 
         if (strchr(pfxs[i], '.') == 0)
           {
-             snprintf(filei, sizeof(filei), "%s.%s", "icon-64", pfxs[i]);
+             snprintf(filei, sizeof(filei),
+                      "../%s/%s.%s", IMG_SRC, "icon-64", pfxs[i]);
              for (j = 0; j < N_PFX; j++)
                {
                   // Load certain types pretending they are something else
-                  snprintf(fileo, sizeof(fileo), "%s/%s.%s.%s", IMGDIR,
+                  snprintf(fileo, sizeof(fileo), "%s/%s.%s.%s", IMG_GEN,
                            "icon-64", pfxs[i], pfxs[j]);
                   unlink(fileo);
                   symlink(filei, fileo);
@@ -111,7 +122,7 @@ test_load(void)
           }
 
         // Empty files of all types
-        snprintf(fileo, sizeof(fileo), "%s/%s.%s", IMGDIR, "empty", pfxs[i]);
+        snprintf(fileo, sizeof(fileo), "%s/%s.%s", IMG_GEN, "empty", pfxs[i]);
         unlink(fileo);
         fp = fopen(fileo, "wb");
         fclose(fp);
@@ -121,7 +132,7 @@ test_load(void)
         EXPECT_TRUE(lerr == IMLIB_LOAD_ERROR_UNKNOWN);
 
         // Non-existing files of all types
-        snprintf(fileo, sizeof(fileo), "%s/%s.%s", IMGDIR, "nonex", pfxs[i]);
+        snprintf(fileo, sizeof(fileo), "%s/%s.%s", IMG_GEN, "nonex", pfxs[i]);
         unlink(fileo);
         symlink("non-existing", fileo);
         D("Load non-existing '%s'\n", fileo);
@@ -129,7 +140,7 @@ test_load(void)
         EXPECT_EQ(lerr, IMLIB_LOAD_ERROR_FILE_DOES_NOT_EXIST);
 
         // Load via fd
-        snprintf(fileo, sizeof(fileo), "%s/%s.%s", IMGDIR, "icon-64", pfxs[i]);
+        snprintf(fileo, sizeof(fileo), "%s/%s.%s", IMG_SRC, "icon-64", pfxs[i]);
         fd = open(fileo, O_RDONLY);
         D("Load fd %d '%s'\n", fd, fileo);
         snprintf(fileo, sizeof(fileo), ".%s", pfxs[i]);
@@ -152,27 +163,4 @@ TEST(LOAD, load_2)
    imlib_context_set_progress_function(progress);
    imlib_context_set_progress_granularity(10);
    test_load();
-}
-
-int
-main(int argc, char **argv)
-{
-   const char         *s;
-
-   ::testing::InitGoogleTest(&argc, argv);
-
-   for (argc--, argv++; argc > 0; argc--, argv++)
-     {
-        s = argv[0];
-        if (*s++ != '-')
-           break;
-        switch (*s)
-          {
-          case 'd':
-             debug++;
-             break;
-          }
-     }
-
-   return RUN_ALL_TESTS();
 }

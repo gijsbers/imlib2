@@ -2,8 +2,8 @@
 #define __IMLIB_API_H 1
 
 #define IMLIB2_VERSION_MAJOR 1
-#define IMLIB2_VERSION_MINOR 7
-#define IMLIB2_VERSION_MICRO 5
+#define IMLIB2_VERSION_MINOR 8
+#define IMLIB2_VERSION_MICRO 0
 
 #define IMLIB2_VERSION_(maj, min, mic) (10000 * (maj) + 100 * (min) + (mic))
 #define IMLIB2_VERSION IMLIB2_VERSION_(IMLIB2_VERSION_MAJOR, IMLIB2_VERSION_MINOR, IMLIB2_VERSION_MICRO)
@@ -29,6 +29,12 @@
 #endif
 #endif
 
+#ifdef __GNUC__
+#define IMLIB2_DEPRECATED __attribute__((deprecated))
+#else
+#define IMLIB2_DEPRECATED
+#endif
+
 #ifndef X_DISPLAY_MISSING
 #include <X11/Xlib.h>
 #endif
@@ -49,27 +55,25 @@ typedef void       *Imlib_Updates;
 typedef void       *Imlib_Font;
 typedef void       *Imlib_Color_Range;
 typedef void       *Imlib_Filter;
-typedef struct _imlib_border Imlib_Border;
-typedef struct _imlib_color Imlib_Color;
 typedef void       *ImlibPolygon;
 
 /* blending operations */
-enum _imlib_operation {
+typedef enum {
    IMLIB_OP_COPY,
    IMLIB_OP_ADD,
    IMLIB_OP_SUBTRACT,
    IMLIB_OP_RESHADE
-};
+} Imlib_Operation;
 
-enum _imlib_text_direction {
+typedef enum {
    IMLIB_TEXT_TO_RIGHT = 0,
    IMLIB_TEXT_TO_LEFT = 1,
    IMLIB_TEXT_TO_DOWN = 2,
    IMLIB_TEXT_TO_UP = 3,
    IMLIB_TEXT_TO_ANGLE = 4
-};
+} Imlib_Text_Direction;
 
-enum _imlib_load_error {
+typedef enum {
    IMLIB_LOAD_ERROR_NONE,
    IMLIB_LOAD_ERROR_FILE_DOES_NOT_EXIST,
    IMLIB_LOAD_ERROR_FILE_IS_DIRECTORY,
@@ -84,30 +88,18 @@ enum _imlib_load_error {
    IMLIB_LOAD_ERROR_OUT_OF_FILE_DESCRIPTORS,
    IMLIB_LOAD_ERROR_PERMISSION_DENIED_TO_WRITE,
    IMLIB_LOAD_ERROR_OUT_OF_DISK_SPACE,
-   IMLIB_LOAD_ERROR_UNKNOWN
-};
+   IMLIB_LOAD_ERROR_UNKNOWN,
+   IMLIB_LOAD_ERROR_IMAGE_READ,
+   IMLIB_LOAD_ERROR_IMAGE_FRAME
+} Imlib_Load_Error;
 
-/* Encodings known to Imlib2 (so far) */
-enum _imlib_TTF_encoding {
-   IMLIB_TTF_ENCODING_ISO_8859_1,
-   IMLIB_TTF_ENCODING_ISO_8859_2,
-   IMLIB_TTF_ENCODING_ISO_8859_3,
-   IMLIB_TTF_ENCODING_ISO_8859_4,
-   IMLIB_TTF_ENCODING_ISO_8859_5
-};
-
-typedef enum _imlib_operation Imlib_Operation;
-typedef enum _imlib_load_error Imlib_Load_Error;
-typedef enum _imlib_text_direction Imlib_Text_Direction;
-typedef enum _imlib_TTF_encoding Imlib_TTF_Encoding;
-
-struct _imlib_border {
+typedef struct {
    int                 left, right, top, bottom;
-};
+} Imlib_Border;
 
-struct _imlib_color {
+typedef struct {
    int                 alpha, red, green, blue;
-};
+} Imlib_Color;
 
 /* Progressive loading callbacks */
 typedef int         (*Imlib_Progress_Function)(Imlib_Image im, char percent,
@@ -122,6 +114,9 @@ typedef void       *(*Imlib_Image_Data_Memory_Function)(void *, size_t size);
 extern "C" {
 #endif
 /* *INDENT-ON* */
+
+/* Imlib2 version */
+EAPI int            imlib_version(void);
 
 /* context handling */
 EAPI Imlib_Context  imlib_context_new(void);
@@ -170,7 +165,6 @@ EAPI void           imlib_context_set_progress_granularity(char
                                                            progress_granularity);
 EAPI void           imlib_context_set_image(Imlib_Image image);
 EAPI void           imlib_context_set_cliprect(int x, int y, int w, int h);
-EAPI void           imlib_context_set_TTF_encoding(Imlib_TTF_Encoding encoding);
 
 /* context getting */
 #ifndef X_DISPLAY_MISSING
@@ -206,7 +200,6 @@ EAPI Imlib_Progress_Function imlib_context_get_progress_function(void);
 EAPI char           imlib_context_get_progress_granularity(void);
 EAPI Imlib_Image    imlib_context_get_image(void);
 EAPI void           imlib_context_get_cliprect(int *x, int *y, int *w, int *h);
-EAPI Imlib_TTF_Encoding imlib_context_get_TTF_encoding(void);
 
 EAPI int            imlib_get_cache_used(void);
 EAPI int            imlib_get_cache_size(void);
@@ -530,9 +523,6 @@ EAPI void           imlib_save_image_with_error_return(const char *filename,
                                                        Imlib_Load_Error *
                                                        error_return);
 
-/* FIXME: */
-/* need to add arbitrary rotation routines */
-
 /* rotation/skewing */
 EAPI Imlib_Image    imlib_create_rotated_image(double angle);
 
@@ -608,6 +598,50 @@ EAPI void           imlib_apply_filter(const char *script, ...);
 
 EAPI void           imlib_image_clear(void);
 EAPI void           imlib_image_clear_color(int r, int g, int b, int a);
+
+typedef struct {
+   int                 frame_count;     /* Number of frames in image      */
+   int                 frame_num;       /* Current frame (1..frame_count) */
+   int                 canvas_w, canvas_h;      /* Canvas size  */
+   int                 frame_x, frame_y;        /* Frame origin */
+   int                 frame_w, frame_h;        /* Frame size   */
+   int                 frame_flags;     /* Frame info flags */
+   int                 frame_delay;     /* Frame delay (ms) */
+} Imlib_Frame_Info;
+
+/* frame info flags */
+#define IMLIB_IMAGE_ANIMATED      (1 << 0)      /* Frames are an animated sequence    */
+#define IMLIB_FRAME_BLEND         (1 << 1)      /* Blend current onto previous frame  */
+#define IMLIB_FRAME_DISPOSE_CLEAR (1 << 2)      /* Clear before rendering next frame  */
+#define IMLIB_FRAME_DISPOSE_PREV  (1 << 3)      /* Revert before rendering next frame */
+
+EAPI Imlib_Image    imlib_load_image_frame(const char *file, int frame);
+EAPI void           imlib_image_get_frame_info(Imlib_Frame_Info * info);
+
+/*
+ * Deprecated functionality
+ */
+
+/* Encodings known to Imlib2 (so far) */
+typedef enum {
+   IMLIB_TTF_ENCODING_ISO_8859_1,
+   IMLIB_TTF_ENCODING_ISO_8859_2,
+   IMLIB_TTF_ENCODING_ISO_8859_3,
+   IMLIB_TTF_ENCODING_ISO_8859_4,
+   IMLIB_TTF_ENCODING_ISO_8859_5
+} Imlib_TTF_Encoding;
+
+/**
+ * Deprecated function. Hasn't done anything useful in ~20 years.
+ */
+IMLIB2_DEPRECATED
+EAPI void           imlib_context_set_TTF_encoding(Imlib_TTF_Encoding encoding);
+
+/**
+ * Deprecated function. Hasn't done anything useful in ~20 years.
+ */
+IMLIB2_DEPRECATED
+EAPI Imlib_TTF_Encoding imlib_context_get_TTF_encoding(void);
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus

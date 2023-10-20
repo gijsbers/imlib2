@@ -3,6 +3,9 @@
 #include <X11/Xutil.h>
 #include <Imlib2.h>
 
+#include "config.h"
+#include "test.h"
+
 typedef struct {
    Display            *dpy;
    Window              root;
@@ -16,10 +19,6 @@ typedef struct {
 } xd_t;
 
 static xd_t         xd;
-int                 debug = 0;
-
-#define D(...)  if (debug) printf(__VA_ARGS__)
-#define D2(...) if (debug > 1) printf(__VA_ARGS__)
 
 static Visual      *
 _x11_vis_argb(void)
@@ -157,7 +156,7 @@ _test_grab_1(int w, int h, int x0, int y0)
       im = imlib_create_scaled_image_from_drawable(None, x0, y0, w, h,
                                                    ws, hs, 0, 0);
    imlib_context_set_image(im);
-   snprintf(buf, sizeof(buf), "%s-%%d.png", xd.test);
+   snprintf(buf, sizeof(buf), "%s/%s-%%d.png", IMG_GEN, xd.test);
    _img_dump(im, buf);
 
    dptr = imlib_image_get_data_for_reading_only();
@@ -319,28 +318,4 @@ TEST(GRAB, grab_offs_32_su2)
 TEST(GRAB, grab_offs_32_sd2)
 {
    _test_grab("grab_offs_32_sd2", 32, -2, 1);
-}
-
-int
-main(int argc, char **argv)
-{
-   const char         *s;
-
-   ::testing::InitGoogleTest(&argc, argv);
-
-   for (argc--, argv++; argc > 0; argc--, argv++)
-     {
-        s = argv[0];
-        if (*s++ != '-')
-           break;
-        switch (*s)
-          {
-          case 'd':
-             while (*s++ == 'd')
-                debug++;
-             break;
-          }
-     }
-
-   return RUN_ALL_TESTS();
 }

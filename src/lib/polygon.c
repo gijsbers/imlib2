@@ -6,20 +6,20 @@
 #include "rgbadraw.h"
 #include "span.h"
 
-ImlibPoly
+ImlibPoly          *
 __imlib_polygon_new()
 {
-   ImlibPoly           poly;
+   ImlibPoly          *poly;
 
-   poly = malloc(sizeof(_ImlibPoly));
+   poly = malloc(sizeof(ImlibPoly));
    if (!poly)
       return NULL;
-   memset(poly, 0, sizeof(_ImlibPoly));
+   memset(poly, 0, sizeof(ImlibPoly));
    return poly;
 }
 
 void
-__imlib_polygon_add_point(ImlibPoly poly, int x, int y)
+__imlib_polygon_add_point(ImlibPoly * poly, int x, int y)
 {
    if (!poly->points)
      {
@@ -59,7 +59,7 @@ __imlib_polygon_add_point(ImlibPoly poly, int x, int y)
 }
 
 void
-__imlib_polygon_free(ImlibPoly poly)
+__imlib_polygon_free(ImlibPoly * poly)
 {
    free(poly->points);
    free(poly);
@@ -77,7 +77,7 @@ __imlib_polygon_free(ImlibPoly poly)
 __imlib_segments_intersect(p_x, p_y, p_x, p_y, s1_x, s1_y, s2_x, s2_y)
 
 void
-__imlib_polygon_get_bounds(ImlibPoly poly, int *px1, int *py1, int *px2,
+__imlib_polygon_get_bounds(ImlibPoly * poly, int *px1, int *py1, int *px2,
                            int *py2)
 {
    if (!poly || !poly->points || (poly->pointcount < 1))
@@ -139,7 +139,7 @@ __imlib_segments_intersect(int r1_x, int r1_y, int r2_x, int r2_y, int s1_x,
 }
 
 unsigned char
-__imlib_polygon_contains_point(ImlibPoly poly, int x, int y)
+__imlib_polygon_contains_point(ImlibPoly * poly, int x, int y)
 {
    int                 count = 0;
    int                 start = 0;
@@ -213,21 +213,18 @@ __imlib_polygon_contains_point(ImlibPoly poly, int x, int y)
 #define SHALLOW_EDGE	1
 #define HORZ_EDGE	2
 
-typedef struct _PolyEdge PolyEdge;
-typedef struct _IndexedValue IndexedValue;
-
-struct _PolyEdge {
+typedef struct {
    int                 type;
    int                 xx;
    int                 dxx, dyy;
    ImlibPoint         *v0, *v1;
    int                 index;
-};
+} PolyEdge;
 
-struct _IndexedValue {
+typedef struct {
    int                 val;
    int                 index;
-};
+} IndexedValue;
 
 static int
 poly_value_sorter(const void *a, const void *b)
@@ -473,7 +470,7 @@ do { \
 /* draws the poly-line defined by the sequence of vertices */
 
 static void
-__imlib_Polygon_DrawToData(ImlibPoly poly, char close, DATA32 color,
+__imlib_Polygon_DrawToData(ImlibPoly * poly, char close, DATA32 color,
                            DATA32 * dst, int dstw,
                            int clx, int cly, int clw, int clh,
                            ImlibOp op, char dst_alpha, char blend)
@@ -712,7 +709,7 @@ __imlib_Polygon_DrawToData(ImlibPoly poly, char close, DATA32 color,
 /* anti-aliased drawing */
 
 static void
-__imlib_Polygon_DrawToData_AA(ImlibPoly poly, char close, DATA32 color,
+__imlib_Polygon_DrawToData_AA(ImlibPoly * poly, char close, DATA32 color,
                               DATA32 * dst, int dstw,
                               int clx, int cly, int clw, int clh,
                               ImlibOp op, char dst_alpha, char blend)
@@ -1041,7 +1038,7 @@ __imlib_Polygon_DrawToData_AA(ImlibPoly poly, char close, DATA32 color,
 }
 
 void
-__imlib_Polygon_DrawToImage(ImlibPoly poly, char close, DATA32 color,
+__imlib_Polygon_DrawToImage(ImlibPoly * poly, char close, DATA32 color,
                             ImlibImage * im, int clx, int cly, int clw, int clh,
                             ImlibOp op, char blend, char anti_alias)
 {
@@ -1097,7 +1094,7 @@ __imlib_Polygon_DrawToImage(ImlibPoly poly, char close, DATA32 color,
 /* aliased filling */
 
 static void
-__imlib_Polygon_FillToData(ImlibPoly poly, DATA32 color,
+__imlib_Polygon_FillToData(ImlibPoly * poly, DATA32 color,
                            DATA32 * dst, int dstw,
                            int clx, int cly, int clw, int clh,
                            ImlibOp op, char dst_alpha, char blend)
@@ -1414,7 +1411,7 @@ __imlib_Polygon_FillToData(ImlibPoly poly, DATA32 color,
 /* anti-aliased filling */
 
 static void
-__imlib_Polygon_FillToData_AA(ImlibPoly poly, DATA32 color,
+__imlib_Polygon_FillToData_AA(ImlibPoly * poly, DATA32 color,
                               DATA32 * dst, int dstw,
                               int clx, int cly, int clw, int clh,
                               ImlibOp op, char dst_alpha, char blend)
@@ -1796,7 +1793,7 @@ __imlib_Polygon_FillToData_AA(ImlibPoly poly, DATA32 color,
 }
 
 void
-__imlib_Polygon_FillToImage(ImlibPoly poly, DATA32 color,
+__imlib_Polygon_FillToImage(ImlibPoly * poly, DATA32 color,
                             ImlibImage * im, int clx, int cly, int clw, int clh,
                             ImlibOp op, char blend, char anti_alias)
 {

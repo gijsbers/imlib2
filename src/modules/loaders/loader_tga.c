@@ -57,102 +57,6 @@ typedef struct {
    char                null;
 } tga_footer;
 
-/*
- * Write an uncompressed RGBA 24- or 32-bit targa to disk
- * (If anyone wants to write a RLE saver, feel free =)
- */
-
-char
-save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
-{
-   int                 rc;
-   FILE               *f;
-   DATA32             *dataptr;
-   unsigned char      *buf, *bufptr;
-   int                 y;
-   tga_header          header;
-
-   f = fopen(im->real_file, "wb");
-   if (!f)
-      return LOAD_FAIL;
-
-   rc = LOAD_FAIL;
-
-   /* assemble the TGA header information */
-
-   /* most entries are zero... */
-   memset(&header, 0x0, sizeof(header));
-
-   /* uncompressed RGB Targa identifier */
-   header.imageType = TGA_TYPE_COLOR;
-
-   /* image width, low byte  */
-   header.widthLo = im->w & 0xFF;
-   /* image width, high byte */
-   header.widthHi = im->w >> 8;
-
-   /* image height, low byte */
-   header.heightLo = im->h & 0xFF;
-   /* image height, high byte */
-   header.heightHi = im->h >> 8;
-
-   /* total number of bits per pixel */
-   header.bpp = (im->flags & F_HAS_ALPHA) ? 32 : 24;
-   /* number of extra (alpha) bits per pixel */
-   header.descriptor = (im->flags & F_HAS_ALPHA) ? 8 : 0;
-
-   /* top-to-bottom storage */
-   header.descriptor |= TGA_DESC_VERTICAL;
-
-   /* allocate a buffer to receive the BGRA-swapped pixel values */
-   buf = malloc(im->w * im->h * ((im->flags & F_HAS_ALPHA) ? 4 : 3));
-   if (!buf)
-      goto quit;
-
-   /* now we have to read from im->data into buf, swapping RGBA to BGRA */
-   dataptr = im->data;
-   bufptr = buf;
-
-   /* for each row */
-   for (y = 0; y < im->h; y++)
-     {
-        int                 x;
-
-        /* for each pixel in the row */
-        for (x = 0; x < im->w; x++)
-          {
-             DATA32              pixel = *dataptr++;
-
-             *bufptr++ = PIXEL_B(pixel);
-             *bufptr++ = PIXEL_G(pixel);
-             *bufptr++ = PIXEL_R(pixel);
-             if (im->flags & F_HAS_ALPHA)
-                *bufptr++ = PIXEL_A(pixel);
-          }                     /* end for (each pixel in row) */
-
-        /* report progress every row */
-        if (im->lc && __imlib_LoadProgressRows(im, y, 1))
-          {
-             rc = LOAD_BREAK;
-             goto quit;
-          }
-     }
-
-   /* write the header */
-   fwrite(&header, sizeof(header), 1, f);
-
-   /* write the image data */
-   fwrite(buf, 1, im->w * im->h * ((im->flags & F_HAS_ALPHA) ? 4 : 3), f);
-
-   rc = LOAD_SUCCESS;
-
- quit:
-   free(buf);
-   fclose(f);
-
-   return rc;
-}
-
 /* Load up a TGA file
  *
  * As written this function only recognizes the following types of Targas:
@@ -181,15 +85,14 @@ load2(ImlibImage * im, int load_data)
    unsigned int        pix16;
 
    rc = LOAD_FAIL;
-   fdata = MAP_FAILED;
 
    if (im->fsize < (int)(sizeof(tga_header)) ||
        (uintmax_t) im->fsize > SIZE_MAX)
-      goto quit;
+      return rc;
 
-   fdata = mmap(0, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
-      goto quit;
+      return LOAD_BADFILE;
 
    fptr = fdata;
    header = fdata;
@@ -274,6 +177,8 @@ load2(ImlibImage * im, int load_data)
         break;
      }
 
+   rc = LOAD_BADIMAGE;          /* Format accepted */
+
    /* endian-safe loading of 16-bit sizes */
    im->w = (header->widthHi << 8) | header->widthLo;
    im->h = (header->heightHi << 8) | header->heightLo;
@@ -287,10 +192,7 @@ load2(ImlibImage * im, int load_data)
    UPDATE_FLAG(im->flags, F_HAS_ALPHA, hasa);
 
    if (!load_data)
-     {
-        rc = LOAD_SUCCESS;
-        goto quit;
-     }
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
    /* find out how much data must be read from the file */
    /* (this is NOT simply width*height*4, due to compression) */
@@ -325,7 +227,7 @@ load2(ImlibImage * im, int load_data)
 
    /* allocate the destination buffer */
    if (!__imlib_AllocateData(im))
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
    /* dataptr is the next 32-bit pixel to be filled in */
    dataptr = im->data;
@@ -565,23 +467,13 @@ load2(ImlibImage * im, int load_data)
  quit:
    if (rc <= 0)
       __imlib_FreeData(im);
-   if (fdata != MAP_FAILED)
-      munmap(fdata, im->fsize);
+   munmap(fdata, im->fsize);
 
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "tga" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
-
-/**********************/
-
 /* flip a DATA32 image block in place */
-void
+static void
 tgaflip(DATA32 * in, int w, int h, int fliph, int flipv)
 {
    DATA32              tmp;
@@ -603,4 +495,104 @@ tgaflip(DATA32 * in, int w, int h, int fliph, int flipv)
              in[y2 * h + x2] = tmp;
           }
      }
+}
+
+/*
+ * Write an uncompressed RGBA 24- or 32-bit targa to disk
+ * (If anyone wants to write a RLE saver, feel free =)
+ */
+
+char
+save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
+{
+   int                 rc;
+   FILE               *f;
+   DATA32             *dataptr;
+   unsigned char      *buf, *bufptr;
+   int                 y;
+   tga_header          header;
+
+   f = fopen(im->real_file, "wb");
+   if (!f)
+      return LOAD_FAIL;
+
+   rc = LOAD_FAIL;
+
+   /* assemble the TGA header information */
+
+   /* most entries are zero... */
+   memset(&header, 0x0, sizeof(header));
+
+   /* uncompressed RGB Targa identifier */
+   header.imageType = TGA_TYPE_COLOR;
+
+   /* image width, low byte  */
+   header.widthLo = im->w & 0xFF;
+   /* image width, high byte */
+   header.widthHi = im->w >> 8;
+
+   /* image height, low byte */
+   header.heightLo = im->h & 0xFF;
+   /* image height, high byte */
+   header.heightHi = im->h >> 8;
+
+   /* total number of bits per pixel */
+   header.bpp = (im->flags & F_HAS_ALPHA) ? 32 : 24;
+   /* number of extra (alpha) bits per pixel */
+   header.descriptor = (im->flags & F_HAS_ALPHA) ? 8 : 0;
+
+   /* top-to-bottom storage */
+   header.descriptor |= TGA_DESC_VERTICAL;
+
+   /* allocate a buffer to receive the BGRA-swapped pixel values */
+   buf = malloc(im->w * im->h * ((im->flags & F_HAS_ALPHA) ? 4 : 3));
+   if (!buf)
+      goto quit;
+
+   /* now we have to read from im->data into buf, swapping RGBA to BGRA */
+   dataptr = im->data;
+   bufptr = buf;
+
+   /* for each row */
+   for (y = 0; y < im->h; y++)
+     {
+        int                 x;
+
+        /* for each pixel in the row */
+        for (x = 0; x < im->w; x++)
+          {
+             DATA32              pixel = *dataptr++;
+
+             *bufptr++ = PIXEL_B(pixel);
+             *bufptr++ = PIXEL_G(pixel);
+             *bufptr++ = PIXEL_R(pixel);
+             if (im->flags & F_HAS_ALPHA)
+                *bufptr++ = PIXEL_A(pixel);
+          }                     /* end for (each pixel in row) */
+
+        /* report progress every row */
+        if (im->lc && __imlib_LoadProgressRows(im, y, 1))
+           QUIT_WITH_RC(LOAD_BREAK);
+     }
+
+   /* write the header */
+   fwrite(&header, sizeof(header), 1, f);
+
+   /* write the image data */
+   fwrite(buf, 1, im->w * im->h * ((im->flags & F_HAS_ALPHA) ? 4 : 3), f);
+
+   rc = LOAD_SUCCESS;
+
+ quit:
+   free(buf);
+   fclose(f);
+
+   return rc;
+}
+
+void
+formats(ImlibLoader * l)
+{
+   static const char  *const list_formats[] = { "tga" };
+   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }

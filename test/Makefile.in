@@ -104,37 +104,40 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__EXEEXT_1 = test_file$(EXEEXT) test_load$(EXEEXT) \
-	test_load_2$(EXEEXT) test_save$(EXEEXT) test_grab$(EXEEXT) \
-	test_scale$(EXEEXT) test_rotate$(EXEEXT)
+am__EXEEXT_1 = test_file$(EXEEXT) test_context$(EXEEXT) \
+	test_load$(EXEEXT) test_load_2$(EXEEXT) test_save$(EXEEXT) \
+	test_grab$(EXEEXT) test_scale$(EXEEXT) test_rotate$(EXEEXT)
 PROGRAMS = $(noinst_PROGRAMS)
-am_test_file_OBJECTS = test_file.$(OBJEXT)
-nodist_test_file_OBJECTS = file.$(OBJEXT)
-test_file_OBJECTS = $(am_test_file_OBJECTS) \
-	$(nodist_test_file_OBJECTS)
+am_test_context_OBJECTS = test.$(OBJEXT) test_context.$(OBJEXT)
+test_context_OBJECTS = $(am_test_context_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-test_file_DEPENDENCIES = $(am__DEPENDENCIES_2)
+test_context_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_test_grab_OBJECTS = test_grab.$(OBJEXT)
+am_test_file_OBJECTS = test.$(OBJEXT) test_file.$(OBJEXT)
+nodist_test_file_OBJECTS = file.$(OBJEXT)
+test_file_OBJECTS = $(am_test_file_OBJECTS) \
+	$(nodist_test_file_OBJECTS)
+test_file_DEPENDENCIES = $(am__DEPENDENCIES_2)
+am_test_grab_OBJECTS = test.$(OBJEXT) test_grab.$(OBJEXT)
 test_grab_OBJECTS = $(am_test_grab_OBJECTS)
 test_grab_DEPENDENCIES = $(am__DEPENDENCIES_2)
-am_test_load_OBJECTS = test_load.$(OBJEXT)
+am_test_load_OBJECTS = test.$(OBJEXT) test_load.$(OBJEXT)
 test_load_OBJECTS = $(am_test_load_OBJECTS)
 test_load_DEPENDENCIES = $(am__DEPENDENCIES_2)
-am_test_load_2_OBJECTS = test_load_2.$(OBJEXT)
+am_test_load_2_OBJECTS = test.$(OBJEXT) test_load_2.$(OBJEXT)
 test_load_2_OBJECTS = $(am_test_load_2_OBJECTS)
 test_load_2_DEPENDENCIES = $(am__DEPENDENCIES_2)
-am_test_rotate_OBJECTS = test_rotate.$(OBJEXT)
+am_test_rotate_OBJECTS = test.$(OBJEXT) test_rotate.$(OBJEXT)
 test_rotate_OBJECTS = $(am_test_rotate_OBJECTS)
 test_rotate_DEPENDENCIES = $(am__DEPENDENCIES_2)
-am_test_save_OBJECTS = test_save.$(OBJEXT)
+am_test_save_OBJECTS = test.$(OBJEXT) test_save.$(OBJEXT)
 test_save_OBJECTS = $(am_test_save_OBJECTS)
 test_save_DEPENDENCIES = $(am__DEPENDENCIES_2)
-am_test_scale_OBJECTS = test_scale.$(OBJEXT)
+am_test_scale_OBJECTS = test.$(OBJEXT) test_scale.$(OBJEXT)
 test_scale_OBJECTS = $(am_test_scale_OBJECTS)
 test_scale_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -152,7 +155,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/file.Po ./$(DEPDIR)/test_file.Po \
+am__depfiles_remade = ./$(DEPDIR)/file.Po ./$(DEPDIR)/test.Po \
+	./$(DEPDIR)/test_context.Po ./$(DEPDIR)/test_file.Po \
 	./$(DEPDIR)/test_grab.Po ./$(DEPDIR)/test_load.Po \
 	./$(DEPDIR)/test_load_2.Po ./$(DEPDIR)/test_rotate.Po \
 	./$(DEPDIR)/test_save.Po ./$(DEPDIR)/test_scale.Po
@@ -193,14 +197,15 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(test_file_SOURCES) $(nodist_test_file_SOURCES) \
-	$(test_grab_SOURCES) $(test_load_SOURCES) \
-	$(test_load_2_SOURCES) $(test_rotate_SOURCES) \
-	$(test_save_SOURCES) $(test_scale_SOURCES)
-DIST_SOURCES = $(test_file_SOURCES) $(test_grab_SOURCES) \
+SOURCES = $(test_context_SOURCES) $(test_file_SOURCES) \
+	$(nodist_test_file_SOURCES) $(test_grab_SOURCES) \
 	$(test_load_SOURCES) $(test_load_2_SOURCES) \
 	$(test_rotate_SOURCES) $(test_save_SOURCES) \
 	$(test_scale_SOURCES)
+DIST_SOURCES = $(test_context_SOURCES) $(test_file_SOURCES) \
+	$(test_grab_SOURCES) $(test_load_SOURCES) \
+	$(test_load_2_SOURCES) $(test_rotate_SOURCES) \
+	$(test_save_SOURCES) $(test_scale_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -271,6 +276,8 @@ FREETYPE_LIBS = @FREETYPE_LIBS@
 GIF_LIBS = @GIF_LIBS@
 GREP = @GREP@
 HAVE_VISIBILITY = @HAVE_VISIBILITY@
+HEIF_CFLAGS = @HEIF_CFLAGS@
+HEIF_LIBS = @HEIF_LIBS@
 ID3_CFLAGS = @ID3_CFLAGS@
 ID3_LIBS = @ID3_LIBS@
 INSTALL = @INSTALL@
@@ -291,6 +298,8 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
+LZMA_CFLAGS = @LZMA_CFLAGS@
+LZMA_LIBS = @LZMA_LIBS@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
@@ -318,6 +327,8 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+SVG_CFLAGS = @SVG_CFLAGS@
+SVG_LIBS = @SVG_LIBS@
 TIFF_CFLAGS = @TIFF_CFLAGS@
 TIFF_LIBS = @TIFF_LIBS@
 VERSION = @VERSION@
@@ -392,27 +403,29 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 CLEANFILES = file.c img_save-*.*
 GTEST_LIBS = -lgtest -lstdc++
-GTESTS = test_file test_load test_load_2 test_save test_grab \
-	test_scale test_rotate
+GTESTS = test_file test_context test_load test_load_2 test_save \
+	test_grab test_scale test_rotate
 AM_CFLAGS = -Wall -Wextra -Werror -Wno-unused-parameter $(CFLAGS_ASAN)
 AM_CXXFLAGS = $(AM_CFLAGS)
 AM_CPPFLAGS = -I $(top_builddir) -I $(top_srcdir)/src/lib -I \
-	$(top_builddir)/src/lib -D SRC_DIR='"$(top_srcdir)"' -D \
-	BUILD_TEST=1
-test_file_SOURCES = test_file.cpp
+	$(top_builddir)/src/lib -D SRC_DIR='"$(srcdir)"' -D \
+	BLD_DIR='"$(builddir)"' -D BUILD_TEST=1
+test_file_SOURCES = test.cpp test_file.cpp
 nodist_test_file_SOURCES = file.c
 test_file_LDADD = $(LIBS)
-test_load_SOURCES = test_load.cpp
+test_context_SOURCES = test.cpp test_context.cpp
+test_context_LDADD = $(LIBS)
+test_load_SOURCES = test.cpp test_load.cpp
 test_load_LDADD = $(LIBS)
-test_load_2_SOURCES = test_load_2.cpp
+test_load_2_SOURCES = test.cpp test_load_2.cpp
 test_load_2_LDADD = $(LIBS) -lz
-test_save_SOURCES = test_save.cpp
+test_save_SOURCES = test.cpp test_save.cpp
 test_save_LDADD = $(LIBS)
-test_grab_SOURCES = test_grab.cpp
+test_grab_SOURCES = test.cpp test_grab.cpp
 test_grab_LDADD = $(LIBS)
-test_scale_SOURCES = test_scale.cpp
+test_scale_SOURCES = test.cpp test_scale.cpp
 test_scale_LDADD = $(LIBS) -lz
-test_rotate_SOURCES = test_rotate.cpp
+test_rotate_SOURCES = test.cpp test_rotate.cpp
 test_rotate_LDADD = $(LIBS) -lz
 TESTS_RUN = $(addprefix run-, $(GTESTS))
 TEST_ENV = IMLIB2_LOADER_PATH=$(top_builddir)/src/modules/loaders/.libs
@@ -461,6 +474,10 @@ clean-noinstPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
+test_context$(EXEEXT): $(test_context_OBJECTS) $(test_context_DEPENDENCIES) $(EXTRA_test_context_DEPENDENCIES) 
+	@rm -f test_context$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(test_context_OBJECTS) $(test_context_LDADD) $(LIBS)
+
 test_file$(EXEEXT): $(test_file_OBJECTS) $(test_file_DEPENDENCIES) $(EXTRA_test_file_DEPENDENCIES) 
 	@rm -f test_file$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(test_file_OBJECTS) $(test_file_LDADD) $(LIBS)
@@ -496,6 +513,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_context.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_file.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_grab.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_load.Po@am__quote@ # am--include-marker
@@ -685,6 +704,8 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/file.Po
+	-rm -f ./$(DEPDIR)/test.Po
+	-rm -f ./$(DEPDIR)/test_context.Po
 	-rm -f ./$(DEPDIR)/test_file.Po
 	-rm -f ./$(DEPDIR)/test_grab.Po
 	-rm -f ./$(DEPDIR)/test_load.Po
@@ -738,6 +759,8 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/file.Po
+	-rm -f ./$(DEPDIR)/test.Po
+	-rm -f ./$(DEPDIR)/test_context.Po
 	-rm -f ./$(DEPDIR)/test_file.Po
 	-rm -f ./$(DEPDIR)/test_grab.Po
 	-rm -f ./$(DEPDIR)/test_load.Po

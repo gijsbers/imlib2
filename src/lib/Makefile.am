@@ -11,7 +11,7 @@ AM_CCASFLAGS = -I$(top_builddir)
 lib_LTLIBRARIES      = libImlib2.la
 include_HEADERS      = Imlib2.h
 libImlib2_la_SOURCES = \
-api.c \
+api.c 		api_obsolete.c	\
 asm.h \
 asm_c.c		asm_c.h		\
 blend.c		blend.h		\
@@ -34,6 +34,7 @@ image_tags.c \
 line.c \
 loaders.c	loaders.h	\
 modules.c \
+object.c	object.h	\
 polygon.c \
 rectangle.c \
 rgbadraw.c	rgbadraw.h	\

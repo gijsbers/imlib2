@@ -3,17 +3,15 @@
 
 #include "script.h"
 
-struct imlib_filter_info {
+typedef struct {
    char               *name;
    char               *author;
    char               *description;
    char              **filters;
    int                 num_filters;
-};
+} ImlibFilterInfo;
 
-typedef struct _imlib_external_filter ImlibExternalFilter;
-
-struct _imlib_external_filter {
+typedef struct _ImlibExternalFilter {
    char               *name;
    char               *author;
    char               *description;
@@ -21,12 +19,12 @@ struct _imlib_external_filter {
    char               *filename;
    void               *handle;
    char              **filters;
-   void                (*init_filter)(struct imlib_filter_info * info);
+   void                (*init_filter)(ImlibFilterInfo * info);
    void                (*deinit_filter)(void);
    void               *(*exec_filter)(char *filter, void *im,
-                                      pIFunctionParam params);
-   ImlibExternalFilter *next;
-};
+                                      IFunctionParam * params);
+   struct _ImlibExternalFilter *next;
+} ImlibExternalFilter;
 
 void                __imlib_dynamic_filters_init(void);
 void                __imlib_dynamic_filters_deinit(void);

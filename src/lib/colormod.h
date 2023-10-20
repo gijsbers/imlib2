@@ -4,15 +4,13 @@
 #include "common.h"
 #include "image.h"
 
-typedef struct _imlib_color_modifier ImlibColorModifier;
-
-struct _imlib_color_modifier {
+typedef struct {
    DATA8               red_mapping[256];
    DATA8               green_mapping[256];
    DATA8               blue_mapping[256];
    DATA8               alpha_mapping[256];
    DATABIG             modification_count;
-};
+} ImlibColorModifier;
 
 #define CMOD_APPLY_RGB(cm, r, g, b) \
 (r) = (cm)->red_mapping[(int)(r)]; \

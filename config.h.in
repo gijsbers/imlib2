@@ -3,31 +3,40 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* Build BZ2 loader */
+/* Build NMUP loader */
 #undef BUILD_BZ2_LOADER
 
-/* Build GIF loader */
+/* Build NMUP loader */
 #undef BUILD_GIF_LOADER
 
-/* Build ID3 loader */
+/* Build NMUP loader */
+#undef BUILD_HEIF_LOADER
+
+/* Build NMUP loader */
 #undef BUILD_ID3_LOADER
 
-/* Build JPEG loader */
+/* Build NMUP loader */
 #undef BUILD_JPEG_LOADER
 
-/* Build PNG loader */
+/* Build NMUP loader */
+#undef BUILD_LZMA_LOADER
+
+/* Build NMUP loader */
 #undef BUILD_PNG_LOADER
 
-/* Build TIFF loader */
+/* Build NMUP loader */
+#undef BUILD_SVG_LOADER
+
+/* Build NMUP loader */
 #undef BUILD_TIFF_LOADER
 
-/* Build WEBP loader */
+/* Build NMUP loader */
 #undef BUILD_WEBP_LOADER
 
 /* enabling X11 support */
 #undef BUILD_X11
 
-/* Build ZLIB loader */
+/* Build NMUP loader */
 #undef BUILD_ZLIB_LOADER
 
 /* enabling AMD64 Assembly */

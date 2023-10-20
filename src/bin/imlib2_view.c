@@ -5,23 +5,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <unistd.h>
 
-#include "Imlib2.h"
+#include <Imlib2.h>
 #include "props.h"
 
+#define MIN(a, b) ((a < b) ? a : b)
+#define MAX(a, b) ((a > b) ? a : b)
+
 Display            *disp;
+
+typedef struct {
+   int                 x, y;    /* Origin */
+   int                 w, h;    /* Size   */
+} rect_t;
 
 static int          debug = 0;
 static int          verbose = 0;
 static Window       win;
-static Pixmap       pm = 0;
+static Pixmap       bg_pm = 0;
 static int          image_width = 0, image_height = 0;
 static int          window_width = 0, window_height = 0;
 static Imlib_Image  bg_im = NULL;
+static Imlib_Image  bg_im_clean = NULL;
+static Imlib_Image  fg_im = NULL;       /* The animated image */
 
-static char         opt_cache = 0;
-static char         opt_scale = 0;
+static bool         opt_cache = false;
+static bool         opt_progr = true;   /* Render through progress callback */
+static bool         opt_scale = false;
 static double       opt_scale_x = 1.;
 static double       opt_scale_y = 1.;
 static double       opt_sgrab_x = 1.;
@@ -30,8 +42,15 @@ static char         opt_progress_granularity = 10;
 static char         opt_progress_print = 0;
 static int          opt_progress_delay = 0;
 
-#define Dprintf if (debug) printf
-#define Vprintf if (verbose) printf
+static Imlib_Frame_Info finfo;
+static bool         multiframe = false; /* Image has multiple frames     */
+static bool         fixedframe = false; /* We have selected single frame */
+static bool         animated = false;   /* Image has animation sequence  */
+static bool         animate = false;    /* Animation is active           */
+
+#define Dprintf(fmt...)  if (debug)        printf(fmt)
+#define Vprintf(fmt...)  if (verbose)      printf(fmt)
+#define V2printf(fmt...) if (verbose >= 2) printf(fmt)
 
 #define MAX_DIM	32767
 
@@ -42,8 +61,9 @@ static int          opt_progress_delay = 0;
    "Usage:\n" \
    "  imlib2_view [OPTIONS] {FILE | XID}...\n" \
    "OPTIONS:\n" \
-   "  -c         : Enable image caching\n" \
+   "  -c         : Enable image caching (implies -e)\n" \
    "  -d         : Enable debug\n" \
+   "  -e         : Do rendering explicitly (not via progress callback)\n" \
    "  -g N       : Set progress granularity to N%% (default 10(%%))\n" \
    "  -l N       : Introduce N ms delay in progress callback (default 0)\n" \
    "  -p         : Print info in progress callback (default no)\n" \
@@ -57,26 +77,229 @@ usage(void)
    printf(HELP);
 }
 
+static void
+bg_im_init(int w, int h)
+{
+   int                 x, y, onoff;
+
+   V2printf("Image  WxH=%dx%d\n", w, h);
+
+   if (bg_im)
+     {
+        imlib_context_set_image(bg_im);
+        imlib_free_image_and_decache();
+     }
+
+   bg_im = imlib_create_image(w, h);
+
+   imlib_context_set_image(bg_im);
+   for (y = 0; y < h; y += 8)
+     {
+        onoff = (y / 8) & 0x1;
+        for (x = 0; x < w; x += 8)
+          {
+             if (onoff)
+                imlib_context_set_color(144, 144, 144, 255);
+             else
+                imlib_context_set_color(100, 100, 100, 255);
+             imlib_image_fill_rectangle(x, y, 8, 8);
+             onoff++;
+             if (onoff == 2)
+                onoff = 0;
+          }
+     }
+}
+
+static void
+bg_pm_init(Window xwin, int w, int h)
+{
+   if (bg_pm)
+      XFreePixmap(disp, bg_pm);
+
+   bg_pm = XCreatePixmap(disp, xwin, w, h,
+                         DefaultDepth(disp, DefaultScreen(disp)));
+}
+
+static void
+bg_pm_redraw(int zx, int zy, double zoom, int aa)
+{
+   int                 sx, sy, sw, sh, dx, dy, dw, dh;
+
+   if (zoom == 0.)
+     {
+        sx = sy = dx = dy = 0;
+        sw = image_width;
+        sh = image_height;
+        dw = window_width;
+        dh = window_height;
+     }
+   else if (zoom > 1.0)
+     {
+        dx = 0;
+        dy = 0;
+        dw = window_width;
+        dh = window_height;
+
+        sx = zx - (zx / zoom);
+        sy = zy - (zy / zoom);
+        sw = image_width / zoom;
+        sh = image_height / zoom;
+     }
+   else
+     {
+        dx = zx - (zx * zoom);
+        dy = zy - (zy * zoom);
+        dw = window_width * zoom;
+        dh = window_height * zoom;
+
+        sx = 0;
+        sy = 0;
+        sw = image_width;
+        sh = image_height;
+     }
+
+   imlib_context_set_anti_alias(aa);
+   imlib_context_set_dither(aa);
+   imlib_context_set_blend(0);
+   imlib_context_set_drawable(bg_pm);
+   imlib_context_set_image(bg_im);
+   imlib_render_image_part_on_drawable_at_size(sx, sy, sw, sh, dx, dy, dw, dh);
+   XClearWindow(disp, win);
+}
+
+static void
+anim_init(int w, int h)
+{
+   if (fg_im)
+     {
+        imlib_context_set_image(fg_im);
+        imlib_free_image_and_decache();
+        fg_im = NULL;
+     }
+
+   if (bg_im_clean)
+     {
+        imlib_context_set_image(bg_im_clean);
+        imlib_free_image_and_decache();
+        bg_im_clean = NULL;
+     }
+
+   if (animated)
+     {
+        /* Create canvas for rendering of animated image */
+        fg_im = imlib_create_image(w, h);
+        imlib_context_set_image(fg_im);
+        imlib_image_set_has_alpha(1);
+        imlib_context_set_color(0, 0, 0, 0);
+        imlib_image_fill_rectangle(0, 0, w, h);
+
+        /* Keep a clean copy of background image around for clearing parts */
+        imlib_context_set_image(bg_im);
+        bg_im_clean = imlib_clone_image();
+     }
+}
+
+static void
+anim_update(Imlib_Image im, const rect_t * up_in, rect_t * up_out, int flags)
+{
+   static const rect_t r_zero = { };
+   static rect_t       r_prev = { };
+   static Imlib_Image  im_prev = NULL;
+   Imlib_Image         im_save = NULL;
+
+   if (!im)
+     {
+        /* Cleanup */
+        if (im_prev)
+          {
+             imlib_context_set_image(im_prev);
+             imlib_free_image_and_decache();
+             im_prev = NULL;
+          }
+        return;
+     }
+
+   imlib_context_set_image(fg_im);
+
+   if (flags & IMLIB_FRAME_DISPOSE_PREV)
+     {
+        Dprintf("Save  %d,%d %dx%d\n", up_in->x, up_in->y, up_in->w, up_in->h);
+        im_save =
+           imlib_create_cropped_image(up_in->x, up_in->y, up_in->w, up_in->h);
+     }
+
+   if (r_prev.w > 0)
+     {
+        /* "dispose" of (clear) previous area before rendering new */
+        if (im_prev)
+          {
+             Dprintf("Prev  %d,%d %dx%d\n",
+                     r_prev.x, r_prev.y, r_prev.w, r_prev.h);
+             imlib_context_set_blend(0);
+             imlib_blend_image_onto_image(im_prev, 1,
+                                          0, 0, r_prev.w, r_prev.h,
+                                          r_prev.x, r_prev.y,
+                                          r_prev.w, r_prev.h);
+             imlib_context_set_image(im_prev);
+             imlib_free_image_and_decache();
+             imlib_context_set_image(fg_im);
+             im_prev = NULL;
+          }
+        else
+          {
+             Dprintf("Clear %d,%d %dx%d\n",
+                     r_prev.x, r_prev.y, r_prev.w, r_prev.h);
+             imlib_context_set_color(0, 0, 0, 0);
+             imlib_image_fill_rectangle(r_prev.x, r_prev.y, r_prev.w, r_prev.h);
+          }
+
+        /* Damaged area is (cleared + new frame) */
+        up_out->x = MIN(r_prev.x, up_in->x);
+        up_out->y = MIN(r_prev.y, up_in->y);
+        up_out->w = MAX(r_prev.x + r_prev.w, up_in->x + up_in->w) - up_out->x;
+        up_out->h = MAX(r_prev.y + r_prev.h, up_in->y + up_in->h) - up_out->y;
+     }
+   else
+     {
+        *up_out = *up_in;
+     }
+   im_prev = im_save;
+
+   if (flags & (IMLIB_FRAME_DISPOSE_CLEAR | IMLIB_FRAME_DISPOSE_PREV))
+      r_prev = *up_in;          /* Clear/revert next time around */
+   else
+      r_prev = r_zero;          /* No clearing before next frame */
+
+   /* Render new frame on canvas */
+   Dprintf("Render %d,%d %dx%d\n", up_in->x, up_in->y, up_in->w, up_in->h);
+   if (flags & IMLIB_FRAME_BLEND)
+      imlib_context_set_blend(1);
+   else
+      imlib_context_set_blend(0);
+   imlib_blend_image_onto_image(im, 1, 0, 0, up_in->w, up_in->h,
+                                up_in->x, up_in->y, up_in->w, up_in->h);
+}
+
 static int
 progress(Imlib_Image im, char percent, int update_x, int update_y,
          int update_w, int update_h)
 {
    static double       scale_x = 0., scale_y = 0.;
    int                 up_wx, up_wy, up_ww, up_wh;
+   rect_t              r_up;
 
    if (opt_progress_print)
       printf("%s: %3d%% %4d,%4d %4dx%4d\n",
              __func__, percent, update_x, update_y, update_w, update_h);
 
+   imlib_context_set_image(im);
+   imlib_image_get_frame_info(&finfo);
+   multiframe = finfo.frame_count > 1;
+   animated = finfo.frame_flags & IMLIB_IMAGE_ANIMATED;
+
    /* first time it's called */
-   imlib_context_set_drawable(pm);
-   imlib_context_set_anti_alias(0);
-   imlib_context_set_dither(0);
-   imlib_context_set_blend(0);
    if (image_width == 0)
      {
-        int                 x, y, onoff;
-
         scale_x = opt_scale_x;
         scale_y = opt_scale_y;
 
@@ -86,10 +309,8 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
         window_height -= 32;
         Dprintf("Screen WxH=%dx%d\n", window_width, window_height);
 
-        imlib_context_set_image(im);
-        image_width = imlib_image_get_width();
-        image_height = imlib_image_get_height();
-        Dprintf("Image  WxH=%dx%d\n", image_width, image_height);
+        image_width = fixedframe ? finfo.frame_w : finfo.canvas_w;
+        image_height = fixedframe ? finfo.frame_h : finfo.canvas_h;
 
         if (!opt_scale &&
             (image_width > window_width || image_height > window_height))
@@ -118,59 +339,87 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
           }
         Dprintf("Window WxH=%dx%d\n", window_width, window_height);
 
-        if (pm)
-           XFreePixmap(disp, pm);
-        pm = XCreatePixmap(disp, win, window_width, window_height,
-                           DefaultDepth(disp, DefaultScreen(disp)));
-        imlib_context_set_drawable(pm);
-        if (bg_im)
-          {
-             imlib_context_set_image(bg_im);
-             imlib_free_image_and_decache();
-          }
-        bg_im = imlib_create_image(image_width, image_height);
+        /* Initialize checkered background image */
+        bg_im_init(image_width, image_height);
+        /* Initialize window background pixmap */
+        bg_pm_init(win, window_width, window_height);
+
+        /* Paint entire background pixmap with initial pattern */
+        imlib_context_set_drawable(bg_pm);
         imlib_context_set_image(bg_im);
-        for (y = 0; y < image_height; y += 8)
-          {
-             onoff = (y / 8) & 0x1;
-             for (x = 0; x < image_width; x += 8)
-               {
-                  if (onoff)
-                     imlib_context_set_color(144, 144, 144, 255);
-                  else
-                     imlib_context_set_color(100, 100, 100, 255);
-                  imlib_image_fill_rectangle(x, y, 8, 8);
-                  onoff++;
-                  if (onoff == 2)
-                     onoff = 0;
-               }
-          }
-        imlib_render_image_part_on_drawable_at_size(0, 0, image_width,
-                                                    image_height, 0, 0,
+        imlib_render_image_part_on_drawable_at_size(0, 0,
+                                                    image_width, image_height,
+                                                    0, 0,
                                                     window_width,
                                                     window_height);
-        XSetWindowBackgroundPixmap(disp, win, pm);
+
+        /* Set window background, resize, and show */
+        XSetWindowBackgroundPixmap(disp, win, bg_pm);
         XResizeWindow(disp, win, window_width, window_height);
         XClearWindow(disp, win);
         XMapWindow(disp, win);
         XSync(disp, False);
+
+        /* Initialize images used for animation */
+        anim_init(image_width, image_height);
      }
+
+   r_up.x = update_x;
+   r_up.y = update_y;
+   r_up.w = update_w;
+   r_up.h = update_h;
+   if (update_w <= 0 || update_h <= 0)
+     {
+        /* Explicit rendering (not doing callbacks) */
+        r_up.x = finfo.frame_x;
+        r_up.y = finfo.frame_y;
+        r_up.w = finfo.frame_w;
+        r_up.h = finfo.frame_h;
+     }
+
+   if (fixedframe)
+      r_up.x = r_up.y = 0;
 
    imlib_context_set_anti_alias(0);
    imlib_context_set_dither(0);
-   imlib_context_set_blend(1);
-   imlib_blend_image_onto_image(im, 0,
-                                update_x, update_y, update_w, update_h,
-                                update_x, update_y, update_w, update_h);
 
-   up_wx = SCALE_X(update_x);
-   up_wy = SCALE_Y(update_y);
-   up_ww = SCALE_X(update_w);
-   up_wh = SCALE_Y(update_h);
+   if (animated)
+     {
+        rect_t              r_dam = { };
+
+        /* Update animated "target" canvas image (fg_im) */
+        anim_update(im, &r_up, &r_dam, finfo.frame_flags);
+        r_up = r_dam;           /* r_up is now the "damaged" (to be re-rendered) area */
+        im = fg_im;
+
+        /* Re-render checkered background where animated image has changes */
+        imlib_context_set_image(bg_im);
+        imlib_context_set_blend(0);
+        imlib_blend_image_onto_image(bg_im_clean, 0,
+                                     r_up.x, r_up.y, r_up.w, r_up.h,
+                                     r_up.x, r_up.y, r_up.w, r_up.h);
+     }
+
+   /* Render image on background image */
+   Dprintf("Update %d,%d %dx%d\n", r_up.x, r_up.y, r_up.w, r_up.h);
+   imlib_context_set_image(bg_im);
+   imlib_context_set_blend(1);
+   imlib_blend_image_onto_image(im, 1,
+                                r_up.x, r_up.y, r_up.w, r_up.h,
+                                r_up.x, r_up.y, r_up.w, r_up.h);
+
+   /* Render image (part) (or updated canvas) on window background pixmap */
+   up_wx = SCALE_X(r_up.x);
+   up_wy = SCALE_Y(r_up.y);
+   up_ww = SCALE_X(r_up.w);
+   up_wh = SCALE_Y(r_up.h);
+   Dprintf("Paint  %d,%d %dx%d\n", up_wx, up_wy, up_ww, up_wh);
    imlib_context_set_blend(0);
-   imlib_render_image_part_on_drawable_at_size(update_x, update_y,
-                                               update_w, update_h,
+   imlib_context_set_drawable(bg_pm);
+   imlib_render_image_part_on_drawable_at_size(r_up.x, r_up.y, r_up.w, r_up.h,
                                                up_wx, up_wy, up_ww, up_wh);
+
+   /* Update window */
    XClearArea(disp, win, up_wx, up_wy, up_ww, up_wh, False);
    XFlush(disp);
 
@@ -181,6 +430,42 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
 }
 
 static              Imlib_Image
+load_image_frame(const char *name, int frame, int inc)
+{
+   Imlib_Image         im;
+
+   if (inc && finfo.frame_count > 0)
+      frame = (finfo.frame_count + frame + inc - 1) % finfo.frame_count + 1;
+
+   im = imlib_load_image_frame(name, frame);
+   if (!im)
+      return im;
+
+   if (!opt_progr)
+     {
+        /* No progress callback - render explicitly */
+        progress(im, 100, 0, 0, 0, 0);
+     }
+
+   /* finfo should now be populated by imlib_image_get_frame_info()
+    * called from progress() callback */
+
+   if (multiframe)
+     {
+        Dprintf(" showing frame %d/%d (x,y=%d,%d, wxh=%dx%d T=%d)\n",
+                finfo.frame_num, finfo.frame_count,
+                finfo.frame_x, finfo.frame_y, finfo.frame_w, finfo.frame_h,
+                finfo.frame_delay);
+     }
+   else
+     {
+        Dprintf(" showing image wxh=%dx%d\n", finfo.frame_w, finfo.frame_h);
+     }
+
+   return im;
+}
+
+static              Imlib_Image
 load_image(int no, const char *name)
 {
    Imlib_Image         im;
@@ -188,6 +473,8 @@ load_image(int no, const char *name)
    Drawable            draw;
 
    Vprintf("Show  %d: '%s'\n", no, name);
+
+   anim_update(NULL, NULL, NULL, 0);    /* Clean up previous animation */
 
    image_width = 0;             /* Force redraw in progress() */
 
@@ -220,7 +507,29 @@ load_image(int no, const char *name)
      }
    else
      {
-        im = imlib_load_image(name);
+        char                nbuf[4096];
+        const char         *s;
+        int                 frame;
+
+        frame = -1;
+        sscanf(name, "%[^%]%%%n", nbuf, &frame);
+        if (frame > 0)
+          {
+             s = name + frame;
+             frame = atoi(s);
+             animate = false;
+             fixedframe = true;
+          }
+        else
+          {
+             frame = 1;
+             animate = true;
+             fixedframe = false;
+          }
+
+        im = load_image_frame(nbuf, frame, 0);
+
+        animate = animate && animated;
      }
 
    return im;
@@ -235,15 +544,19 @@ main(int argc, char **argv)
 
    verbose = 0;
 
-   while ((opt = getopt(argc, argv, "cdg:l:ps:S:v")) != -1)
+   while ((opt = getopt(argc, argv, "cdeg:l:ps:S:v")) != -1)
      {
         switch (opt)
           {
           case 'c':
-             opt_cache = 1;
+             opt_cache = true;
+             opt_progr = false; /* Cached images won't give progress callbacks */
              break;
           case 'd':
              debug += 1;
+             break;
+          case 'e':
+             opt_progr = false;
              break;
           case 'g':
              opt_progress_granularity = atoi(optarg);
@@ -255,7 +568,7 @@ main(int argc, char **argv)
              opt_progress_print = 1;
              break;
           case 's':            /* Scale (window size wrt. image size) */
-             opt_scale = 1;
+             opt_scale = true;
              opt_scale_y = 0.f;
              sscanf(optarg, "%lf,%lf", &opt_scale_x, &opt_scale_y);
              if (opt_scale_y == 0.f)
@@ -302,9 +615,16 @@ main(int argc, char **argv)
    imlib_context_set_display(disp);
    imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
    imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
-   imlib_context_set_progress_function(progress);
-   imlib_context_set_progress_granularity(opt_progress_granularity);
-   imlib_context_set_drawable(win);
+
+   if (opt_progr)
+     {
+        imlib_context_set_progress_function(progress);
+        imlib_context_set_progress_granularity(opt_progress_granularity);
+     }
+
+   /* Raise cache size if we do caching (default 4M) */
+   if (opt_cache)
+      imlib_set_cache_size(32 * 1024 * 1024);
 
    no = -1;
    for (im = NULL; !im;)
@@ -318,20 +638,39 @@ main(int argc, char **argv)
         im = load_image(no, argv[no]);
      }
 
-   imlib_context_set_image(im);
-
    for (;;)
      {
-        int                 x, y, b, count, fdsize, xfd, timeout = 0;
+        int                 x, y, b, count, fdsize, xfd, timeout;
         XEvent              ev;
         static int          zoom_mode = 0, zx, zy;
         static double       zoom = 1.0;
         struct timeval      tval;
         fd_set              fdset;
-        double              t1;
         KeySym              key;
         Imlib_Image        *im2;
         int                 no2;
+
+        if (im)
+          {
+             Dprintf("Cache usage: %d/%d\n", imlib_get_cache_used(),
+                     imlib_get_cache_size());
+             imlib_context_set_image(im);
+             if (opt_cache)
+                imlib_free_image();
+             else
+                imlib_free_image_and_decache();
+             im = NULL;
+          }
+
+        if (animate)
+          {
+             usleep(1e3 * finfo.frame_delay);
+             im = load_image_frame(argv[no], finfo.frame_num, 1);
+             if (!XPending(disp))
+                continue;
+          }
+
+        timeout = 0;
 
         XFlush(disp);
         XNextEvent(disp, &ev);
@@ -348,12 +687,27 @@ main(int argc, char **argv)
              while (XCheckTypedWindowEvent(disp, win, KeyPress, &ev))
                 ;
              key = XLookupKeysym(&ev.xkey, 0);
-             if (key == XK_q || key == XK_Escape)
-                goto quit;
-             if (key == XK_Right)
-                goto show_next;
-             if (key == XK_Left)
-                goto show_prev;
+             switch (key)
+               {
+               default:
+                  break;
+               case XK_q:
+               case XK_Escape:
+                  goto quit;
+               case XK_r:
+                  goto show_cur;
+               case XK_Right:
+                  goto show_next;
+               case XK_Left:
+                  goto show_prev;
+               case XK_p:
+                  animate = animated && !animate;
+                  break;
+               case XK_Up:
+                  goto show_next_frame;
+               case XK_Down:
+                  goto show_prev_frame;
+               }
              break;
           case ButtonPress:
              b = ev.xbutton.button;
@@ -364,15 +718,7 @@ main(int argc, char **argv)
                   zoom_mode = 1;
                   zx = x;
                   zy = y;
-                  imlib_context_set_drawable(pm);
-                  imlib_context_set_image(bg_im);
-                  imlib_context_set_anti_alias(0);
-                  imlib_context_set_dither(0);
-                  imlib_context_set_blend(0);
-                  imlib_render_image_part_on_drawable_at_size
-                     (0, 0, image_width, image_height,
-                      0, 0, window_width, window_height);
-                  XClearWindow(disp, win);
+                  bg_pm_redraw(zx, zy, 0., 0);
                }
              break;
           case ButtonRelease:
@@ -390,8 +736,6 @@ main(int argc, char **argv)
              x = ev.xmotion.x;
              if (zoom_mode)
                {
-                  int                 sx, sy, sw, sh, dx, dy, dw, dh;
-
                   zoom = ((double)x - (double)zx) / 32.0;
                   if (zoom < 0)
                      zoom = 1.0 + ((zoom * 32.0) / ((double)(zx + 1)));
@@ -399,42 +743,15 @@ main(int argc, char **argv)
                      zoom += 1.0;
                   if (zoom <= 0.0001)
                      zoom = 0.0001;
-                  if (zoom > 1.0)
-                    {
-                       dx = 0;
-                       dy = 0;
-                       dw = window_width;
-                       dh = window_height;
 
-                       sx = zx - (zx / zoom);
-                       sy = zy - (zy / zoom);
-                       sw = image_width / zoom;
-                       sh = image_height / zoom;
-                    }
-                  else
-                    {
-                       dx = zx - (zx * zoom);
-                       dy = zy - (zy * zoom);
-                       dw = window_width * zoom;
-                       dh = window_height * zoom;
-
-                       sx = 0;
-                       sy = 0;
-                       sw = image_width;
-                       sh = image_height;
-                    }
-                  imlib_context_set_anti_alias(0);
-                  imlib_context_set_dither(0);
-                  imlib_context_set_blend(0);
-                  imlib_context_set_image(bg_im);
-                  imlib_render_image_part_on_drawable_at_size
-                     (sx, sy, sw, sh, dx, dy, dw, dh);
-                  XClearWindow(disp, win);
-                  XFlush(disp);
-                  timeout = 1;
+                  bg_pm_redraw(zx, zy, zoom, 0);
+                  timeout = 200000;     /* .2 s */
                }
              break;
 
+           show_cur:
+             inc = 0;
+             goto show_next_prev;
            show_next:
              inc = 1;
              goto show_next_prev;
@@ -455,7 +772,7 @@ main(int argc, char **argv)
                        inc = 1;
                        continue;
                     }
-                  if (no2 == no)
+                  if (no2 == no && inc != 0)
                      break;
                   im2 = load_image(no2, argv[no2]);
                   if (!im2)
@@ -465,32 +782,44 @@ main(int argc, char **argv)
                     }
                   zoom = 1.0;
                   zoom_mode = 0;
-                  imlib_context_set_image(im);
-                  if (!opt_cache)
-                     imlib_free_image_and_decache();
                   no = no2;
                   im = im2;
-                  imlib_context_set_image(im);
                   break;
                }
              break;
+           show_next_frame:
+             inc = 1;
+             goto show_next_prev_frame;
+           show_prev_frame:
+             inc = -1;
+             goto show_next_prev_frame;
+           show_next_prev_frame:
+             if (!multiframe)
+                break;
+             if (!animated)
+                image_width = 0;        /* Reset window size */
+             im = load_image_frame(argv[no], finfo.frame_num, inc);
+             break;
           }
 
-        if (XPending(disp))
+        if (multiframe || XPending(disp))
            continue;
 
-        t1 = 0.2;
-        tval.tv_sec = (long)t1;
-        tval.tv_usec = (long)((t1 - ((double)tval.tv_sec)) * 1000000);
         xfd = ConnectionNumber(disp);
         fdsize = xfd + 1;
         FD_ZERO(&fdset);
         FD_SET(xfd, &fdset);
 
-        if (timeout)
-           count = select(fdsize, &fdset, NULL, NULL, &tval);
+        if (timeout > 0)
+          {
+             tval.tv_sec = timeout / 1000000;
+             tval.tv_usec = timeout - tval.tv_sec * 1000000;
+             count = select(fdsize, &fdset, NULL, NULL, &tval);
+          }
         else
-           count = select(fdsize, &fdset, NULL, NULL, NULL);
+          {
+             count = select(fdsize, &fdset, NULL, NULL, NULL);
+          }
 
         if (count < 0)
           {
@@ -499,40 +828,8 @@ main(int argc, char **argv)
           }
         else if (count == 0)
           {
-             int                 sx, sy, sw, sh, dx, dy, dw, dh;
-
-             if (zoom > 1.0)
-               {
-                  dx = 0;
-                  dy = 0;
-                  dw = window_width;
-                  dh = window_height;
-
-                  sx = zx - (zx / zoom);
-                  sy = zy - (zy / zoom);
-                  sw = image_width / zoom;
-                  sh = image_height / zoom;
-               }
-             else
-               {
-                  dx = zx - (zx * zoom);
-                  dy = zy - (zy * zoom);
-                  dw = window_width * zoom;
-                  dh = window_height * zoom;
-
-                  sx = 0;
-                  sy = 0;
-                  sw = image_width;
-                  sh = image_height;
-               }
-             imlib_context_set_anti_alias(1);
-             imlib_context_set_dither(1);
-             imlib_context_set_blend(0);
-             imlib_context_set_image(bg_im);
-             imlib_render_image_part_on_drawable_at_size
-                (sx, sy, sw, sh, dx, dy, dw, dh);
-             XClearWindow(disp, win);
-             XFlush(disp);
+             /* "Final" (delayed) re-rendering with AA */
+             bg_pm_redraw(zx, zy, zoom, 1);
           }
      }
 

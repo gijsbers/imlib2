@@ -3,13 +3,10 @@
 
 #include "common.h"
 
-typedef struct _imlibimage ImlibImage;
 typedef struct _imlibldctx ImlibLdCtx;
-
-typedef struct _imlibborder ImlibBorder;
 typedef struct _imlibloader ImlibLoader;
-typedef struct _imlibimagetag ImlibImageTag;
-typedef enum _imlib_load_error ImlibLoadError;
+
+typedef struct _ImlibImage ImlibImage;
 
 typedef int         (*ImlibProgressFunction)(ImlibImage * im, char percent,
                                              int update_x, int update_y,
@@ -32,19 +29,25 @@ enum _iflags {
 
 typedef enum _iflags ImlibImageFlags;
 
-struct _imlibborder {
-   int                 left, right, top, bottom;
-};
+/* Must match the ones in Imlib2.h.in */
+#define FF_IMAGE_ANIMATED       (1 << 0)        /* Frames are an animated sequence    */
+#define FF_FRAME_BLEND          (1 << 1)        /* Blend current onto previous frame  */
+#define FF_FRAME_DISPOSE_CLEAR  (1 << 2)        /* Clear before rendering next frame  */
+#define FF_FRAME_DISPOSE_PREV   (1 << 3)        /* Revert before rendering next frame */
 
-struct _imlibimagetag {
+typedef struct {
+   int                 left, right, top, bottom;
+} ImlibBorder;
+
+typedef struct _ImlibImageTag {
    char               *key;
    int                 val;
    void               *data;
    void                (*destructor)(ImlibImage * im, void *data);
-   ImlibImageTag      *next;
-};
+   struct _ImlibImageTag *next;
+} ImlibImageTag;
 
-struct _imlibimage {
+struct _ImlibImage {
    char               *file;
    int                 w, h;
    DATA32             *data;
@@ -62,7 +65,25 @@ struct _imlibimage {
    ImlibLdCtx         *lc;
    FILE               *fp;
    off_t               fsize;
+   int                 canvas_w;        /* Canvas size      */
+   int                 canvas_h;
+   int                 frame_count;     /* Number of frames */
+   int                 frame_num;       /* Current frame    */
+   int                 frame_x; /* Frame origin     */
+   int                 frame_y;
+   int                 frame_flags;     /* Frame flags      */
+   int                 frame_delay;     /* Frame delay (ms) */
 };
+
+typedef struct {
+   FILE               *fp;
+   ImlibProgressFunction pfunc;
+   int                 pgran;
+   char                immed;
+   char                nocache;
+   int                 err;
+   int                 frame;
+} ImlibLoadArgs;
 
 void                __imlib_RemoveAllLoaders(void);
 ImlibLoader       **__imlib_GetLoaderList(void);
@@ -78,11 +99,7 @@ void                __imlib_LoaderSetFormats(ImlibLoader * l,
                                              unsigned int num);
 
 ImlibImage         *__imlib_CreateImage(int w, int h, DATA32 * data);
-ImlibImage         *__imlib_LoadImage(const char *file, FILE * fp,
-                                      ImlibProgressFunction progress,
-                                      char progress_granularity,
-                                      char immediate_load, char dont_cache,
-                                      ImlibLoadError * er);
+ImlibImage         *__imlib_LoadImage(const char *file, ImlibLoadArgs * ila);
 int                 __imlib_LoadEmbedded(ImlibLoader * l, ImlibImage * im,
                                          const char *file, int load_data);
 int                 __imlib_LoadImageData(ImlibImage * im);
@@ -90,8 +107,7 @@ void                __imlib_DirtyImage(ImlibImage * im);
 void                __imlib_FreeImage(ImlibImage * im);
 void                __imlib_SaveImage(ImlibImage * im, const char *file,
                                       ImlibProgressFunction progress,
-                                      char progress_granularity,
-                                      ImlibLoadError * er);
+                                      char progress_granularity, int *er);
 
 DATA32             *__imlib_AllocateData(ImlibImage * im);
 void                __imlib_FreeData(ImlibImage * im);
@@ -128,9 +144,13 @@ int                 __imlib_CurrentCacheSize(void);
 #define UPDATE_FLAG(flags, f, set) \
    do { if (set) SET_FLAG(flags, f); else UNSET_FLAG(flags, f); } while(0)
 
-#define LOAD_FAIL       0
-#define LOAD_SUCCESS    1
-#define LOAD_BREAK      2
+#define LOAD_BREAK       2      /* Break signaled by progress callback */
+#define LOAD_SUCCESS     1      /* Image loaded successfully           */
+#define LOAD_FAIL        0      /* Image was not recognized by loader  */
+#define LOAD_OOM        -1      /* Could not allocate memory           */
+#define LOAD_BADFILE    -2      /* File could not be accessed          */
+#define LOAD_BADIMAGE   -3      /* Image is corrupt                    */
+#define LOAD_BADFRAME   -4      /* Requested frame not found           */
 
 /* 32767 is the maximum pixmap dimension and ensures that
  * (w * h * sizeof(DATA32)) won't exceed ULONG_MAX */

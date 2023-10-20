@@ -654,8 +654,7 @@ __imlib_GrabDrawableToRGBA(DATA32 * data, int x_dst, int y_dst, int w_dst,
 
    domask = (pdomask) ? *pdomask : 0;
 
-   /* FIXME: h_dst isn't used - i wonder if there's a bug looming... */
-   h_dst = 0;
+   h_dst = 0;                   /* h_dst is not used */
 
    if (grab)
       XGrabServer(d);

@@ -180,7 +180,7 @@ load2(ImlibImage * im, int load_data)
 
    fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
-      return rc;
+      return LOAD_BADFILE;
 
    fptr = fdata;
    mm_init(fdata, im->fsize);
@@ -214,6 +214,8 @@ load2(ImlibImage * im, int load_data)
 
    if (mm_read(&bih.header_size + 1, bih.header_size - 4))
       goto quit;
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
 
    comp = BI_RGB;
    amask = rmask = gmask = bmask = 0;
@@ -397,15 +399,12 @@ load2(ImlibImage * im, int load_data)
    im->h = h;
 
    if (!load_data)
-     {
-        rc = LOAD_SUCCESS;
-        goto quit;
-     }
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
    /* Load data */
 
    if (!__imlib_AllocateData(im))
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
    fptr += bfh_offset;
 
@@ -441,10 +440,7 @@ load2(ImlibImage * im, int load_data)
                   ptr -= w * 2;
 
                   if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
-                    {
-                       rc = LOAD_BREAK;
-                       goto quit;
-                    }
+                     QUIT_WITH_RC(LOAD_BREAK);
                }
              break;
           }
@@ -549,10 +545,7 @@ load2(ImlibImage * im, int load_data)
                 progress_bc4:
                   if (im->lc && (x == w) &&
                       __imlib_LoadProgressRows(im, h - y - 1, -1))
-                    {
-                       rc = LOAD_BREAK;
-                       goto quit;
-                    }
+                     QUIT_WITH_RC(LOAD_BREAK);
                }
              break;
 
@@ -572,10 +565,7 @@ load2(ImlibImage * im, int load_data)
                   ptr -= w * 2;
 
                   if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
-                    {
-                       rc = LOAD_BREAK;
-                       goto quit;
-                    }
+                     QUIT_WITH_RC(LOAD_BREAK);
                }
              break;
           }
@@ -664,10 +654,7 @@ load2(ImlibImage * im, int load_data)
                 progress_bc8:
                   if (im->lc && (x == w) &&
                       __imlib_LoadProgressRows(im, h - y - 1, -1))
-                    {
-                       rc = LOAD_BREAK;
-                       goto quit;
-                    }
+                     QUIT_WITH_RC(LOAD_BREAK);
                }
              break;
 
@@ -684,10 +671,7 @@ load2(ImlibImage * im, int load_data)
                   buffer_ptr += skip;
 
                   if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
-                    {
-                       rc = LOAD_BREAK;
-                       goto quit;
-                    }
+                     QUIT_WITH_RC(LOAD_BREAK);
                }
              break;
           }
@@ -717,10 +701,7 @@ load2(ImlibImage * im, int load_data)
              buffer_ptr += skip;
 
              if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
-               {
-                  rc = LOAD_BREAK;
-                  goto quit;
-               }
+                QUIT_WITH_RC(LOAD_BREAK);
           }
         break;
 
@@ -741,10 +722,7 @@ load2(ImlibImage * im, int load_data)
              buffer_ptr += skip;
 
              if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
-               {
-                  rc = LOAD_BREAK;
-                  goto quit;
-               }
+                QUIT_WITH_RC(LOAD_BREAK);
           }
         break;
 
@@ -772,10 +750,7 @@ load2(ImlibImage * im, int load_data)
              buffer_ptr += skip;
 
              if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
-               {
-                  rc = LOAD_BREAK;
-                  goto quit;
-               }
+                QUIT_WITH_RC(LOAD_BREAK);
           }
         break;
      }
@@ -785,8 +760,7 @@ load2(ImlibImage * im, int load_data)
  quit:
    if (rc <= 0)
       __imlib_FreeData(im);
-   if (fdata != MAP_FAILED)
-      munmap(fdata, im->fsize);
+   munmap(fdata, im->fsize);
 
    return rc;
 }

@@ -29,12 +29,14 @@ load2(ImlibImage * im, int load_data)
 
    fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
-      return rc;
+      return LOAD_BADFILE;
 
    /* read and check the header */
    hdr = fdata;
    if (memcmp("farbfeld", hdr->magic, sizeof(hdr->magic)))
       goto quit;
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
 
    im->w = ntohl(hdr->w);
    im->h = ntohl(hdr->h);
@@ -44,15 +46,12 @@ load2(ImlibImage * im, int load_data)
    SET_FLAG(im->flags, F_HAS_ALPHA);
 
    if (!load_data)
-     {
-        rc = LOAD_SUCCESS;
-        goto quit;
-     }
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
    /* Load data */
 
    if (!__imlib_AllocateData(im))
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
    rowlen = 4 * im->w;          /* RGBA */
 
@@ -76,10 +75,7 @@ load2(ImlibImage * im, int load_data)
           }
 
         if (im->lc && __imlib_LoadProgressRows(im, i, 1))
-          {
-             rc = LOAD_BREAK;
-             goto quit;
-          }
+           QUIT_WITH_RC(LOAD_BREAK);
      }
 
    rc = LOAD_SUCCESS;
@@ -87,8 +83,7 @@ load2(ImlibImage * im, int load_data)
  quit:
    if (rc <= 0)
       __imlib_FreeData(im);
-   if (fdata != MAP_FAILED)
-      munmap(fdata, im->fsize);
+   munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -145,10 +140,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
            goto quit;
 
         if (im->lc && __imlib_LoadProgressRows(im, i, 1))
-          {
-             rc = LOAD_BREAK;
-             goto quit;
-          }
+           QUIT_WITH_RC(LOAD_BREAK);
      }
 
    rc = LOAD_SUCCESS;

@@ -3,7 +3,7 @@
 #include <Imlib2.h>
 
 void
-init(struct imlib_filter_info *info)
+init(ImlibFilterInfo * info)
 {
    static const char  *const filters[] = { "tint", "cool_text", "gradient" };
    int                 i = 0;
@@ -26,7 +26,7 @@ deinit(void)
 }
 
 void               *
-exec(char *filter, void *im, pIFunctionParam params)
+exec(char *filter, void *im, IFunctionParam * params)
 {
    Imlib_Image         imge = im;
    Imlib_Image         anoim;

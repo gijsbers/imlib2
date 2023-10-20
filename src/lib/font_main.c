@@ -17,12 +17,6 @@
 
 FT_Library          ft_lib;
 
-static int          __imlib_hash_gen(const char *key);
-static int          imlib_list_alloc_error(void);
-
-static int          _imlib_hash_alloc_error = 0;
-static int          _imlib_list_alloc_error = 0;
-
 void
 __imlib_font_init(void)
 {
@@ -112,15 +106,17 @@ __imlib_font_get_line_advance(ImlibFont * fn)
    return ret;
 }
 
-int
-__imlib_font_utf8_get_next(unsigned char *buf, int *iindex)
+/*
+ * Reads UTF8 bytes from @text, starting at *@index and returns the code
+ * point of the next valid code point. @index is updated ready for the
+ * next call.
+ *
+ * Returns 0 to indicate an error (e.g. invalid UTF8)
+ */
+static int
+_utf8_get_next(const char *text, int *iindex)
 {
-   /* Reads UTF8 bytes from @buf, starting at *@index and returns the code
-    * point of the next valid code point. @index is updated ready for the
-    * next call.
-    * 
-    * * Returns 0 to indicate an error (e.g. invalid UTF8) */
-
+   const unsigned char *buf = (const unsigned char *)text;
    int                 index = *iindex, r;
    unsigned char       d = buf[index++], d2, d3, d4;
 
@@ -175,231 +171,64 @@ __imlib_font_utf8_get_next(unsigned char *buf, int *iindex)
    return r;
 }
 
-/* TODO put this somewhere else */
-
-void               *
-__imlib_object_list_prepend(void *in_list, void *in_item)
+/*
+ * This function returns the first font in the fallback chain to contain
+ * the requested glyph.
+ * The glyph index is returned in ret_index
+ * If the glyph is not found, then the given font pointer is returned and
+ * ret_index will be set to 0
+ */
+static ImlibFont   *
+__imlib_font_find_glyph(ImlibFont * first_fn, int gl, unsigned int *ret_index)
 {
-   Imlib_Object_List  *new_l;
-   Imlib_Object_List  *list, *item;
+   int                 index;
+   ImlibFont          *fn = first_fn;
 
-   list = in_list;
-   item = in_item;
-   new_l = item;
-   new_l->prev = NULL;
-   if (!list)
+   for (; fn; fn = fn->fallback_next)
      {
-        new_l->next = NULL;
-        return new_l;
+        index = FT_Get_Char_Index(fn->ft.face, gl);
+        if (index <= 0)
+           continue;
+        *ret_index = index;
+        return fn;
      }
-   new_l->next = list;
-   list->prev = new_l;
-   return new_l;
+
+   *ret_index = 0;
+   return first_fn;
 }
 
-void               *
-__imlib_object_list_remove(void *in_list, void *in_item)
+Imlib_Font_Glyph   *
+__imlib_font_get_next_glyph(ImlibFont * fn, const char *utf8, int *cindx,
+                            FT_UInt * pindex, int *pkern)
 {
-   Imlib_Object_List  *return_l;
-   Imlib_Object_List  *list = in_list;
-   Imlib_Object_List  *item = in_item;
+   FT_UInt             index;
+   Imlib_Font_Glyph   *fg;
+   ImlibFont          *fn_in_chain;
+   int                 gl, kern;
 
-   /* checkme */
-   if (!list)
-      return list;
-   if (!item)
-      return list;
-
-   if (item->next)
-      item->next->prev = item->prev;
-
-   if (item->prev)
-     {
-        item->prev->next = item->next;
-        return_l = list;
-     }
-   else
-     {
-        return_l = item->next;
-     }
-
-   item->next = NULL;
-   item->prev = NULL;
-
-   return return_l;
-}
-
-static int
-__imlib_hash_gen(const char *key)
-{
-   unsigned int        hash_num = 0;
-   const unsigned char *ptr;
-
-   if (!key)
-      return 0;
-
-   for (ptr = (unsigned char *)key; *ptr; ptr++)
-      hash_num ^= (int)(*ptr);
-
-   hash_num &= 0xff;
-   return (int)hash_num;
-}
-
-Imlib_Hash         *
-__imlib_hash_add(Imlib_Hash * hash, const char *key, const void *data)
-{
-   int                 hash_num;
-   Imlib_Hash_El      *el;
-
-   _imlib_hash_alloc_error = 0;
-   if (!hash)
-     {
-        hash = calloc(1, sizeof(struct _Imlib_Hash));
-        if (!hash)
-          {
-             _imlib_hash_alloc_error = 1;
-             return NULL;
-          }
-     }
-   if (!(el = malloc(sizeof(struct _Imlib_Hash_El))))
-     {
-        if (hash->population <= 0)
-          {
-             free(hash);
-             hash = NULL;
-          }
-        _imlib_hash_alloc_error = 1;
-        return hash;
-     };
-   if (key)
-     {
-        el->key = strdup(key);
-        if (!el->key)
-          {
-             free(el);
-             _imlib_hash_alloc_error = 1;
-             return hash;
-          }
-        hash_num = __imlib_hash_gen(key);
-     }
-   else
-     {
-        el->key = NULL;
-        hash_num = 0;
-     }
-   el->data = (void *)data;
-
-   hash->buckets[hash_num] =
-      __imlib_object_list_prepend(hash->buckets[hash_num], el);
-
-   if (imlib_list_alloc_error())
-     {
-        _imlib_hash_alloc_error = 1;
-        free(el->key);
-        free(el);
-        return hash;
-     }
-   hash->population++;
-   return hash;
-}
-
-void               *
-__imlib_hash_find(Imlib_Hash * hash, const char *key)
-{
-   int                 hash_num;
-   Imlib_Hash_El      *el;
-   Imlib_Object_List  *l;
-
-   _imlib_hash_alloc_error = 0;
-   if (!hash)
+   gl = _utf8_get_next(utf8, cindx);
+   if (gl == 0)
       return NULL;
-   hash_num = __imlib_hash_gen(key);
-   for (l = hash->buckets[hash_num]; l; l = l->next)
+
+   fn_in_chain = __imlib_font_find_glyph(fn, gl, &index);
+
+   kern = 0;
+   if (FT_HAS_KERNING(fn->ft.face) && *pindex && index)
      {
-        el = (Imlib_Hash_El *) l;
-        if (((el->key) && (key) && (!strcmp(el->key, key)))
-            || ((!el->key) && (!key)))
-          {
-             if (l != hash->buckets[hash_num])
-               {
-                  /* FIXME: move to front of list without alloc */
-                  hash->buckets[hash_num] =
-                     __imlib_object_list_remove(hash->buckets[hash_num], el);
-                  hash->buckets[hash_num] =
-                     __imlib_object_list_prepend(hash->buckets[hash_num], el);
-                  if (imlib_list_alloc_error())
-                    {
-                       _imlib_hash_alloc_error = 1;
-                       return el->data;
-                    }
-               }
-             return el->data;
-          }
+        FT_Vector           delta;
+
+        FT_Get_Kerning(fn_in_chain->ft.face, *pindex, index,
+                       ft_kerning_default, &delta);
+        kern = delta.x << 2;
      }
-   return NULL;
-}
+   if (pkern)
+      *pkern = kern;
 
-static int
-__imlib_hash_size(Imlib_Hash * hash)
-{
-   if (!hash)
-      return 0;
-   return 256;
-}
+   fg = __imlib_font_cache_glyph_get(fn_in_chain, index);
+   if (!fg)
+      return IMLIB_GLYPH_NONE;
 
-void
-__imlib_hash_free(Imlib_Hash * hash)
-{
-   int                 i, size;
+   *pindex = index;
 
-   if (!hash)
-      return;
-
-   size = __imlib_hash_size(hash);
-   for (i = 0; i < size; i++)
-     {
-        Imlib_Hash_El      *el, *el_next;
-
-        for (el = (Imlib_Hash_El *) hash->buckets[i]; el; el = el_next)
-          {
-             el_next = (Imlib_Hash_El *) el->_list_data.next;
-             free(el->key);
-             free(el);
-          }
-     }
-   free(hash);
-}
-
-void
-__imlib_hash_foreach(Imlib_Hash * hash, int (*func)(Imlib_Hash * hash,
-                                                    const char *key,
-                                                    void *data, void *fdata),
-                     const void *fdata)
-{
-   int                 i, size;
-
-   if (!hash)
-      return;
-   size = __imlib_hash_size(hash);
-   for (i = 0; i < size; i++)
-     {
-        Imlib_Object_List  *l, *next_l;
-
-        for (l = hash->buckets[i]; l;)
-          {
-             Imlib_Hash_El      *el;
-
-             next_l = l->next;
-             el = (Imlib_Hash_El *) l;
-             if (!func(hash, el->key, el->data, (void *)fdata))
-                return;
-             l = next_l;
-          }
-     }
-}
-
-int
-imlib_list_alloc_error(void)
-{
-   return _imlib_list_alloc_error;
+   return fg;
 }

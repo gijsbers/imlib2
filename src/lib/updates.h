@@ -3,12 +3,10 @@
 
 #include "common.h"
 
-typedef struct _imlibupdate ImlibUpdate;
-
-struct _imlibupdate {
+typedef struct _ImlibUpdate {
    int                 x, y, w, h;
-   ImlibUpdate        *next;
-};
+   struct _ImlibUpdate *next;
+} ImlibUpdate;
 
 ImlibUpdate        *__imlib_AddUpdate(ImlibUpdate * u,
                                       int x, int y, int w, int h);

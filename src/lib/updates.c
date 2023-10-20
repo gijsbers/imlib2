@@ -8,7 +8,7 @@ enum _t_used {
 };
 
 struct _tile {
-   enum _t_used        used;
+   char                used;
 };
 
 #define TBITS 5
@@ -23,7 +23,7 @@ __imlib_MergeUpdate(ImlibUpdate * u, int w, int h, int hgapmax)
 {
    ImlibUpdate        *nu = NULL, *uu;
    struct _tile       *t;
-   int                 tw, th, x, y, i;
+   int                 tw, th, x, y;
    int                *gaps = NULL;
 
    /* if theres no rects to process.. return NULL */
@@ -35,13 +35,7 @@ __imlib_MergeUpdate(ImlibUpdate * u, int w, int h, int hgapmax)
    th = h >> TB;
    if (h & TM)
       th++;
-   t = malloc(tw * th * sizeof(struct _tile));
-   /* fill in tiles to be all not used */
-   for (i = 0, y = 0; y < th; y++)
-     {
-        for (x = 0; x < tw; x++)
-           t[i++].used = T_UNUSED;
-     }
+   t = calloc(tw * th, sizeof(struct _tile));
    /* fill in all tiles */
    for (uu = u; uu; uu = uu->next)
      {
@@ -63,20 +57,20 @@ __imlib_MergeUpdate(ImlibUpdate * u, int w, int h, int hgapmax)
            gaps[x] = 0;
         for (x = 0; x < tw; x++)
           {
-             if ((have) && (T(x, y).used == T_UNUSED))
+             if (have && !T(x, y).used)
                {
                   start = x;
                   gap = 1;
                   have = 0;
                }
-             else if ((!have) && (gap) && (T(x, y).used & T_USED))
+             else if (!have && gap && T(x, y).used)
                {
                   gap = 0;
                   hgaps++;
                   have = 1;
                   gaps[start] = x - start;
                }
-             else if (T(x, y).used & T_USED)
+             else if (T(x, y).used)
                 have = 1;
           }
         while (hgaps > hgapmax)
@@ -95,8 +89,8 @@ __imlib_MergeUpdate(ImlibUpdate * u, int w, int h, int hgapmax)
              if (start >= 0)
                {
                   gaps[start] = 0;
-                  for (x = start;
-                       T(x, y).used == T_UNUSED; T(x++, y).used = T_USED);
+                  for (x = start; !T(x, y).used; T(x++, y).used = T_USED)
+                     ;
                   hgaps--;
                }
           }
@@ -107,19 +101,18 @@ __imlib_MergeUpdate(ImlibUpdate * u, int w, int h, int hgapmax)
      {
         for (x = 0; x < tw; x++)
           {
-             if (T(x, y).used & T_USED)
+             if (T(x, y).used)
                {
                   int                 xx, yy, ww, hh, ok, xww;
 
-                  for (xx = x + 1, ww = 1;
-                       (xx < tw) && (T(xx, y).used & T_USED); xx++, ww++);
+                  for (xx = x + 1, ww = 1; xx < tw && T(xx, y).used; xx++, ww++)
+                     ;
                   xww = x + ww;
-                  for (yy = y + 1, hh = 1, ok = 1;
-                       (yy < th) && (ok); yy++, hh++)
+                  for (yy = y + 1, hh = 1, ok = 1; yy < th && ok; yy++, hh++)
                     {
                        for (xx = x; xx < xww; xx++)
                          {
-                            if (!(T(xx, yy).used & T_USED))
+                            if (!T(xx, yy).used)
                               {
                                  ok = 0;
                                  hh--;

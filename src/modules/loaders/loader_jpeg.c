@@ -75,10 +75,7 @@ load2(ImlibImage * im, int load_data)
    /* set up error handling */
    jds.err = _jdata_init(&jdata);
    if (sigsetjmp(jdata.setjmp_buffer, 1))
-     {
-        rc = LOAD_FAIL;
-        goto quit;
-     }
+      QUIT_WITH_RC(LOAD_FAIL);
 
    rc = LOAD_FAIL;
 
@@ -86,6 +83,8 @@ load2(ImlibImage * im, int load_data)
    jpeg_stdio_src(&jds, im->fp);
    jpeg_save_markers(&jds, JPEG_APP0 + 1, 256);
    jpeg_read_header(&jds, TRUE);
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
 
    /* Get orientation */
    ei.orientation = ORIENT_TOPLEFT;
@@ -119,10 +118,7 @@ load2(ImlibImage * im, int load_data)
    UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
    if (!load_data)
-     {
-        rc = LOAD_SUCCESS;
-        goto quit;
-     }
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
    /* Load data */
 
@@ -135,12 +131,12 @@ load2(ImlibImage * im, int load_data)
 
    jdata.data = malloc(w * 16 * jds.output_components);
    if (!jdata.data)
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
    /* must set the im->data member before callign progress function */
    ptr2 = __imlib_AllocateData(im);
    if (!ptr2)
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
    for (y = 0; y < jds.rec_outbuf_height; y++)
       line[y] = jdata.data + (y * w * jds.output_components);
@@ -232,11 +228,9 @@ load2(ImlibImage * im, int load_data)
         if (ei.orientation != ORIENT_TOPLEFT &&
             ei.orientation != ORIENT_TOPRIGHT)
            continue;
+
         if (im->lc && __imlib_LoadProgressRows(im, l, scans))
-          {
-             rc = LOAD_BREAK;
-             goto quit;
-          }
+           QUIT_WITH_RC(LOAD_BREAK);
      }
    if (ei.orientation != ORIENT_TOPLEFT && ei.orientation != ORIENT_TOPRIGHT)
      {
@@ -345,10 +339,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
         jpeg_write_scanlines(&jcs, jbuf, 1);
 
         if (im->lc && __imlib_LoadProgressRows(im, y, 1))
-          {
-             rc = LOAD_BREAK;
-             goto quit;
-          }
+           QUIT_WITH_RC(LOAD_BREAK);
      }
 
    rc = LOAD_SUCCESS;

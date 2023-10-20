@@ -30,7 +30,7 @@ static ImlibExternalFilter *
 __imlib_LoadFilter(char *file)
 {
    ImlibExternalFilter *ptr;
-   struct imlib_filter_info *info;
+   ImlibFilterInfo    *info;
 
    /* printf( "Loading filter %s\n", file ); */
    MALLOCSHOW;
@@ -57,7 +57,7 @@ __imlib_LoadFilter(char *file)
         free(ptr);
         return NULL;
      }
-   info = malloc(sizeof(struct imlib_filter_info));
+   info = malloc(sizeof(ImlibFilterInfo));
    ptr->init_filter(info);
    ptr->num_filters = info->num_filters;
    ptr->filters = info->filters;

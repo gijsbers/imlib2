@@ -1,34 +1,14 @@
+#ifndef FONT_H
+#define FONT_H
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
 #include "common.h"
+#include "object.h"
 
-/* TODO separate fonts and data stuff */
-
-typedef struct _Imlib_Font ImlibFont;
-typedef struct _Imlib_Font_Glyph Imlib_Font_Glyph;
-
-typedef struct _Imlib_Object_List Imlib_Object_List;
-typedef struct _Imlib_Hash Imlib_Hash;
-typedef struct _Imlib_Hash_El Imlib_Hash_El;
-
-struct _Imlib_Object_List {
-   Imlib_Object_List  *next, *prev;
-};
-
-struct _Imlib_Hash {
-   int                 population;
-   Imlib_Object_List  *buckets[256];
-};
-
-struct _Imlib_Hash_El {
-   Imlib_Object_List   _list_data;
-   char               *key;
-   void               *data;
-};
-
-struct _Imlib_Font {
+typedef struct _Imlib_Font {
    Imlib_Object_List   _list_data;
    char               *name;
    char               *file;
@@ -47,12 +27,14 @@ struct _Imlib_Font {
    /* using a double-linked list for the fallback chain */
    struct _Imlib_Font *fallback_prev;
    struct _Imlib_Font *fallback_next;
-};
+} ImlibFont;
 
-struct _Imlib_Font_Glyph {
+typedef struct {
    FT_Glyph            glyph;
    FT_BitmapGlyph      glyph_out;
-};
+} Imlib_Font_Glyph;
+
+#define IMLIB_GLYPH_NONE ((Imlib_Font_Glyph*) 1)        /* Glyph not found */
 
 /* functions */
 
@@ -62,7 +44,6 @@ int                 __imlib_font_descent_get(ImlibFont * fn);
 int                 __imlib_font_max_ascent_get(ImlibFont * fn);
 int                 __imlib_font_max_descent_get(ImlibFont * fn);
 int                 __imlib_font_get_line_advance(ImlibFont * fn);
-int                 __imlib_font_utf8_get_next(unsigned char *buf, int *iindex);
 void                __imlib_font_add_font_path(const char *path);
 void                __imlib_font_del_font_path(const char *path);
 int                 __imlib_font_path_exists(const char *path);
@@ -82,8 +63,6 @@ void                __imlib_font_modify_cache_by(ImlibFont * fn, int dir);
 void                __imlib_font_modify_cache_by(ImlibFont * fn, int dir);
 void                __imlib_font_flush_last(void);
 ImlibFont          *__imlib_font_find(const char *name, int size);
-ImlibFont          *__imlib_font_find_glyph(ImlibFont * fn, int gl,
-                                            unsigned int *ret_index);
 
 void                __imlib_font_query_size(ImlibFont * fn, const char *text,
                                             int *w, int *h);
@@ -100,6 +79,10 @@ int                 __imlib_font_query_text_at_pos(ImlibFont * fn,
                                                    int *cx, int *cy,
                                                    int *cw, int *ch);
 
+Imlib_Font_Glyph   *__imlib_font_get_next_glyph(ImlibFont * fn,
+                                                const char *utf8,
+                                                int *cindx,
+                                                FT_UInt * pindex, int *pkern);
 Imlib_Font_Glyph   *__imlib_font_cache_glyph_get(ImlibFont * fn, FT_UInt index);
 void                __imlib_render_str(ImlibImage * im, ImlibFont * f,
                                        int drx, int dry, const char *text,
@@ -112,16 +95,4 @@ void                __imlib_font_draw(ImlibImage * dst, DATA32 col,
                                       const char *text, int *nextx, int *nexty,
                                       int clx, int cly, int clw, int clh);
 
-/* data manipulation */
-
-void               *__imlib_object_list_prepend(void *in_list, void *in_item);
-void               *__imlib_object_list_remove(void *in_list, void *in_item);
-Imlib_Hash         *__imlib_hash_add(Imlib_Hash * hash, const char *key,
-                                     const void *data);
-void               *__imlib_hash_find(Imlib_Hash * hash, const char *key);
-void                __imlib_hash_free(Imlib_Hash * hash);
-void                __imlib_hash_foreach(Imlib_Hash * hash,
-                                         int (*func)(Imlib_Hash * hash,
-                                                     const char *key,
-                                                     void *data, void *fdata),
-                                         const void *fdata);
+#endif /* FONT_H */

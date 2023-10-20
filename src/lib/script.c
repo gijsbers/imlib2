@@ -38,20 +38,20 @@ __imlib_find_string(const char *haystack, const char *needle)
 static char        *
 __imlib_stripwhitespace(char *str)
 {
-   int                 i, strt = 0, in_quote = 0, str_len;
-   char               *tmpstr = NULL;
+   int                 ch, in_quote;
+   char               *si, *so;
 
-   str_len = strlen(str);
-   tmpstr = calloc(str_len + 1, sizeof(char));
-   for (i = 0; i < str_len; i++)
+   in_quote = 0;
+   for (si = so = str;;)
      {
-        if (str[i] == '\"')
-           in_quote = (in_quote == 0 ? 1 : 0);
-        if (in_quote || !isspace(*(str + i)))
-           tmpstr[strt++] = str[i];
+        ch = *si++;
+        if (ch == '"')
+           in_quote = !in_quote;
+        if (in_quote || !isspace(ch))
+           *so++ = ch;
+        if (ch == '\0')
+           break;
      }
-   strcpy(str, tmpstr);
-   free(tmpstr);
    return str;
 }
 

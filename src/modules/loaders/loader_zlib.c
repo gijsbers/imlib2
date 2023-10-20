@@ -5,85 +5,60 @@
 #define OUTBUF_SIZE 16484
 
 static int
-uncompress_file(FILE * fp, int dest)
+uncompress_file(const void *fdata, unsigned int fsize, int dest)
 {
-   gzFile              gf;
-   DATA8               outbuf[OUTBUF_SIZE];
+   int                 ok;
+   z_stream            strm = { 0 };;
+   unsigned char       outbuf[OUTBUF_SIZE];
    int                 ret = 1, bytes;
 
-   gf = gzdopen(dup(fileno(fp)), "rb");
-   if (!gf)
-      return 0;
+   ok = 0;
 
-   while (1)
+   ret = inflateInit2(&strm, 15 + 32);
+   if (ret != Z_OK)
+      return ok;
+
+   strm.next_in = (void *)fdata;
+   strm.avail_in = fsize;
+
+   for (;;)
      {
-        bytes = gzread(gf, outbuf, OUTBUF_SIZE);
+        strm.next_out = outbuf;
+        strm.avail_out = sizeof(outbuf);
 
-        if (!bytes)
-           break;
-        else if (bytes == -1)
-          {
-             ret = 0;
-             break;
-          }
-        else if (write(dest, outbuf, bytes) != bytes)
+        ret = inflate(&strm, 0);
+
+        if (ret != Z_OK && ret != Z_STREAM_END)
+           goto quit;
+
+        bytes = sizeof(outbuf) - strm.avail_out;
+        if (write(dest, outbuf, bytes) != bytes)
+           goto quit;
+
+        if (ret == Z_STREAM_END)
            break;
      }
 
-   gzclose(gf);
+   ok = 1;
+
+ quit:
+   inflateEnd(&strm);
 
    return ret;
 }
 
+static const char  *const list_formats[] = { "gz" };
+
 int
 load2(ImlibImage * im, int load_data)
 {
-   ImlibLoader        *loader;
-   int                 dest, res;
-   const char         *s, *p, *q;
-   char                tmp[] = "/tmp/imlib2_loader_zlib-XXXXXX";
-   char               *real_ext;
 
-   /* make sure this file ends in ".gz" and that there's another ext
-    * (e.g. "foo.png.gz") */
-   for (p = s = im->real_file, q = NULL; *s; s++)
-     {
-        if (*s != '.' && *s != '/')
-           continue;
-        q = p;
-        p = s + 1;
-     }
-   if (!q || strcasecmp(p, "gz"))
-      return 0;
-
-   if (!(real_ext = strndup(q, p - q - 1)))
-      return 0;
-
-   loader = __imlib_FindBestLoaderForFormat(real_ext, 0);
-   free(real_ext);
-   if (!loader)
-      return 0;
-
-   if ((dest = mkstemp(tmp)) < 0)
-      return 0;
-
-   res = uncompress_file(im->fp, dest);
-   close(dest);
-
-   if (!res)
-      goto quit;
-
-   res = __imlib_LoadEmbedded(loader, im, tmp, load_data);
-
- quit:
-   unlink(tmp);
-
-   return res;
+   return decompress_load(im, load_data, list_formats, ARRAY_SIZE(list_formats),
+                          uncompress_file);
 }
 
 void
 formats(ImlibLoader * l)
 {
-   static const char  *const list_formats[] = { "gz" };
    __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
 }

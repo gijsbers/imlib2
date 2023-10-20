@@ -29,38 +29,21 @@ __imlib_IsRealFile(const char *s)
 char               *
 __imlib_FileKey(const char *file)
 {
-   char               *newfile;
+   const char         *p;
 
-   newfile = malloc(strlen(file) + 1);
-   if (!newfile)
-      return NULL;
-   newfile[0] = 0;
-   {
-      char               *p1, *p2;
-      int                 go;
+   for (p = file;;)
+     {
+        p = strchr(p, ':');
+        if (!p)
+           break;
+        p++;
+        if (*p == '\0')
+           break;
+        if (*p != ':')          /* :: Drive spec? */
+           return strdup(p);
+        p++;
+     }
 
-      go = 0;
-      p1 = (char *)file;
-      p2 = newfile;
-      while (p1[0])
-        {
-           if (go)
-             {
-                p2[0] = p1[0];
-                p2++;
-             }
-           if ((p1[0] == ':') && (p1[1] != ':'))
-              go = 1;
-           if ((p1[0] == ':') && (p1[1] == ':'))
-              p1++;
-           p1++;
-        }
-      p2[0] = p1[0];
-   }
-   if (newfile[0])
-      return newfile;
-   else
-      free(newfile);
    return NULL;
 }
 

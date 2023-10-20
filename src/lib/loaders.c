@@ -23,23 +23,24 @@ typedef struct {
 
 static const char  *const ext_argb[] = { "argb", NULL };
 static const char  *const ext_bmp[] = { "bmp", NULL };
-#ifdef BUILD_BZ2_LOADER
-static const char  *const ext_bz2[] = { "bz2", NULL };
-#endif
 static const char  *const ext_ff[] = { "ff", NULL };
 #ifdef BUILD_GIF_LOADER
 static const char  *const ext_gif[] = { "gif", NULL };
 #endif
-static const char  *const ext_ico[] = { "ico", NULL };
-#ifdef BUILD_ID3_LOADER
-static const char  *const ext_id3[] = { "mp3", NULL };
+#ifdef BUILD_HEIF_LOADER
+static const char  *const ext_heif[] =
+   { "heif", "heifs", "heic", "heics", "avci", "avcs", "avif", "avifs", NULL };
 #endif
+static const char  *const ext_ico[] = { "ico", NULL };
 #ifdef BUILD_JPEG_LOADER
 static const char  *const ext_jpeg[] = { "jpg", "jpeg", "jfif", "jfi", NULL };
 #endif
 static const char  *const ext_lbm[] = { "iff", "ilbm", "lbm", NULL };
 #ifdef BUILD_PNG_LOADER
 static const char  *const ext_png[] = { "png", NULL };
+#endif
+#ifdef BUILD_SVG_LOADER
+static const char  *const ext_svg[] = { "svg", NULL };
 #endif
 static const char  *const ext_pnm[] =
    { "pnm", "ppm", "pgm", "pbm", "pam", NULL };
@@ -52,23 +53,32 @@ static const char  *const ext_webp[] = { "webp", NULL };
 #endif
 static const char  *const ext_xbm[] = { "xbm", NULL };
 static const char  *const ext_xpm[] = { "xpm", NULL };
+
+#ifdef BUILD_BZ2_LOADER
+static const char  *const ext_bz2[] = { "bz2", NULL };
+#endif
+#ifdef BUILD_LZMA_LOADER
+static const char  *const ext_lzma[] = { "xz", "lzma", NULL };
+#endif
 #ifdef BUILD_ZLIB_LOADER
 static const char  *const ext_zlib[] = { "gz", NULL };
 #endif
+
+#ifdef BUILD_ID3_LOADER
+static const char  *const ext_id3[] = { "mp3", NULL };
+#endif
+
 static const KnownLoader loaders_known[] = {
    {"argb", ext_argb},
    {"bmp", ext_bmp},
-#ifdef BUILD_BZ2_LOADER
-   {"bz2", ext_bz2},
-#endif
    {"ff", ext_ff},
 #ifdef BUILD_GIF_LOADER
    {"gif", ext_gif},
 #endif
-   {"ico", ext_ico},
-#ifdef BUILD_ID3_LOADER
-   {"id3", ext_id3},
+#ifdef BUILD_HEIF_LOADER
+   {"heif", ext_heif},
 #endif
+   {"ico", ext_ico},
 #ifdef BUILD_JPEG_LOADER
    {"jpeg", ext_jpeg},
 #endif
@@ -77,6 +87,9 @@ static const KnownLoader loaders_known[] = {
    {"png", ext_png},
 #endif
    {"pnm", ext_pnm},
+#ifdef BUILD_SVG_LOADER
+   {"svg", ext_svg},
+#endif
    {"tga", ext_tga},
 #ifdef BUILD_TIFF_LOADER
    {"tiff", ext_tiff},
@@ -86,8 +99,17 @@ static const KnownLoader loaders_known[] = {
 #endif
    {"xbm", ext_xbm},
    {"xpm", ext_xpm},
+#ifdef BUILD_BZ2_LOADER
+   {"bz2", ext_bz2},
+#endif
+#ifdef BUILD_LZMA_LOADER
+   {"lzma", ext_lzma},
+#endif
 #ifdef BUILD_ZLIB_LOADER
    {"zlib", ext_zlib},
+#endif
+#ifdef BUILD_ID3_LOADER
+   {"id3", ext_id3},
 #endif
 };
 
@@ -125,6 +147,7 @@ __imlib_ProduceLoader(const char *file)
         return NULL;
      }
    l->load2 = dlsym(l->handle, "load2");
+   l->load = NULL;
    if (!l->load2)
       l->load = dlsym(l->handle, "load");
    l->save = dlsym(l->handle, "save");
@@ -281,7 +304,7 @@ __imlib_LookupLoadedLoader(const char *format, int for_save)
                {
                   /* does it provide the function we need? */
                   if ((for_save && l->save) ||
-                      (!for_save && (l->load || l->load2)))
+                      (!for_save && (l->load2 || l->load)))
                      goto done;
                }
           }

@@ -89,7 +89,6 @@ typedef struct {
 } ie_t;
 
 typedef struct {
-   FILE               *fp;
    idir_t              idir;    /* ICONDIR */
    ie_t               *ie;      /* Icon entries */
 } ico_t;
@@ -109,8 +108,6 @@ ico_delete(ico_t * ico)
           }
         free(ico->ie);
      }
-
-   free(ico);
 }
 
 static void
@@ -133,8 +130,8 @@ ico_read_idir(ico_t * ico, int ino)
    SWAP_LE_32_INPLACE(ie->ide.size);
    SWAP_LE_32_INPLACE(ie->ide.offs);
 
-   D("Entry %2d: Idir: WxHxD = %dx%dx%d, colors = %d\n",
-     ino, ie->w, ie->h, ie->ide.bpp, ie->ide.colors);
+   DL("Entry %2d: Idir: WxHxD = %dx%dx%d, colors = %d\n",
+      ino, ie->w, ie->h, ie->ide.bpp, ie->ide.colors);
 }
 
 static void
@@ -142,6 +139,9 @@ ico_read_icon(ico_t * ico, int ino)
 {
    ie_t               *ie;
    unsigned int        size;
+#ifdef WORDS_BIGENDIAN
+   unsigned int        nr;
+#endif
 
    ie = &ico->ie[ino];
 
@@ -169,8 +169,8 @@ ico_read_icon(ico_t * ico, int ino)
         goto bail;
      }
 
-   D("Entry %2d: Icon: WxHxD = %dx%dx%d, colors = %d\n",
-     ino, ie->w, ie->h, ie->bih.bpp, ie->bih.colors);
+   DL("Entry %2d: Icon: WxHxD = %dx%dx%d, colors = %d\n",
+      ino, ie->w, ie->h, ie->bih.bpp, ie->bih.colors);
 
    if (ie->bih.width != ie->w || ie->bih.height != 2 * ie->h)
      {
@@ -187,7 +187,7 @@ ico_read_icon(ico_t * ico, int ino)
      case 1:
      case 4:
      case 8:
-        D("Allocating a %d slot colormap\n", ie->bih.colors);
+        DL("Allocating a %d slot colormap\n", ie->bih.colors);
         if (UINT_MAX / sizeof(DATA32) < ie->bih.colors)
            goto bail;
         size = ie->bih.colors * sizeof(DATA32);
@@ -215,7 +215,7 @@ ico_read_icon(ico_t * ico, int ino)
       goto bail;
    if (mm_read(ie->pxls, size))
       goto bail;
-   D("Pixel data size: %u\n", size);
+   DL("Pixel data size: %u\n", size);
 
    size = ((ie->w + 31) / 32 * 4) * ie->h;
    ie->mask = malloc(size);
@@ -223,54 +223,12 @@ ico_read_icon(ico_t * ico, int ino)
       goto bail;
    if (mm_read(ie->mask, size))
       goto bail;
-   D("Mask  data size: %u\n", size);
+   DL("Mask  data size: %u\n", size);
 
    return;
 
  bail:
    ie->w = ie->h = 0;           /* Mark invalid */
-}
-
-static ico_t       *
-ico_read(ImlibImage * im, void *data, unsigned int size)
-{
-   ico_t              *ico;
-   unsigned int        i;
-
-   ico = calloc(1, sizeof(ico_t));
-   if (!ico)
-      return NULL;
-
-   ico->fp = im->fp;
-
-   if (mm_read(&ico->idir, sizeof(ico->idir)))
-      goto bail;
-
-   SWAP_LE_16_INPLACE(ico->idir.rsvd);
-   SWAP_LE_16_INPLACE(ico->idir.type);
-   SWAP_LE_16_INPLACE(ico->idir.icons);
-
-   if (ico->idir.rsvd != 0 ||
-       (ico->idir.type != 1 && ico->idir.type != 2) || ico->idir.icons <= 0)
-      goto bail;
-
-   ico->ie = calloc(ico->idir.icons, sizeof(ie_t));
-   if (!ico->ie)
-      goto bail;
-
-   D("Loading '%s' Nicons = %d\n", im->real_file, ico->idir.icons);
-
-   for (i = 0; i < ico->idir.icons; i++)
-     {
-        ico_read_idir(ico, i);
-        ico_read_icon(ico, i);
-     }
-
-   return ico;
-
- bail:
-   ico_delete(ico);
-   return NULL;
 }
 
 static int
@@ -302,35 +260,41 @@ ico_data_get_nibble(DATA8 * data, int w, int x, int y)
 static int
 ico_load(ico_t * ico, ImlibImage * im, int load_data)
 {
-   int                 ic, x, y, w, h, d;
+   int                 ic, x, y, w, h, d, frame;
    DATA32             *cmap;
    DATA8              *pxls, *mask, *psrc;
    ie_t               *ie;
    DATA32             *pdst;
    DATA32              pixel;
 
-   /* Find icon with largest size and depth */
-   ic = y = d = 0;
-   for (x = 0; x < ico->idir.icons; x++)
+   frame = 0;                   /* Select default */
+   if (im->frame_num > 0)
      {
-        ie = &ico->ie[x];
-        w = ie->w;
-        h = ie->h;
-        if (w * h < y)
-           continue;
-        if (w * h == y && ie->bih.bpp < d)
-           continue;
-        ic = x;
-        y = w * h;
-        d = ie->bih.bpp;
+        frame = im->frame_num;
+        im->frame_count = ico->idir.icons;
+
+        if (frame > 1 && frame > im->frame_count)
+           return 0;
      }
 
-   /* Enable overriding selected index for debug purposes */
-   if (im->key)
+   ic = frame - 1;
+   if (ic < 0)
      {
-        ic = atoi(im->key);
-        if (ic >= ico->idir.icons)
-           return 0;
+        /* Select default: Find icon with largest size and depth */
+        ic = y = d = 0;
+        for (x = 0; x < ico->idir.icons; x++)
+          {
+             ie = &ico->ie[x];
+             w = ie->w;
+             h = ie->h;
+             if (w * h < y)
+                continue;
+             if (w * h == y && ie->bih.bpp < d)
+                continue;
+             ic = x;
+             y = w * h;
+             d = ie->bih.bpp;
+          }
      }
 
    ie = &ico->ie[ic];
@@ -357,62 +321,57 @@ ico_load(ico_t * ico, ImlibImage * im, int load_data)
    pxls = ie->pxls;
    mask = ie->mask;
 
+   pdst = im->data + (h - 1) * w;       /* Start in lower left corner */
+
    switch (ie->bih.bpp)
      {
      case 1:
-        for (y = 0; y < h; y++)
+        for (y = 0; y < h; y++, pdst -= 2 * w)
           {
              for (x = 0; x < w; x++)
                {
-                  pdst = &(im->data[(h - 1 - y) * w + x]);
-
                   pixel = cmap[ico_data_get_bit(pxls, w, x, y)];
                   if (ico_data_get_bit(mask, w, x, y) == 0)
                      pixel |= 0xff000000;
 
-                  *pdst = pixel;
+                  *pdst++ = pixel;
                }
           }
         break;
 
      case 4:
-        for (y = 0; y < h; y++)
+        for (y = 0; y < h; y++, pdst -= 2 * w)
           {
              for (x = 0; x < w; x++)
                {
-                  pdst = &(im->data[(h - 1 - y) * w + x]);
-
                   pixel = cmap[ico_data_get_nibble(pxls, w, x, y)];
                   if (ico_data_get_bit(mask, w, x, y) == 0)
                      pixel |= 0xff000000;
 
-                  *pdst = pixel;
+                  *pdst++ = pixel;
                }
           }
         break;
 
      case 8:
-        for (y = 0; y < h; y++)
+        for (y = 0; y < h; y++, pdst -= 2 * w)
           {
              for (x = 0; x < w; x++)
                {
-                  pdst = &(im->data[(h - 1 - y) * w + x]);
-
                   pixel = cmap[pxls[y * w + x]];
                   if (ico_data_get_bit(mask, w, x, y) == 0)
                      pixel |= 0xff000000;
 
-                  *pdst = pixel;
+                  *pdst++ = pixel;
                }
           }
         break;
 
      default:
-        for (y = 0; y < h; y++)
+        for (y = 0; y < h; y++, pdst -= 2 * w)
           {
              for (x = 0; x < w; x++)
                {
-                  pdst = &(im->data[(h - 1 - y) * w + x]);
                   psrc = &pxls[(y * w + x) * ie->bih.bpp / 8];
 
                   pixel = PIXEL_ARGB(0, psrc[2], psrc[1], psrc[0]);
@@ -421,7 +380,7 @@ ico_load(ico_t * ico, ImlibImage * im, int load_data)
                   else if (ico_data_get_bit(mask, w, x, y) == 0)
                      pixel |= 0xff000000;
 
-                  *pdst = pixel;
+                  *pdst++ = pixel;
                }
           }
         break;
@@ -435,34 +394,55 @@ load2(ImlibImage * im, int load_data)
 {
    int                 rc;
    void               *fdata;
-   ico_t              *ico;
+   ico_t               ico;
+   unsigned int        i;
 
    rc = LOAD_FAIL;
 
    fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
-      return rc;
+      return LOAD_BADFILE;
 
    mm_init(fdata, im->fsize);
 
-   ico = ico_read(im, fdata, im->fsize);
-   if (!ico)
+   ico.ie = NULL;
+   if (mm_read(&ico.idir, sizeof(ico.idir)))
       goto quit;
 
-   if (ico_load(ico, im, load_data))
+   SWAP_LE_16_INPLACE(ico.idir.rsvd);
+   SWAP_LE_16_INPLACE(ico.idir.type);
+   SWAP_LE_16_INPLACE(ico.idir.icons);
+
+   if (ico.idir.rsvd != 0 ||
+       (ico.idir.type != 1 && ico.idir.type != 2) || ico.idir.icons <= 0)
+      goto quit;
+
+   ico.ie = calloc(ico.idir.icons, sizeof(ie_t));
+   if (!ico.ie)
+      QUIT_WITH_RC(LOAD_OOM);
+
+   D("Loading '%s' Nicons = %d\n", im->real_file, ico.idir.icons);
+
+   for (i = 0; i < ico.idir.icons; i++)
+     {
+        ico_read_idir(&ico, i);
+        ico_read_icon(&ico, i);
+     }
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
+
+   if (ico_load(&ico, im, load_data))
      {
         if (im->lc)
            __imlib_LoadProgressRows(im, 0, im->h);
         rc = LOAD_SUCCESS;
      }
 
-   ico_delete(ico);
-
  quit:
+   ico_delete(&ico);
    if (rc <= 0)
       __imlib_FreeData(im);
-   if (fdata != MAP_FAILED)
-      munmap(fdata, im->fsize);
+   munmap(fdata, im->fsize);
    return rc;
 }
 

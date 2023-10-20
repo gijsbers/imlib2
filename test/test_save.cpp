@@ -2,15 +2,12 @@
 
 #include <Imlib2.h>
 
-int                 debug = 0;
-
-#define D(...)  if (debug) printf(__VA_ARGS__)
+#include "config.h"
+#include "test.h"
 
 #define EXPECT_OK(x)  EXPECT_FALSE(x)
 #define EXPECT_ERR(x) EXPECT_TRUE(x)
 
-#define TOPDIR  	SRC_DIR
-#define FILE_DIR	"test/images"
 #define FILE_REF1	"icon-64"       // RGB
 #define FILE_REF2	"xeyes" // ARGB (shaped)
 
@@ -58,7 +55,7 @@ test_save(const char *file, int prog)
         imlib_context_set_progress_granularity(10);
      }
 
-   snprintf(filei, sizeof(filei), "%s/%s/%s.png", TOPDIR, FILE_DIR, file);
+   snprintf(filei, sizeof(filei), "%s/%s.png", IMG_SRC, file);
    D("Load '%s'\n", filei);
    im = imlib_load_image(filei);
    ASSERT_TRUE(im);
@@ -86,7 +83,7 @@ test_save(const char *file, int prog)
         w = imlib_image_get_width();
         h = imlib_image_get_height();
         snprintf(fileo, sizeof(fileo), "%s/save-%s-%dx%d.%s",
-                 ".", file, w, h, pfxs[i]);
+                 IMG_GEN, file, w, h, pfxs[i]);
         D("Save '%s'\n", fileo);
         imlib_save_image_with_error_return(fileo, &lerr);
         EXPECT_EQ(lerr, 0);
@@ -98,7 +95,7 @@ test_save(const char *file, int prog)
         w = imlib_image_get_width();
         h = imlib_image_get_height();
         snprintf(fileo, sizeof(fileo), "%s/save-%s-%dx%d.%s",
-                 ".", file, w, h, pfxs[i]);
+                 IMG_GEN, file, w, h, pfxs[i]);
         D("Save '%s'\n", fileo);
         imlib_save_image_with_error_return(fileo, &lerr);
         EXPECT_EQ(lerr, 0);
@@ -110,7 +107,7 @@ test_save(const char *file, int prog)
         w = imlib_image_get_width();
         h = imlib_image_get_height();
         snprintf(fileo, sizeof(fileo), "%s/save-%s-%dx%d.%s",
-                 ".", file, w, h, pfxs[i]);
+                 IMG_GEN, file, w, h, pfxs[i]);
         D("Save '%s'\n", fileo);
         imlib_save_image_with_error_return(fileo, &lerr);
         EXPECT_EQ(lerr, 0);
@@ -122,7 +119,7 @@ test_save(const char *file, int prog)
         w = imlib_image_get_width();
         h = imlib_image_get_height();
         snprintf(fileo, sizeof(fileo), "%s/save-%s-%dx%d.%s",
-                 ".", file, w, h, pfxs[i]);
+                 IMG_GEN, file, w, h, pfxs[i]);
         D("Save '%s'\n", fileo);
         imlib_save_image_with_error_return(fileo, &lerr);
         EXPECT_EQ(lerr, 0);
@@ -162,27 +159,4 @@ TEST(SAVE, save_1_argb)
 TEST(SAVE, save_2_argb)
 {
    test_save(FILE_REF2, 1);
-}
-
-int
-main(int argc, char **argv)
-{
-   const char         *s;
-
-   ::testing::InitGoogleTest(&argc, argv);
-
-   for (argc--, argv++; argc > 0; argc--, argv++)
-     {
-        s = argv[0];
-        if (*s++ != '-')
-           break;
-        switch (*s)
-          {
-          case 'd':
-             debug++;
-             break;
-          }
-     }
-
-   return RUN_ALL_TESTS();
 }

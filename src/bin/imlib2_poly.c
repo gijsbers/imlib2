@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "Imlib2.h"
+#include <Imlib2.h>
 
 Display            *disp;
 Window              win;

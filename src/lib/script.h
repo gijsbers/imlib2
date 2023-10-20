@@ -29,22 +29,18 @@
       }                                            \
    }
 
-typedef struct _imlib_function_param IFunctionParam;
-typedef struct _imlib_function_param *pIFunctionParam;
-struct _imlib_function_param {
+typedef struct _IFunctionParam {
    char               *key;
    int                 type;
    void               *data;
-   pIFunctionParam     next;
-};
+   struct _IFunctionParam *next;
+} IFunctionParam;
 
-typedef struct _imlib_function IFunction;
-typedef struct _imlib_function *pIFunction;
-struct _imlib_function {
+typedef struct _IFunction {
    char               *name;
-   pIFunctionParam     params;
-   pIFunction          next;
-};
+   IFunctionParam     *params;
+   struct _IFunction  *next;
+} IFunction;
 
 typedef struct _imlib_variable {
    void               *ptr;

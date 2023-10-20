@@ -1,4 +1,4 @@
-AC_INIT([imlib2],[1.7.5],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.8.0],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -21,19 +21,54 @@ define([AC_LIBTOOL_LANG_CXX_CONFIG], [:])dnl
 define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
-VERSION_CUR=8
-VERSION_REV=5
-VERSION_AGE=7
+VERSION_CUR=9
+VERSION_REV=0
+VERSION_AGE=8
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
 
 PKG_PROG_PKG_CONFIG
 
-AC_DEFUN([EC_LOADER], [
-  if test "$2" = "yes"; then
-    AC_DEFINE([$1], [ 1 ], [ Build $3 loader ])
+AC_DEFUN([EC_LOADER_CHECK], [
+  m4_pushdef([NMDN], m4_tolower($1))
+  m4_pushdef([NMUP], m4_toupper($1))
+  m4_pushdef([DFLT], m4_strip($2))
+  AC_MSG_CHECKING([whether to enable NMUP support])
+  AC_ARG_WITH([NMDN],
+    AS_HELP_STRING([--without-NMDN], [Disable NMUP loader]),
+    [ NMDN[]_loader="$withval" ], [ NMDN[]_loader="DFLT" ]
+  )
+  AC_MSG_RESULT($NMDN[]_loader)
+
+  if test "$NMDN[]_loader" != "no"; then
+    ifelse([$3], [], [
+      NMDN[]_ok="no"
+    ], [
+      PKG_CHECK_MODULES(NMUP, $3, [ NMDN[]_ok="yes" ], [ NMDN[]_ok="no" ])
+    ])
+    ifelse([$4], [],, [
+      if test "$NMDN[]_ok" = "no" ; then
+        $4
+      fi
+    ])
+    if test "$NMDN[]_ok" = "no" ; then
+      if test "$NMDN[]_loader" = "yes" ; then
+        AC_MSG_ERROR([NMUP support was requested but system does not support it])
+      else
+        AC_MSG_WARN([*** NMUP support will not be built ($2 not found) ***])
+      fi
+    fi
+  else
+    NMDN[]_ok="no"
   fi
-  AM_CONDITIONAL([$1], [ test "$2" = "yes" ])
+
+  if test "$NMDN[]_ok" = "yes" ; then
+    AC_DEFINE(BUILD_[]NMUP[]_LOADER, [ 1 ], [ Build NMUP loader ])
+  fi
+  AM_CONDITIONAL(BUILD_[]NMUP[]_LOADER, [ test "$NMDN[]_ok" = "yes" ])
+
+  m4_popdef([NMDN])
+  m4_popdef([NMUP])
 ])
 
 
@@ -147,127 +182,7 @@ if test "x$have_clock_gettime" != xno; then
 fi
 
 
-AC_MSG_CHECKING(whether to enable jpeg support)
-AC_ARG_WITH([jpeg],
-  [AS_HELP_STRING([--without-jpeg], [Disable JPEG image loader])],
-  [
-   if test "$withval" = no ; then
-     jpeg_loader=no
-   else
-     jpeg_loader=yes
-   fi
-  ],
-  [ jpeg_loader=auto ]
-)
-AC_MSG_RESULT($jpeg_loader)
-
-if test "$jpeg_loader" != no ; then
-  PKG_CHECK_MODULES(JPEG, libjpeg, [ jpeg_ok="yes" ], [ jpeg_ok="no" ])
-  if test "$jpeg_ok" = no ; then
-    if test "$jpeg_loader" = yes ; then
-      AC_MSG_ERROR(JPEG support was requested but system does not support it)
-    else
-      AC_MSG_WARN(*** Native JPEG support will not be built (JPEG not found) ***)
-    fi
-  fi
-else
-  jpeg_ok=no
-fi
-EC_LOADER(BUILD_JPEG_LOADER, $jpeg_ok, JPEG)
-
-
-AC_MSG_CHECKING(whether to enable png support)
-AC_ARG_WITH([png],
-  [AS_HELP_STRING([--without-png], [Disable PNG image loader])],
-  [
-   if test "$withval" = no ; then
-     png_loader=no
-   else
-     png_loader=yes
-   fi
-  ],
-  [ png_loader=auto ]
-)
-AC_MSG_RESULT($png_loader)
-
-if test "$png_loader" != no ; then
-  PKG_CHECK_MODULES(PNG, libpng, [ png_ok="yes" ], [
-    PKG_CHECK_MODULES(PNG, libpng12, [ png_ok="yes" ], [
-      PKG_CHECK_MODULES(PNG, libpng10, [ png_ok="yes" ], [ png_ok="no"])
-    ])
-  ])
-else
-  png_ok="no"
-fi
-EC_LOADER(BUILD_PNG_LOADER, $png_ok, PNG)
-
-
-AC_MSG_CHECKING(whether to enable webp support)
-AC_ARG_WITH([webp],
-  [AS_HELP_STRING([--without-webp], [Disable WEBP image loader])],
-  [
-   if test "$withval" = no ; then
-     webp_loader=no
-   else
-     webp_loader=yes
-   fi
-  ],
-  [ webp_loader=auto ]
-)
-AC_MSG_RESULT($webp_loader)
-
-if test "$webp_loader" != no ; then
-  PKG_CHECK_MODULES(WEBP, libwebpdemux, [ webp_ok="yes" ], [ webp_ok="no" ])
-else
-  webp_ok="no"
-fi
-EC_LOADER(BUILD_WEBP_LOADER, $webp_ok, WEBP)
-
-
-AC_MSG_CHECKING(whether to enable tiff support)
-AC_ARG_WITH([tiff],
-  [AS_HELP_STRING([--without-tiff], [Disable TIFF image loader])],
-  [
-   if test "$withval" = no ; then
-     tiff_loader=no
-   else
-     tiff_loader=yes
-   fi
-  ],
-  [ tiff_loader=auto ]
-)
-AC_MSG_RESULT($tiff_loader)
-
-if test "$tiff_loader" != no ; then
-  PKG_CHECK_MODULES(TIFF, libtiff-4, [ tiff_ok="yes" ], [ tiff_ok="no" ])
-  if test "$tiff_ok" = no ; then
-    if test "$tiff_loader" = yes ; then
-      AC_MSG_ERROR(TIFF support was requested but system does not support it)
-    else
-      AC_MSG_WARN(*** Native TIFF support will not be built (TIFF not found) ***)
-    fi
-  fi
-else
-  tiff_ok=no
-fi
-EC_LOADER(BUILD_TIFF_LOADER, $tiff_ok, TIFF)
-
-
-AC_MSG_CHECKING(whether to enable gif support)
-AC_ARG_WITH([gif],
-  [AS_HELP_STRING([--without-gif], [Disable GIF image loader])],
-  [
-   if test "$withval" = no ; then
-     gif_loader=no
-   else
-     gif_loader=yes
-   fi
-  ],
-  [ gif_loader=auto ]
-)
-AC_MSG_RESULT($gif_loader)
-
-if test "$gif_loader" != no ; then
+loader_check_gif() {
   AC_CHECK_LIB(gif, DGifOpenFileName, gif_libs="-lgif" gif_ok=yes, gif_ok=no)
   if test "$gif_ok" = yes; then
     AC_CHECK_HEADER([gif_lib.h], , gif_ok=no)
@@ -276,114 +191,31 @@ if test "$gif_loader" != no ; then
       AC_SUBST(GIF_LIBS)
     fi
   fi
+}
 
-  if test "$gif_ok" = no ; then
-    if test "$gif_loader" = yes ; then
-      AC_MSG_ERROR(GIF support was requested but system does not support it)
-    else
-      AC_MSG_WARN(*** Native GIF support will not be built (GIF not found) ***)
-    fi
-  fi
-else
-  gif_ok=no
-fi
-EC_LOADER(BUILD_GIF_LOADER, $gif_ok, GIF)
+EC_LOADER_CHECK(GIF,  auto, , loader_check_gif)
+EC_LOADER_CHECK(HEIF, auto, libheif)
+EC_LOADER_CHECK(JPEG, auto, libjpeg)
+EC_LOADER_CHECK(PNG,  auto, libpng)
+EC_LOADER_CHECK(SVG,  auto, librsvg-2.0)
+EC_LOADER_CHECK(TIFF, auto, libtiff-4)
+EC_LOADER_CHECK(WEBP, auto, libwebpdemux)
 
-
-AC_MSG_CHECKING(whether to enable zlib support)
-AC_ARG_WITH([zlib],
-  [AS_HELP_STRING([--without-zlib], [Disable ZLIB loader])],
-  [
-   if test "$withval" = no ; then
-     zlib_loader=no
-   else
-     zlib_loader=yes
-   fi
-  ],
-  [ zlib_loader=auto ]
-)
-AC_MSG_RESULT($zlib_loader)
-
-if test "$zlib_loader" != no ; then
-  PKG_CHECK_MODULES(ZLIB, zlib, [ zlib_ok="yes" ], [ zlib_ok="no" ])
-  if test "$zlib_ok" = no ; then
-    if test "$zlib_loader" = yes ; then
-      AC_MSG_ERROR(ZLIB support was requested but system does not support it)
-    else
-      AC_MSG_WARN(*** Native zlib support will not be built (zlib not found) ***)
-    fi
-  fi
-else
-  zlib_ok=no
-fi
-EC_LOADER(BUILD_ZLIB_LOADER, $zlib_ok, ZLIB)
-
-
-AC_MSG_CHECKING(whether to enable bzip2 support)
-AC_ARG_WITH([bzip2],
-  [AS_HELP_STRING([--without-bzip2], [Disable BZIP2 loader])],
-  [
-   if test "$withval" = no ; then
-     bz2_loader=no
-   else
-     bz2_loader=yes
-   fi
-  ],
-  [ bz2_loader=auto ]
-)
-AC_MSG_RESULT($bz2_loader)
-
-if test "$bz2_loader" != no ; then
-  PKG_CHECK_MODULES(BZ2, bzip2, [ bz2_ok="yes" ], [ bz2_ok="no" ])
-  if test "$bz2_ok" = no ; then
-    AC_CHECK_LIB(bz2, BZ2_bzRead, bz2_ok=yes, bz2_ok=no)
+loader_check_bz2() {
+  AC_CHECK_LIB(bz2, BZ2_bzRead, bz2_ok=yes, bz2_ok=no)
+  if test "$bz2_ok" = yes; then
+    AC_CHECK_HEADER([bzlib.h], , bz2_ok=no)
     if test "$bz2_ok" = yes; then
-      AC_CHECK_HEADER([bzlib.h], , bz2_ok=no)
-      if test "$bz2_ok" = yes; then
-        BZ2_LIBS="-lbz2"
-      fi
+      BZ2_LIBS="-lbz2"
     fi
   fi
-  if test "$bz2_ok" = no ; then
-    if test "$bz2_loader" = yes ; then
-      AC_MSG_ERROR(BZIP2 support was requested but system does not support it)
-    else
-      AC_MSG_WARN(*** Native bz2 support will not be built (bzip2 not found) ***)
-    fi
-  fi
-else
-  bz2_ok=no
-fi
-EC_LOADER(BUILD_BZ2_LOADER, $bz2_ok, BZ2)
+}
 
+EC_LOADER_CHECK(BZ2,  auto, bzip2, loader_check_bz2)
+EC_LOADER_CHECK(LZMA, auto, liblzma)
+EC_LOADER_CHECK(ZLIB, auto, zlib)
 
-AC_MSG_CHECKING(whether to enable id3 support)
-AC_ARG_WITH([id3],
-  [AS_HELP_STRING([--without-id3], [Disable ID3 loader])],
-  [
-   if test "$withval" = no ; then
-     id3_loader=no
-   else
-     id3_loader=yes
-   fi
-  ],
-  [ id3_loader=auto ]
-)
-AC_MSG_RESULT($id3_loader)
-
-if test "$id3_loader" != no ; then
-  PKG_CHECK_MODULES(ID3, id3tag, [ id3_ok="yes" ], [ id3_ok="no" ])
-  if test "$id3_ok" = no ; then
-    if test "$id3_loader" = yes ; then
-      AC_MSG_ERROR(ID3 support was requested but system does not support it)
-    else
-      AC_MSG_WARN(*** Native mp3 support will not be built (id3tag not found) ***)
-    fi
-  fi
-else
-  id3_ok=no
-fi
-EC_LOADER(BUILD_ID3_LOADER, $id3_ok, ID3)
+EC_LOADER_CHECK(ID3,  auto, id3tag)
 
 
 AM_CONDITIONAL(BUILD_TEST, false)
@@ -440,13 +272,19 @@ echo
 echo "Configuration Options Summary:"
 echo
 echo "Image loaders:"
+echo " Regular image loaders"
+echo "  GIF.....................: $gif_ok"
+echo "  HEIF....................: $heif_ok"
 echo "  JPEG....................: $jpeg_ok"
 echo "  PNG.....................: $png_ok"
+echo "  SVG.....................: $svg_ok"
 echo "  TIFF....................: $tiff_ok"
-echo "  GIF.....................: $gif_ok"
 echo "  WEBP....................: $webp_ok"
-echo "  ZLIB....................: $zlib_ok"
+echo " Decompressors"
 echo "  BZIP2...................: $bz2_ok"
+echo "  LZMA(XZ)................: $lzma_ok"
+echo "  ZLIB....................: $zlib_ok"
+echo " Containers"
 echo "  ID3.....................: $id3_ok"
 echo
 echo "Build for X11.............: $have_x"

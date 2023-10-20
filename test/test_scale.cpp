@@ -4,13 +4,8 @@
 #include <zlib.h>
 
 #include "config.h"
+#include "test.h"
 
-int                 debug = 0;
-
-#define D(...)  if (debug) printf(__VA_ARGS__)
-
-#define TOPDIR  	SRC_DIR
-#define FILE_DIR	"test/images"
 #define FILE_REF1	"icon-64"       // RGB
 #define FILE_REF2	"xeyes" // ARGB (shaped)
 
@@ -47,7 +42,7 @@ test_scale(int no)
 #endif
    ptd = &td[no];
 
-   snprintf(filei, sizeof(filei), "%s/%s/%s.png", TOPDIR, FILE_DIR, ptd->file);
+   snprintf(filei, sizeof(filei), "%s/%s.png", IMG_SRC, ptd->file);
    D("Load '%s'\n", filei);
    imi = imlib_load_image(filei);
    ASSERT_TRUE(imi);
@@ -78,7 +73,7 @@ test_scale(int no)
         EXPECT_EQ(crc, ptd->crcs[i]);
 
         snprintf(fileo, sizeof(fileo), "%s/scale-%s-%dx%d.%s",
-                 ".", ptd->file, w, h, "png");
+                 IMG_GEN, ptd->file, w, h, "png");
         imlib_image_set_format("png");
         D("Save '%s'\n", fileo);
         imlib_save_image_with_error_return(fileo, &lerr);
@@ -102,27 +97,4 @@ TEST(SCALE, scale_1_rgb)
 TEST(SCALE, scale_1_argb)
 {
    test_scale(1);
-}
-
-int
-main(int argc, char **argv)
-{
-   const char         *s;
-
-   ::testing::InitGoogleTest(&argc, argv);
-
-   for (argc--, argv++; argc > 0; argc--, argv++)
-     {
-        s = argv[0];
-        if (*s++ != '-')
-           break;
-        switch (*s)
-          {
-          case 'd':
-             debug++;
-             break;
-          }
-     }
-
-   return RUN_ALL_TESTS();
 }

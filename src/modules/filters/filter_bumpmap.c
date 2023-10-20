@@ -8,10 +8,10 @@
 #define PI (4 * atan(1))
 
 static              Imlib_Image
-bump_map(Imlib_Image im, pIFunctionParam par)
+bump_map(Imlib_Image im, IFunctionParam * par)
 {
    Imlib_Image         map = im;
-   pIFunctionParam     ptr;
+   IFunctionParam     *ptr;
    double              an = 0, el = 30, d = 0x200;
    double              red = 0x200, green = 0x200, blue = 0x200;
    double              ambient = 0;
@@ -126,10 +126,10 @@ bump_map(Imlib_Image im, pIFunctionParam par)
 }
 
 static              Imlib_Image
-bump_map_point(Imlib_Image im, pIFunctionParam par)
+bump_map_point(Imlib_Image im, IFunctionParam * par)
 {
    Imlib_Image         map = im;
-   pIFunctionParam     ptr;
+   IFunctionParam     *ptr;
    double              x = 0, y = 0, z = 30, d = 0x200;
    double              red = 0x200, green = 0x200, blue = 0x200;
    double              ambient = 0;
@@ -244,7 +244,7 @@ bump_map_point(Imlib_Image im, pIFunctionParam par)
 }
 
 void
-init(struct imlib_filter_info *info)
+init(ImlibFilterInfo * info)
 {
    static const char  *const filters[] = { "bump_map_point", "bump_map" };
    int                 i = ARRAY_SIZE(filters);
@@ -267,7 +267,7 @@ deinit()
 }
 
 void               *
-exec(char *filter, void *im, pIFunctionParam par)
+exec(char *filter, void *im, IFunctionParam * par)
 {
    if (!strcmp(filter, "bump_map"))
       return bump_map((Imlib_Image) im, par);

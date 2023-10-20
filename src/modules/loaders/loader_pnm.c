@@ -1,7 +1,10 @@
 #include "loader_common.h"
 
 #include <ctype.h>
+#include <stdbool.h>
 #include <sys/mman.h>
+
+#define DBG_PFX "LDR-pnm"
 
 static struct {
    const unsigned char *data, *dptr;
@@ -41,23 +44,60 @@ mm_getc(void)
 }
 
 static int
-mm_getu(unsigned int *pui)
+mm_get01(void)
 {
    int                 ch;
-   int                 uval;
 
    for (;;)
      {
         ch = mm_getc();
+        switch (ch)
+          {
+          case '0':
+             return 0;
+          case '1':
+             return 1;
+          case ' ':
+          case '\t':
+          case '\r':
+          case '\n':
+             continue;
+          default:
+             return -1;
+          }
+     }
+}
+
+static int
+mm_getu(unsigned int *pui)
+{
+   int                 ch;
+   int                 uval;
+   bool                comment;
+
+   /* Strip whitespace and comments */
+   for (comment = false;;)
+     {
+        ch = mm_getc();
         if (ch < 0)
            return ch;
-        if (!isspace(ch))
+        if (comment)
+          {
+             if (ch == '\n')
+                comment = false;
+             continue;
+          }
+        if (isspace(ch))
+           continue;
+        if (ch != '#')
            break;
+        comment = true;
      }
 
    if (!isdigit(ch))
       return -1;
 
+   /* Parse number */
    for (uval = 0;;)
      {
         uval = 10 * uval + ch - '0';
@@ -77,9 +117,8 @@ load2(ImlibImage * im, int load_data)
 {
    int                 rc;
    void               *fdata;
-   char                p = ' ', numbers = 3, count = 0;
-   int                 w = 0, h = 0, v = 255, c = 0;
-   char                buf[256];
+   int                 c, p;
+   int                 w, h, v, numbers, count;
    DATA8              *data = NULL;     /* for the binary versions */
    DATA8              *ptr = NULL;
    int                *idata = NULL;    /* for the ASCII versions */
@@ -90,18 +129,17 @@ load2(ImlibImage * im, int load_data)
 
    fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
-      return rc;
+      return LOAD_BADFILE;
 
    mm_init(fdata, im->fsize);
 
    /* read the header info */
 
-   rc = LOAD_FAIL;
-
    c = mm_getc();
    if (c != 'P')
       goto quit;
 
+   numbers = 3;
    p = mm_getc();
    if (p == '1' || p == '4')
       numbers = 2;              /* bitimages don't have max value */
@@ -109,59 +147,42 @@ load2(ImlibImage * im, int load_data)
    if ((p < '1') || (p > '8'))
       goto quit;
 
-   count = 0;
-   while (count < numbers)
+   /* read numbers */
+   w = h = 0;
+   v = 255;
+   for (count = i = 0; count < numbers; i++)
      {
-        c = mm_getc();
-
-        if (c == EOF)
+        if (mm_getu(&gval))
            goto quit;
 
-        /* eat whitespace */
-        while (isspace(c))
-           c = mm_getc();
-        /* if comment, eat that */
-        if (c == '#')
+        if (p == '7' && i == 0)
           {
-             do
-                c = mm_getc();
-             while (c != '\n' && c != EOF);
+             if (gval != 332)
+                goto quit;
+             else
+                continue;
           }
-        /* no comment -> proceed */
-        else
-          {
-             i = 0;
 
-             /* read numbers */
-             while (c != EOF && !isspace(c) && (i < 255))
-               {
-                  buf[i++] = c;
-                  c = mm_getc();
-               }
-             if (i)
-               {
-                  buf[i] = 0;
-                  count++;
-                  switch (count)
-                    {
-                       /* width */
-                    case 1:
-                       w = atoi(buf);
-                       break;
-                       /* height */
-                    case 2:
-                       h = atoi(buf);
-                       break;
-                       /* max value, only for color and greyscale */
-                    case 3:
-                       v = atoi(buf);
-                       break;
-                    }
-               }
+        count++;
+        switch (count)
+          {
+          case 1:              /* width */
+             w = gval;
+             break;
+          case 2:              /* height */
+             h = gval;
+             break;
+          case 3:              /* max value, only for color and greyscale */
+             v = gval;
+             break;
           }
      }
    if ((v < 0) || (v > 255))
       goto quit;
+
+   D("P%c: WxH=%dx%d V=%d\n", p, w, h, v);
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
 
    im->w = w;
    im->h = h;
@@ -171,16 +192,13 @@ load2(ImlibImage * im, int load_data)
    UPDATE_FLAG(im->flags, F_HAS_ALPHA, p == '8');
 
    if (!load_data)
-     {
-        rc = LOAD_SUCCESS;
-        goto quit;
-     }
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
    /* Load data */
 
    ptr2 = __imlib_AllocateData(im);
    if (!ptr2)
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
    /* start reading the data */
    switch (p)
@@ -190,15 +208,11 @@ load2(ImlibImage * im, int load_data)
           {
              for (x = 0; x < w; x++)
                {
-                  if (mm_getu(&gval))
+                  i = mm_get01();
+                  if (i < 0)
                      goto quit;
 
-                  if (gval == 1)
-                     *ptr2++ = 0xff000000;
-                  else if (gval == 0)
-                     *ptr2++ = 0xffffffff;
-                  else
-                     goto quit;
+                  *ptr2++ = i ? 0xff000000 : 0xffffffff;
                }
 
              if (im->lc && __imlib_LoadProgressRows(im, y, 1))
@@ -261,7 +275,7 @@ load2(ImlibImage * im, int load_data)
      case '4':                 /* binary 1bit monochrome */
         data = malloc((w + 7) / 8 * sizeof(DATA8));
         if (!data)
-           goto quit;
+           QUIT_WITH_RC(LOAD_OOM);
 
         ptr2 = im->data;
         for (y = 0; y < h; y++)
@@ -291,7 +305,7 @@ load2(ImlibImage * im, int load_data)
      case '5':                 /* binary 8bit grayscale GGGGGGGG */
         data = malloc(1 * sizeof(DATA8) * w);
         if (!data)
-           goto quit;
+           QUIT_WITH_RC(LOAD_OOM);
 
         ptr2 = im->data;
         for (y = 0; y < h; y++)
@@ -330,7 +344,7 @@ load2(ImlibImage * im, int load_data)
      case '6':                 /* 24bit binary RGBRGBRGB */
         data = malloc(3 * sizeof(DATA8) * w);
         if (!data)
-           goto quit;
+           QUIT_WITH_RC(LOAD_OOM);
 
         ptr2 = im->data;
         for (y = 0; y < h; y++)
@@ -369,7 +383,7 @@ load2(ImlibImage * im, int load_data)
      case '7':                 /* XV's 8bit 332 format */
         data = malloc(1 * sizeof(DATA8) * w);
         if (!data)
-           goto quit;
+           QUIT_WITH_RC(LOAD_OOM);
 
         ptr2 = im->data;
         for (y = 0; y < h; y++)
@@ -401,7 +415,7 @@ load2(ImlibImage * im, int load_data)
      case '8':                 /* 24bit binary RGBARGBARGBA */
         data = malloc(4 * sizeof(DATA8) * w);
         if (!data)
-           goto quit;
+           QUIT_WITH_RC(LOAD_OOM);
 
         ptr2 = im->data;
         for (y = 0; y < h; y++)
@@ -448,8 +462,7 @@ load2(ImlibImage * im, int load_data)
  quit:
    free(idata);
    free(data);
-   if (fdata != MAP_FAILED)
-      munmap(fdata, im->fsize);
+   munmap(fdata, im->fsize);
 
    if (rc == 0)
       __imlib_FreeData(im);

@@ -88,6 +88,17 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@BUILD_GIF_LOADER_TRUE@am__append_1 = gif.la
+@BUILD_HEIF_LOADER_TRUE@am__append_2 = heif.la
+@BUILD_JPEG_LOADER_TRUE@am__append_3 = jpeg.la
+@BUILD_PNG_LOADER_TRUE@am__append_4 = png.la
+@BUILD_SVG_LOADER_TRUE@am__append_5 = svg.la
+@BUILD_TIFF_LOADER_TRUE@am__append_6 = tiff.la
+@BUILD_WEBP_LOADER_TRUE@am__append_7 = webp.la
+@BUILD_BZ2_LOADER_TRUE@am__append_8 = bz2.la
+@BUILD_LZMA_LOADER_TRUE@am__append_9 = lzma.la
+@BUILD_ZLIB_LOADER_TRUE@am__append_10 = zlib.la
+@BUILD_ID3_LOADER_TRUE@am__append_11 = id3.la
 subdir = src/modules/loaders
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ec_asan.m4 \
@@ -151,7 +162,7 @@ bmp_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(bmp_la_LIBTOOLFLAGS) \
 am__DEPENDENCIES_1 =
 bz2_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/lib/libImlib2.la
-am_bz2_la_OBJECTS = bz2_la-loader_bz2.lo
+am_bz2_la_OBJECTS = bz2_la-loader_bz2.lo bz2_la-decompress_load.lo
 bz2_la_OBJECTS = $(am_bz2_la_OBJECTS)
 bz2_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(bz2_la_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -171,6 +182,14 @@ gif_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(gif_la_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(gif_la_LDFLAGS) $(LDFLAGS) -o $@
 @BUILD_GIF_LOADER_TRUE@am_gif_la_rpath = -rpath $(pkgdir)
+heif_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/lib/libImlib2.la
+am_heif_la_OBJECTS = heif_la-loader_heif.lo
+heif_la_OBJECTS = $(am_heif_la_OBJECTS)
+heif_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(heif_la_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(heif_la_LDFLAGS) $(LDFLAGS) -o $@
+@BUILD_HEIF_LOADER_TRUE@am_heif_la_rpath = -rpath $(pkgdir)
 ico_la_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_ico_la_OBJECTS = ico_la-loader_ico.lo
 ico_la_OBJECTS = $(am_ico_la_OBJECTS)
@@ -199,6 +218,14 @@ lbm_la_OBJECTS = $(am_lbm_la_OBJECTS)
 lbm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(lbm_la_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(lbm_la_LDFLAGS) $(LDFLAGS) -o $@
+lzma_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/lib/libImlib2.la
+am_lzma_la_OBJECTS = lzma_la-loader_lzma.lo lzma_la-decompress_load.lo
+lzma_la_OBJECTS = $(am_lzma_la_OBJECTS)
+lzma_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(lzma_la_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(lzma_la_LDFLAGS) $(LDFLAGS) -o $@
+@BUILD_LZMA_LOADER_TRUE@am_lzma_la_rpath = -rpath $(pkgdir)
 png_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/lib/libImlib2.la
 am_png_la_OBJECTS = png_la-loader_png.lo
@@ -213,6 +240,14 @@ pnm_la_OBJECTS = $(am_pnm_la_OBJECTS)
 pnm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(pnm_la_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(pnm_la_LDFLAGS) $(LDFLAGS) -o $@
+svg_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/lib/libImlib2.la
+am_svg_la_OBJECTS = svg_la-loader_svg.lo
+svg_la_OBJECTS = $(am_svg_la_OBJECTS)
+svg_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(svg_la_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(svg_la_LDFLAGS) $(LDFLAGS) -o $@
+@BUILD_SVG_LOADER_TRUE@am_svg_la_rpath = -rpath $(pkgdir)
 tga_la_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_tga_la_OBJECTS = tga_la-loader_tga.lo
 tga_la_OBJECTS = $(am_tga_la_OBJECTS)
@@ -249,7 +284,7 @@ xpm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(xpm_la_LIBTOOLFLAGS) \
 	$(xpm_la_LDFLAGS) $(LDFLAGS) -o $@
 zlib_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/lib/libImlib2.la
-am_zlib_la_OBJECTS = zlib_la-loader_zlib.lo
+am_zlib_la_OBJECTS = zlib_la-loader_zlib.lo zlib_la-decompress_load.lo
 zlib_la_OBJECTS = $(am_zlib_la_OBJECTS)
 zlib_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(zlib_la_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -272,20 +307,26 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/argb_la-loader_argb.Plo \
 	./$(DEPDIR)/bmp_la-loader_bmp.Plo \
+	./$(DEPDIR)/bz2_la-decompress_load.Plo \
 	./$(DEPDIR)/bz2_la-loader_bz2.Plo \
 	./$(DEPDIR)/ff_la-loader_ff.Plo \
 	./$(DEPDIR)/gif_la-loader_gif.Plo \
+	./$(DEPDIR)/heif_la-loader_heif.Plo \
 	./$(DEPDIR)/ico_la-loader_ico.Plo \
 	./$(DEPDIR)/id3_la-loader_id3.Plo ./$(DEPDIR)/jpeg_la-exif.Plo \
 	./$(DEPDIR)/jpeg_la-loader_jpeg.Plo \
 	./$(DEPDIR)/lbm_la-loader_lbm.Plo \
+	./$(DEPDIR)/lzma_la-decompress_load.Plo \
+	./$(DEPDIR)/lzma_la-loader_lzma.Plo \
 	./$(DEPDIR)/png_la-loader_png.Plo \
 	./$(DEPDIR)/pnm_la-loader_pnm.Plo \
+	./$(DEPDIR)/svg_la-loader_svg.Plo \
 	./$(DEPDIR)/tga_la-loader_tga.Plo \
 	./$(DEPDIR)/tiff_la-loader_tiff.Plo \
 	./$(DEPDIR)/webp_la-loader_webp.Plo \
 	./$(DEPDIR)/xbm_la-loader_xbm.Plo \
 	./$(DEPDIR)/xpm_la-loader_xpm.Plo \
+	./$(DEPDIR)/zlib_la-decompress_load.Plo \
 	./$(DEPDIR)/zlib_la-loader_zlib.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -307,15 +348,17 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(argb_la_SOURCES) $(bmp_la_SOURCES) $(bz2_la_SOURCES) \
-	$(ff_la_SOURCES) $(gif_la_SOURCES) $(ico_la_SOURCES) \
-	$(id3_la_SOURCES) $(jpeg_la_SOURCES) $(lbm_la_SOURCES) \
-	$(png_la_SOURCES) $(pnm_la_SOURCES) $(tga_la_SOURCES) \
+	$(ff_la_SOURCES) $(gif_la_SOURCES) $(heif_la_SOURCES) \
+	$(ico_la_SOURCES) $(id3_la_SOURCES) $(jpeg_la_SOURCES) \
+	$(lbm_la_SOURCES) $(lzma_la_SOURCES) $(png_la_SOURCES) \
+	$(pnm_la_SOURCES) $(svg_la_SOURCES) $(tga_la_SOURCES) \
 	$(tiff_la_SOURCES) $(webp_la_SOURCES) $(xbm_la_SOURCES) \
 	$(xpm_la_SOURCES) $(zlib_la_SOURCES)
 DIST_SOURCES = $(argb_la_SOURCES) $(bmp_la_SOURCES) $(bz2_la_SOURCES) \
-	$(ff_la_SOURCES) $(gif_la_SOURCES) $(ico_la_SOURCES) \
-	$(id3_la_SOURCES) $(jpeg_la_SOURCES) $(lbm_la_SOURCES) \
-	$(png_la_SOURCES) $(pnm_la_SOURCES) $(tga_la_SOURCES) \
+	$(ff_la_SOURCES) $(gif_la_SOURCES) $(heif_la_SOURCES) \
+	$(ico_la_SOURCES) $(id3_la_SOURCES) $(jpeg_la_SOURCES) \
+	$(lbm_la_SOURCES) $(lzma_la_SOURCES) $(png_la_SOURCES) \
+	$(pnm_la_SOURCES) $(svg_la_SOURCES) $(tga_la_SOURCES) \
 	$(tiff_la_SOURCES) $(webp_la_SOURCES) $(xbm_la_SOURCES) \
 	$(xpm_la_SOURCES) $(zlib_la_SOURCES)
 am__can_run_installinfo = \
@@ -388,6 +431,8 @@ FREETYPE_LIBS = @FREETYPE_LIBS@
 GIF_LIBS = @GIF_LIBS@
 GREP = @GREP@
 HAVE_VISIBILITY = @HAVE_VISIBILITY@
+HEIF_CFLAGS = @HEIF_CFLAGS@
+HEIF_LIBS = @HEIF_LIBS@
 ID3_CFLAGS = @ID3_CFLAGS@
 ID3_LIBS = @ID3_LIBS@
 INSTALL = @INSTALL@
@@ -406,6 +451,8 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
+LZMA_CFLAGS = @LZMA_CFLAGS@
+LZMA_LIBS = @LZMA_LIBS@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
@@ -433,6 +480,8 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+SVG_CFLAGS = @SVG_CFLAGS@
+SVG_LIBS = @SVG_LIBS@
 TIFF_CFLAGS = @TIFF_CFLAGS@
 TIFF_LIBS = @TIFF_LIBS@
 VERSION = @VERSION@
@@ -508,33 +557,11 @@ top_srcdir = @top_srcdir@
 AM_CFLAGS = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
 AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/src/lib
 pkgdir = $(libdir)/imlib2/loaders
-@BUILD_BZ2_LOADER_TRUE@BZ2_L = bz2.la
-@BUILD_GIF_LOADER_TRUE@GIF_L = gif.la
-@BUILD_ID3_LOADER_TRUE@ID3_L = id3.la
-@BUILD_JPEG_LOADER_TRUE@JPEG_L = jpeg.la
-@BUILD_PNG_LOADER_TRUE@PNG_L = png.la
-@BUILD_TIFF_LOADER_TRUE@TIFF_L = tiff.la
-@BUILD_WEBP_LOADER_TRUE@WEBP_L = webp.la
-@BUILD_ZLIB_LOADER_TRUE@ZLIB_L = zlib.la
-pkg_LTLIBRARIES = \
-argb.la \
-bmp.la \
-$(BZ2_L) \
-ff.la \
-$(GIF_L) \
-ico.la \
-$(ID3_L) \
-$(JPEG_L) \
-lbm.la \
-$(PNG_L) \
-pnm.la \
-tga.la \
-$(TIFF_L) \
-$(WEBP_L) \
-xbm.la \
-xpm.la \
-$(ZLIB_L)
-
+pkg_LTLIBRARIES = argb.la bmp.la ff.la ico.la lbm.la pnm.la tga.la \
+	xbm.la xpm.la $(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4) $(am__append_5) $(am__append_6) \
+	$(am__append_7) $(am__append_8) $(am__append_9) \
+	$(am__append_10) $(am__append_11)
 EXTRA_DIST = loader_common.h
 argb_la_SOURCES = loader_argb.c
 argb_la_LDFLAGS = -module -avoid-version
@@ -544,11 +571,6 @@ bmp_la_SOURCES = loader_bmp.c
 bmp_la_LDFLAGS = -module -avoid-version
 bmp_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
 bmp_la_LIBTOOLFLAGS = --tag=disable-static
-bz2_la_SOURCES = loader_bz2.c
-bz2_la_CPPFLAGS = $(BZ2_CFLAGS) $(AM_CPPFLAGS)
-bz2_la_LDFLAGS = -module -avoid-version
-bz2_la_LIBADD = $(BZ2_LIBS) $(top_builddir)/src/lib/libImlib2.la
-bz2_la_LIBTOOLFLAGS = --tag=disable-static
 ff_la_SOURCES = loader_ff.c
 ff_la_LDFLAGS = -module -avoid-version
 ff_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
@@ -557,15 +579,15 @@ gif_la_SOURCES = loader_gif.c
 gif_la_LDFLAGS = -module -avoid-version
 gif_la_LIBADD = $(GIF_LIBS) $(top_builddir)/src/lib/libImlib2.la
 gif_la_LIBTOOLFLAGS = --tag=disable-static
+heif_la_SOURCES = loader_heif.c
+heif_la_CPPFLAGS = $(HEIF_CFLAGS) $(AM_CPPFLAGS)
+heif_la_LDFLAGS = -module -avoid-version -Wl,-z,nodelete
+heif_la_LIBADD = $(HEIF_LIBS) $(top_builddir)/src/lib/libImlib2.la
+heif_la_LIBTOOLFLAGS = --tag=disable-static
 ico_la_SOURCES = loader_ico.c
 ico_la_LDFLAGS = -module -avoid-version
 ico_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
 ico_la_LIBTOOLFLAGS = --tag=disable-static
-id3_la_SOURCES = loader_id3.c
-id3_la_CPPFLAGS = $(ID3_CFLAGS) $(AM_CPPFLAGS)
-id3_la_LDFLAGS = -module -avoid-version
-id3_la_LIBADD = $(ID3_LIBS) $(top_builddir)/src/lib/libImlib2.la
-id3_la_LIBTOOLFLAGS = --tag=disable-static
 jpeg_la_SOURCES = loader_jpeg.c exif.c exif.h
 jpeg_la_CPPFLAGS = $(JPEG_CFLAGS) $(AM_CPPFLAGS)
 jpeg_la_LDFLAGS = -module -avoid-version
@@ -584,6 +606,11 @@ pnm_la_SOURCES = loader_pnm.c
 pnm_la_LDFLAGS = -module -avoid-version
 pnm_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
 pnm_la_LIBTOOLFLAGS = --tag=disable-static
+svg_la_SOURCES = loader_svg.c
+svg_la_CPPFLAGS = $(SVG_CFLAGS) $(AM_CPPFLAGS)
+svg_la_LDFLAGS = -module -avoid-version -Wl,-z,nodelete
+svg_la_LIBADD = $(SVG_LIBS) $(top_builddir)/src/lib/libImlib2.la
+svg_la_LIBTOOLFLAGS = --tag=disable-static
 tga_la_SOURCES = loader_tga.c
 tga_la_LDFLAGS = -module -avoid-version
 tga_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
@@ -606,11 +633,26 @@ xpm_la_SOURCES = loader_xpm.c
 xpm_la_LDFLAGS = -module -avoid-version
 xpm_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
 xpm_la_LIBTOOLFLAGS = --tag=disable-static
-zlib_la_SOURCES = loader_zlib.c
+bz2_la_SOURCES = loader_bz2.c decompress_load.c
+bz2_la_CPPFLAGS = $(BZ2_CFLAGS) $(AM_CPPFLAGS)
+bz2_la_LDFLAGS = -module -avoid-version
+bz2_la_LIBADD = $(BZ2_LIBS) $(top_builddir)/src/lib/libImlib2.la
+bz2_la_LIBTOOLFLAGS = --tag=disable-static
+lzma_la_SOURCES = loader_lzma.c decompress_load.c
+lzma_la_CPPFLAGS = $(LZMA_CFLAGS) $(AM_CPPFLAGS)
+lzma_la_LDFLAGS = -module -avoid-version
+lzma_la_LIBADD = $(LZMA_LIBS) $(top_builddir)/src/lib/libImlib2.la
+lzma_la_LIBTOOLFLAGS = --tag=disable-static
+zlib_la_SOURCES = loader_zlib.c decompress_load.c
 zlib_la_CPPFLAGS = $(ZLIB_CFLAGS) $(AM_CPPFLAGS)
 zlib_la_LDFLAGS = -module -avoid-version
 zlib_la_LIBADD = $(ZLIB_LIBS) $(top_builddir)/src/lib/libImlib2.la
 zlib_la_LIBTOOLFLAGS = --tag=disable-static
+id3_la_SOURCES = loader_id3.c
+id3_la_CPPFLAGS = $(ID3_CFLAGS) $(AM_CPPFLAGS)
+id3_la_LDFLAGS = -module -avoid-version
+id3_la_LIBADD = $(ID3_LIBS) $(top_builddir)/src/lib/libImlib2.la
+id3_la_LIBTOOLFLAGS = --tag=disable-static
 all: all-am
 
 .SUFFIXES:
@@ -695,6 +737,9 @@ ff.la: $(ff_la_OBJECTS) $(ff_la_DEPENDENCIES) $(EXTRA_ff_la_DEPENDENCIES)
 gif.la: $(gif_la_OBJECTS) $(gif_la_DEPENDENCIES) $(EXTRA_gif_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(gif_la_LINK) $(am_gif_la_rpath) $(gif_la_OBJECTS) $(gif_la_LIBADD) $(LIBS)
 
+heif.la: $(heif_la_OBJECTS) $(heif_la_DEPENDENCIES) $(EXTRA_heif_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(heif_la_LINK) $(am_heif_la_rpath) $(heif_la_OBJECTS) $(heif_la_LIBADD) $(LIBS)
+
 ico.la: $(ico_la_OBJECTS) $(ico_la_DEPENDENCIES) $(EXTRA_ico_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(ico_la_LINK) -rpath $(pkgdir) $(ico_la_OBJECTS) $(ico_la_LIBADD) $(LIBS)
 
@@ -707,11 +752,17 @@ jpeg.la: $(jpeg_la_OBJECTS) $(jpeg_la_DEPENDENCIES) $(EXTRA_jpeg_la_DEPENDENCIES
 lbm.la: $(lbm_la_OBJECTS) $(lbm_la_DEPENDENCIES) $(EXTRA_lbm_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(lbm_la_LINK) -rpath $(pkgdir) $(lbm_la_OBJECTS) $(lbm_la_LIBADD) $(LIBS)
 
+lzma.la: $(lzma_la_OBJECTS) $(lzma_la_DEPENDENCIES) $(EXTRA_lzma_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(lzma_la_LINK) $(am_lzma_la_rpath) $(lzma_la_OBJECTS) $(lzma_la_LIBADD) $(LIBS)
+
 png.la: $(png_la_OBJECTS) $(png_la_DEPENDENCIES) $(EXTRA_png_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(png_la_LINK) $(am_png_la_rpath) $(png_la_OBJECTS) $(png_la_LIBADD) $(LIBS)
 
 pnm.la: $(pnm_la_OBJECTS) $(pnm_la_DEPENDENCIES) $(EXTRA_pnm_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(pnm_la_LINK) -rpath $(pkgdir) $(pnm_la_OBJECTS) $(pnm_la_LIBADD) $(LIBS)
+
+svg.la: $(svg_la_OBJECTS) $(svg_la_DEPENDENCIES) $(EXTRA_svg_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(svg_la_LINK) $(am_svg_la_rpath) $(svg_la_OBJECTS) $(svg_la_LIBADD) $(LIBS)
 
 tga.la: $(tga_la_OBJECTS) $(tga_la_DEPENDENCIES) $(EXTRA_tga_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(tga_la_LINK) -rpath $(pkgdir) $(tga_la_OBJECTS) $(tga_la_LIBADD) $(LIBS)
@@ -739,21 +790,27 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/argb_la-loader_argb.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bmp_la-loader_bmp.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bz2_la-decompress_load.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bz2_la-loader_bz2.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ff_la-loader_ff.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gif_la-loader_gif.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heif_la-loader_heif.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ico_la-loader_ico.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/id3_la-loader_id3.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jpeg_la-exif.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jpeg_la-loader_jpeg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lbm_la-loader_lbm.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lzma_la-decompress_load.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lzma_la-loader_lzma.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/png_la-loader_png.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pnm_la-loader_pnm.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/svg_la-loader_svg.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tga_la-loader_tga.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tiff_la-loader_tiff.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/webp_la-loader_webp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xbm_la-loader_xbm.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xpm_la-loader_xpm.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zlib_la-decompress_load.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/zlib_la-loader_zlib.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -804,6 +861,13 @@ bz2_la-loader_bz2.lo: loader_bz2.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(bz2_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(bz2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o bz2_la-loader_bz2.lo `test -f 'loader_bz2.c' || echo '$(srcdir)/'`loader_bz2.c
 
+bz2_la-decompress_load.lo: decompress_load.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(bz2_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(bz2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT bz2_la-decompress_load.lo -MD -MP -MF $(DEPDIR)/bz2_la-decompress_load.Tpo -c -o bz2_la-decompress_load.lo `test -f 'decompress_load.c' || echo '$(srcdir)/'`decompress_load.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/bz2_la-decompress_load.Tpo $(DEPDIR)/bz2_la-decompress_load.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='decompress_load.c' object='bz2_la-decompress_load.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(bz2_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(bz2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o bz2_la-decompress_load.lo `test -f 'decompress_load.c' || echo '$(srcdir)/'`decompress_load.c
+
 ff_la-loader_ff.lo: loader_ff.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(ff_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ff_la-loader_ff.lo -MD -MP -MF $(DEPDIR)/ff_la-loader_ff.Tpo -c -o ff_la-loader_ff.lo `test -f 'loader_ff.c' || echo '$(srcdir)/'`loader_ff.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ff_la-loader_ff.Tpo $(DEPDIR)/ff_la-loader_ff.Plo
@@ -817,6 +881,13 @@ gif_la-loader_gif.lo: loader_gif.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_gif.c' object='gif_la-loader_gif.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(gif_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gif_la-loader_gif.lo `test -f 'loader_gif.c' || echo '$(srcdir)/'`loader_gif.c
+
+heif_la-loader_heif.lo: loader_heif.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(heif_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(heif_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT heif_la-loader_heif.lo -MD -MP -MF $(DEPDIR)/heif_la-loader_heif.Tpo -c -o heif_la-loader_heif.lo `test -f 'loader_heif.c' || echo '$(srcdir)/'`loader_heif.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/heif_la-loader_heif.Tpo $(DEPDIR)/heif_la-loader_heif.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_heif.c' object='heif_la-loader_heif.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(heif_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(heif_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o heif_la-loader_heif.lo `test -f 'loader_heif.c' || echo '$(srcdir)/'`loader_heif.c
 
 ico_la-loader_ico.lo: loader_ico.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(ico_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ico_la-loader_ico.lo -MD -MP -MF $(DEPDIR)/ico_la-loader_ico.Tpo -c -o ico_la-loader_ico.lo `test -f 'loader_ico.c' || echo '$(srcdir)/'`loader_ico.c
@@ -853,6 +924,20 @@ lbm_la-loader_lbm.lo: loader_lbm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(lbm_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lbm_la-loader_lbm.lo `test -f 'loader_lbm.c' || echo '$(srcdir)/'`loader_lbm.c
 
+lzma_la-loader_lzma.lo: loader_lzma.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(lzma_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lzma_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lzma_la-loader_lzma.lo -MD -MP -MF $(DEPDIR)/lzma_la-loader_lzma.Tpo -c -o lzma_la-loader_lzma.lo `test -f 'loader_lzma.c' || echo '$(srcdir)/'`loader_lzma.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lzma_la-loader_lzma.Tpo $(DEPDIR)/lzma_la-loader_lzma.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_lzma.c' object='lzma_la-loader_lzma.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(lzma_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lzma_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lzma_la-loader_lzma.lo `test -f 'loader_lzma.c' || echo '$(srcdir)/'`loader_lzma.c
+
+lzma_la-decompress_load.lo: decompress_load.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(lzma_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lzma_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT lzma_la-decompress_load.lo -MD -MP -MF $(DEPDIR)/lzma_la-decompress_load.Tpo -c -o lzma_la-decompress_load.lo `test -f 'decompress_load.c' || echo '$(srcdir)/'`decompress_load.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/lzma_la-decompress_load.Tpo $(DEPDIR)/lzma_la-decompress_load.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='decompress_load.c' object='lzma_la-decompress_load.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(lzma_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(lzma_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o lzma_la-decompress_load.lo `test -f 'decompress_load.c' || echo '$(srcdir)/'`decompress_load.c
+
 png_la-loader_png.lo: loader_png.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(png_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(png_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT png_la-loader_png.lo -MD -MP -MF $(DEPDIR)/png_la-loader_png.Tpo -c -o png_la-loader_png.lo `test -f 'loader_png.c' || echo '$(srcdir)/'`loader_png.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/png_la-loader_png.Tpo $(DEPDIR)/png_la-loader_png.Plo
@@ -866,6 +951,13 @@ pnm_la-loader_pnm.lo: loader_pnm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_pnm.c' object='pnm_la-loader_pnm.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(pnm_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pnm_la-loader_pnm.lo `test -f 'loader_pnm.c' || echo '$(srcdir)/'`loader_pnm.c
+
+svg_la-loader_svg.lo: loader_svg.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(svg_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(svg_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT svg_la-loader_svg.lo -MD -MP -MF $(DEPDIR)/svg_la-loader_svg.Tpo -c -o svg_la-loader_svg.lo `test -f 'loader_svg.c' || echo '$(srcdir)/'`loader_svg.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/svg_la-loader_svg.Tpo $(DEPDIR)/svg_la-loader_svg.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_svg.c' object='svg_la-loader_svg.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(svg_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(svg_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o svg_la-loader_svg.lo `test -f 'loader_svg.c' || echo '$(srcdir)/'`loader_svg.c
 
 tga_la-loader_tga.lo: loader_tga.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(tga_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tga_la-loader_tga.lo -MD -MP -MF $(DEPDIR)/tga_la-loader_tga.Tpo -c -o tga_la-loader_tga.lo `test -f 'loader_tga.c' || echo '$(srcdir)/'`loader_tga.c
@@ -908,6 +1000,13 @@ zlib_la-loader_zlib.lo: loader_zlib.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_zlib.c' object='zlib_la-loader_zlib.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(zlib_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(zlib_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zlib_la-loader_zlib.lo `test -f 'loader_zlib.c' || echo '$(srcdir)/'`loader_zlib.c
+
+zlib_la-decompress_load.lo: decompress_load.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(zlib_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(zlib_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT zlib_la-decompress_load.lo -MD -MP -MF $(DEPDIR)/zlib_la-decompress_load.Tpo -c -o zlib_la-decompress_load.lo `test -f 'decompress_load.c' || echo '$(srcdir)/'`decompress_load.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/zlib_la-decompress_load.Tpo $(DEPDIR)/zlib_la-decompress_load.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='decompress_load.c' object='zlib_la-decompress_load.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(zlib_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(zlib_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o zlib_la-decompress_load.lo `test -f 'decompress_load.c' || echo '$(srcdir)/'`decompress_load.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1045,21 +1144,27 @@ clean-am: clean-generic clean-libtool clean-pkgLTLIBRARIES \
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/argb_la-loader_argb.Plo
 	-rm -f ./$(DEPDIR)/bmp_la-loader_bmp.Plo
+	-rm -f ./$(DEPDIR)/bz2_la-decompress_load.Plo
 	-rm -f ./$(DEPDIR)/bz2_la-loader_bz2.Plo
 	-rm -f ./$(DEPDIR)/ff_la-loader_ff.Plo
 	-rm -f ./$(DEPDIR)/gif_la-loader_gif.Plo
+	-rm -f ./$(DEPDIR)/heif_la-loader_heif.Plo
 	-rm -f ./$(DEPDIR)/ico_la-loader_ico.Plo
 	-rm -f ./$(DEPDIR)/id3_la-loader_id3.Plo
 	-rm -f ./$(DEPDIR)/jpeg_la-exif.Plo
 	-rm -f ./$(DEPDIR)/jpeg_la-loader_jpeg.Plo
 	-rm -f ./$(DEPDIR)/lbm_la-loader_lbm.Plo
+	-rm -f ./$(DEPDIR)/lzma_la-decompress_load.Plo
+	-rm -f ./$(DEPDIR)/lzma_la-loader_lzma.Plo
 	-rm -f ./$(DEPDIR)/png_la-loader_png.Plo
 	-rm -f ./$(DEPDIR)/pnm_la-loader_pnm.Plo
+	-rm -f ./$(DEPDIR)/svg_la-loader_svg.Plo
 	-rm -f ./$(DEPDIR)/tga_la-loader_tga.Plo
 	-rm -f ./$(DEPDIR)/tiff_la-loader_tiff.Plo
 	-rm -f ./$(DEPDIR)/webp_la-loader_webp.Plo
 	-rm -f ./$(DEPDIR)/xbm_la-loader_xbm.Plo
 	-rm -f ./$(DEPDIR)/xpm_la-loader_xpm.Plo
+	-rm -f ./$(DEPDIR)/zlib_la-decompress_load.Plo
 	-rm -f ./$(DEPDIR)/zlib_la-loader_zlib.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -1108,21 +1213,27 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/argb_la-loader_argb.Plo
 	-rm -f ./$(DEPDIR)/bmp_la-loader_bmp.Plo
+	-rm -f ./$(DEPDIR)/bz2_la-decompress_load.Plo
 	-rm -f ./$(DEPDIR)/bz2_la-loader_bz2.Plo
 	-rm -f ./$(DEPDIR)/ff_la-loader_ff.Plo
 	-rm -f ./$(DEPDIR)/gif_la-loader_gif.Plo
+	-rm -f ./$(DEPDIR)/heif_la-loader_heif.Plo
 	-rm -f ./$(DEPDIR)/ico_la-loader_ico.Plo
 	-rm -f ./$(DEPDIR)/id3_la-loader_id3.Plo
 	-rm -f ./$(DEPDIR)/jpeg_la-exif.Plo
 	-rm -f ./$(DEPDIR)/jpeg_la-loader_jpeg.Plo
 	-rm -f ./$(DEPDIR)/lbm_la-loader_lbm.Plo
+	-rm -f ./$(DEPDIR)/lzma_la-decompress_load.Plo
+	-rm -f ./$(DEPDIR)/lzma_la-loader_lzma.Plo
 	-rm -f ./$(DEPDIR)/png_la-loader_png.Plo
 	-rm -f ./$(DEPDIR)/pnm_la-loader_pnm.Plo
+	-rm -f ./$(DEPDIR)/svg_la-loader_svg.Plo
 	-rm -f ./$(DEPDIR)/tga_la-loader_tga.Plo
 	-rm -f ./$(DEPDIR)/tiff_la-loader_tiff.Plo
 	-rm -f ./$(DEPDIR)/webp_la-loader_webp.Plo
 	-rm -f ./$(DEPDIR)/xbm_la-loader_xbm.Plo
 	-rm -f ./$(DEPDIR)/xpm_la-loader_xpm.Plo
+	-rm -f ./$(DEPDIR)/zlib_la-decompress_load.Plo
 	-rm -f ./$(DEPDIR)/zlib_la-loader_zlib.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

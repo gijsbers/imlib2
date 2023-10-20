@@ -2,21 +2,44 @@
 
 #include <gif_lib.h>
 
+#define DBG_PFX "LDR-gif"
+
+static void
+make_colormap(DATA32 * cmi, ColorMapObject * cmg, int bg, int tr)
+{
+   int                 i, r, g, b;
+
+   memset(cmi, 0, 256 * sizeof(DATA32));
+   if (!cmg)
+      return;
+
+   for (i = cmg->ColorCount > 256 ? 256 : cmg->ColorCount; i-- > 0;)
+     {
+        r = cmg->Colors[i].Red;
+        g = cmg->Colors[i].Green;
+        b = cmg->Colors[i].Blue;
+        cmi[i] = PIXEL_ARGB(0xff, r, g, b);
+     }
+
+   /* if bg > cmg->ColorCount, it is transparent black already */
+   if (tr >= 0 && tr < 256)
+      cmi[tr] = bg >= 0 && bg < 256 ? cmi[bg] & 0x00ffffff : 0x00000000;
+}
+
 int
 load2(ImlibImage * im, int load_data)
 {
-   static const int    intoffset[] = { 0, 4, 2, 1 };
-   static const int    intjump[] = { 8, 8, 4, 2 };
    int                 rc;
    DATA32             *ptr;
    GifFileType        *gif;
    GifRowType         *rows;
    GifRecordType       rec;
    ColorMapObject     *cmap;
-   int                 i, j, done, bg, r, g, b, w = 0, h = 0;
+   int                 i, j, bg, bits;
    int                 transp;
    int                 fd;
    DATA32              colormap[256];
+   int                 fcount, frame, multiframe;
 
    fd = dup(fileno(im->fp));
 
@@ -28,138 +51,213 @@ load2(ImlibImage * im, int load_data)
    if (!gif)
       return LOAD_FAIL;
 
-   rc = LOAD_FAIL;
-   done = 0;
+   rc = LOAD_BADIMAGE;          /* Format accepted */
+
    rows = NULL;
    transp = -1;
+   fcount = 0;
+   frame = 1;
+   if (im->frame_num > 0)
+     {
+        frame = im->frame_num;
+        im->frame_count = gif->ImageCount;
+        if (im->frame_count > 1)
+           im->frame_flags |= FF_IMAGE_ANIMATED;
+        im->canvas_w = gif->SWidth;
+        im->canvas_h = gif->SHeight;
 
-   do
+        D("Canvas WxH=%dx%d frames=%d\n",
+          im->canvas_w, im->canvas_h, im->frame_count);
+
+#if 0
+        if (frame > 1 && frame > im->frame_count)
+           goto quit;
+#endif
+     }
+
+   bg = gif->SBackGroundColor;
+   cmap = gif->SColorMap;
+
+   for (;;)
      {
         if (DGifGetRecordType(gif, &rec) == GIF_ERROR)
           {
              /* PrintGifError(); */
-             rec = TERMINATE_RECORD_TYPE;
+             DL("err1\n");
+             break;
           }
 
-        if ((rec == IMAGE_DESC_RECORD_TYPE) && (!done))
+        if (rec == TERMINATE_RECORD_TYPE)
+          {
+             DL(" TERMINATE_RECORD_TYPE(%d)\n", rec);
+             break;
+          }
+
+        if (rec == IMAGE_DESC_RECORD_TYPE)
           {
              if (DGifGetImageDesc(gif) == GIF_ERROR)
                {
                   /* PrintGifError(); */
-                  rec = TERMINATE_RECORD_TYPE;
+                  DL("err2\n");
                   break;
                }
 
-             im->w = w = gif->Image.Width;
-             im->h = h = gif->Image.Height;
-             if (!IMAGE_DIMENSIONS_OK(w, h))
-                goto quit;
+             DL(" IMAGE_DESC_RECORD_TYPE(%d): ic=%d x,y=%d,%d wxh=%dx%d\n",
+                rec, gif->ImageCount, gif->Image.Left, gif->Image.Top,
+                gif->Image.Width, gif->Image.Height);
 
-             rows = calloc(h, sizeof(GifRowType));
-             if (!rows)
-                goto quit;
+             fcount += 1;
 
-             for (i = 0; i < h; i++)
+             if (gif->ImageCount != frame)
                {
-                  rows[i] = calloc(w, sizeof(GifPixelType));
-                  if (!rows[i])
+                  int                 size = 0;
+                  GifByteType        *data;
+
+                  if (DGifGetCode(gif, &size, &data) == GIF_ERROR)
                      goto quit;
+                  DL("DGifGetCode: size=%d data=%p\n", size, data);
+                  while (data)
+                    {
+                       if (DGifGetCodeNext(gif, &data) == GIF_ERROR)
+                          goto quit;
+                       DL(" DGifGetCodeNext: size=%d data=%p\n", size, data);
+                    }
+                  continue;
+               }
+
+             im->w = gif->Image.Width;
+             im->h = gif->Image.Height;
+             im->frame_x = gif->Image.Left;
+             im->frame_y = gif->Image.Top;
+
+             if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
+                goto quit;
+
+             D("Canvas WxH=%dx%d frame=%d/%d X,Y=%d,%d WxH=%dx%d\n",
+               im->canvas_w, im->canvas_h, gif->ImageCount, im->frame_count,
+               im->frame_x, im->frame_y, im->w, im->h);
+
+             DL(" CM S=%p I=%p\n", cmap, gif->Image.ColorMap);
+             if (gif->Image.ColorMap)
+                cmap = gif->Image.ColorMap;
+             if (load_data)
+                make_colormap(colormap, cmap, bg, transp);
+
+             rows = calloc(im->h, sizeof(GifRowType));
+             if (!rows)
+                QUIT_WITH_RC(LOAD_OOM);
+
+             for (i = 0; i < im->h; i++)
+               {
+                  rows[i] = calloc(im->w, sizeof(GifPixelType));
+                  if (!rows[i])
+                     QUIT_WITH_RC(LOAD_OOM);
                }
 
              if (gif->Image.Interlace)
                {
+                  static const int    intoffset[] = { 0, 4, 2, 1 };
+                  static const int    intjump[] = { 8, 8, 4, 2 };
                   for (i = 0; i < 4; i++)
                     {
-                       for (j = intoffset[i]; j < h; j += intjump[i])
+                       for (j = intoffset[i]; j < im->h; j += intjump[i])
                          {
-                            DGifGetLine(gif, rows[j], w);
+                            DGifGetLine(gif, rows[j], im->w);
                          }
                     }
                }
              else
                {
-                  for (i = 0; i < h; i++)
+                  for (i = 0; i < im->h; i++)
                     {
-                       DGifGetLine(gif, rows[i], w);
+                       DGifGetLine(gif, rows[i], im->w);
                     }
                }
-             done = 1;
+
+             /* Break if no specific frame was requested */
+             if (im->frame_num == 0)
+                break;
           }
         else if (rec == EXTENSION_RECORD_TYPE)
           {
-             int                 ext_code;
+             int                 ext_code, disp;
              GifByteType        *ext;
 
              ext = NULL;
              DGifGetExtension(gif, &ext_code, &ext);
              while (ext)
                {
-                  if ((ext_code == 0xf9) && (ext[1] & 1) && (transp < 0))
+                  DL(" EXTENSION_RECORD_TYPE(%d): ic=%d: ext_code=%02x: %02x %02x %02x %02x %02x\n",    //
+                     rec, gif->ImageCount, ext_code,
+                     ext[0], ext[1], ext[2], ext[3], ext[4]);
+                  if (ext_code == GRAPHICS_EXT_FUNC_CODE
+                      && gif->ImageCount == frame - 1)
                     {
-                       transp = (int)ext[4];
+                       bits = ext[1];
+                       im->frame_delay = 10 * (0x100 * ext[3] + ext[2]);
+                       if (bits & 1)
+                          transp = ext[4];
+                       disp = (bits >> 2) & 0x7;
+                       if (disp == 2 || disp == 3)
+                          im->frame_flags |= FF_FRAME_DISPOSE_CLEAR;
+                       im->frame_flags |= FF_FRAME_BLEND;
+                       D(" Frame %d: disp=%d ui=%d tr=%d, delay=%d transp = #%02x\n",   //
+                         gif->ImageCount + 1, disp, (bits >> 1) & 1, bits & 1,
+                         im->frame_delay, transp);
                     }
                   ext = NULL;
                   DGifGetExtensionNext(gif, &ext);
                }
           }
+        else
+          {
+             DL(" Unknown record type(%d)\n", rec);
+          }
      }
-   while (rec != TERMINATE_RECORD_TYPE);
 
    UPDATE_FLAG(im->flags, F_HAS_ALPHA, transp >= 0);
+   im->frame_count = fcount;
+   multiframe = im->frame_count > 1;
+   if (multiframe)
+      im->frame_flags |= FF_IMAGE_ANIMATED;
 
    if (!rows)
-      goto quit;
-
-   if (!load_data)
      {
-        rc = LOAD_SUCCESS;
+        if (frame > 1 && frame > im->frame_count)
+           QUIT_WITH_RC(LOAD_BADFRAME);
+
         goto quit;
      }
 
-   /* Load data */
+   if (!load_data)
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
-   bg = gif->SBackGroundColor;
-   cmap = (gif->Image.ColorMap ? gif->Image.ColorMap : gif->SColorMap);
-   memset(colormap, 0, sizeof(colormap));
-   if (cmap != NULL)
-     {
-        for (i = cmap->ColorCount > 256 ? 256 : cmap->ColorCount; i-- > 0;)
-          {
-             r = cmap->Colors[i].Red;
-             g = cmap->Colors[i].Green;
-             b = cmap->Colors[i].Blue;
-             colormap[i] = PIXEL_ARGB(0xff, r, g, b);
-          }
-        /* if bg > cmap->ColorCount, it is transparent black already */
-        if (transp >= 0 && transp < 256)
-           colormap[transp] = bg >= 0 && bg < 256 ?
-              colormap[bg] & 0x00ffffff : 0x00000000;
-     }
+   /* Load data */
 
    ptr = __imlib_AllocateData(im);
    if (!ptr)
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
-   for (i = 0; i < h; i++)
+   for (i = 0; i < im->h; i++)
      {
-        for (j = 0; j < w; j++)
+        for (j = 0; j < im->w; j++)
           {
              *ptr++ = colormap[rows[i][j]];
           }
 
-        if (im->lc && __imlib_LoadProgressRows(im, i, 1))
-          {
-             rc = LOAD_BREAK;
-             goto quit;
-          }
+        if (!multiframe && im->lc && __imlib_LoadProgressRows(im, i, 1))
+           QUIT_WITH_RC(LOAD_BREAK);
      }
+
+   if (multiframe && im->lc)
+      __imlib_LoadProgress(im, im->frame_x, im->frame_y, im->w, im->h);
 
    rc = LOAD_SUCCESS;
 
  quit:
    if (rows)
      {
-        for (i = 0; i < h; i++)
+        for (i = 0; i < im->h; i++)
            free(rows[i]);
         free(rows);
      }

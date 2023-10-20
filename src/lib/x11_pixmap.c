@@ -116,7 +116,7 @@ __imlib_AddImagePixmapToCache(ImlibImage * im, Pixmap pmap, Pixmap mask,
 }
 
 void
-__imlib_PixmapUnrefImage(ImlibImage * im)
+__imlib_PixmapUnrefImage(const ImlibImage * im)
 {
    ImlibImagePixmap   *ip;
 
@@ -245,7 +245,7 @@ __imlib_FreePixmap(Display * d, Pixmap p)
 /* wont pick up on them again since they are now invalid since the original */
 /* data they were generated from has changed */
 void
-__imlib_DirtyPixmapsForImage(ImlibImage * im)
+__imlib_DirtyPixmapsForImage(const ImlibImage * im)
 {
    ImlibImagePixmap   *ip;
 

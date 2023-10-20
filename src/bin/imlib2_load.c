@@ -1,5 +1,6 @@
 #include "config.h"
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +21,8 @@
 static char         progress_called;
 static FILE        *fout;
 
-#define Vprintf(fmt...) if (verbose) fprintf(fout, fmt)
+#define Vprintf(fmt...)  if (verbose)      fprintf(fout, fmt)
+#define V2printf(fmt...) if (verbose >= 2) fprintf(fout, fmt)
 
 #define HELP \
    "Usage:\n" \
@@ -92,24 +94,28 @@ main(int argc, char **argv)
    Imlib_Image         im;
    Imlib_Load_Error    lerr;
    unsigned int        t0;
+   char                nbuf[4096];
+   int                 frame;
    int                 verbose;
-   int                 check_progress;
+   bool                check_progress;
    int                 break_on_error;
-   int                 show_time;
+   bool                show_time;
    int                 load_cnt, cnt;
-   int                 load_fd;
-   int                 load_now;
+   bool                load_fd;
+   bool                load_now;
+   bool                load_nodata;
 
    fout = stdout;
    verbose = 0;
-   check_progress = 0;
+   check_progress = false;
    break_on_error = 0;
-   show_time = 0;
+   show_time = false;
    load_cnt = 1;
-   load_fd = 0;
-   load_now = 0;
+   load_fd = false;
+   load_now = false;
+   load_nodata = false;
 
-   while ((opt = getopt(argc, argv, "efin:pvx")) != -1)
+   while ((opt = getopt(argc, argv, "efijn:pvx")) != -1)
      {
         switch (opt)
           {
@@ -117,22 +123,25 @@ main(int argc, char **argv)
              break_on_error += 1;
              break;
           case 'f':
-             load_fd = 1;
+             load_fd = true;
              break;
           case 'i':
-             load_now = 1;
+             load_now = true;
+             break;
+          case 'j':
+             load_nodata = true;
              break;
           case 'n':
              load_cnt = atoi(optarg);
-             show_time = 1;
+             show_time = true;
              verbose = 1;
              break;
           case 'p':
-             check_progress = 1;
+             check_progress = true;
              verbose = 1;
              break;
           case 'v':
-             verbose = 1;
+             verbose += 1;
              break;
           case 'x':
              fout = stderr;
@@ -177,7 +186,15 @@ main(int argc, char **argv)
              else if (load_now)
                 im = imlib_load_image_immediately(argv[0]);
              else
-                im = imlib_load_image(argv[0]);
+               {
+                  frame = -1;
+                  sscanf(argv[0], "%[^%]%%%d", nbuf, &frame);
+
+                  if (frame >= 0)
+                     im = imlib_load_image_frame(nbuf, frame);
+                  else
+                     im = imlib_load_image(argv[0]);
+               }
 
              if (!im)
                {
@@ -189,8 +206,10 @@ main(int argc, char **argv)
                }
 
              imlib_context_set_image(im);
+             V2printf("Image  WxH=%dx%d\n",
+                      imlib_image_get_width(), imlib_image_get_height());
 
-             if (!check_progress && !load_now)
+             if (!check_progress && !load_now && !load_nodata)
                 imlib_image_get_data();
 
              imlib_free_image_and_decache();

@@ -34,7 +34,7 @@ archopts="--disable-mmx --enable-amd64"
 %ifarch %ix86
 archopts="--enable-mmx --disable-amd64"
 %endif
-%configure $archopts
+%configure $archopts %{?acflags}
 make %{?_smp_mflags}
 
 %install

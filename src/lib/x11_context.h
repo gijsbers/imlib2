@@ -3,22 +3,20 @@
 
 #include "common.h"
 
-typedef struct _context Context;
-
-struct _context {
+typedef struct _Context {
    int                 last_use;
    Display            *display;
    Visual             *visual;
    Colormap            colormap;
    int                 depth;
-   Context            *next;
+   struct _Context    *next;
 
    DATA8              *palette;
    DATA8               palette_type;
    void               *r_dither;
    void               *g_dither;
    void               *b_dither;
-};
+} Context;
 
 void                __imlib_SetMaxContexts(int num);
 int                 __imlib_GetMaxContexts(void);

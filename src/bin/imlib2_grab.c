@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "Imlib2.h"
+#include <Imlib2.h>
 
 Display            *disp;
 int                 image_width = 0, image_height = 0;
@@ -32,6 +32,7 @@ main(int argc, char **argv)
    unsigned int        wo, ho;
    unsigned int        depth;
    Window              rr;
+   Imlib_Load_Error    err;
 
    verbose = 0;
    get_alpha = 1;
@@ -132,7 +133,9 @@ main(int argc, char **argv)
      }
 
    imlib_context_set_image(im);
-   imlib_save_image(file);
+   imlib_save_image_with_error_return(file, &err);
+   if (err != IMLIB_LOAD_ERROR_NONE)
+      fprintf(stderr, "Failed to save image to '%s' (error %d)\n", file, err);
 
    return 0;
 }

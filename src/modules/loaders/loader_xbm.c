@@ -87,7 +87,7 @@ load2(ImlibImage * im, int load_data)
    void               *fdata;
    char                buf[4096], tok1[1024], tok2[1024];
    DATA32             *ptr, pixel;
-   int                 i, x, y, bit;
+   int                 i, x, y, bit, nl;
    const char         *s;
    int                 header, val, nlen;
 
@@ -98,7 +98,7 @@ load2(ImlibImage * im, int load_data)
 
    fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
-      return rc;
+      return LOAD_BADFILE;
 
    /* Signature check ("#define") allow longish initial comment */
    s = fdata;
@@ -113,7 +113,7 @@ load2(ImlibImage * im, int load_data)
    x = y = 0;
 
    header = 1;
-   for (;;)
+   for (nl = 0;; nl++)
      {
         s = mm_gets(buf, sizeof(buf));
         if (!s)
@@ -151,21 +151,23 @@ load2(ImlibImage * im, int load_data)
                      goto quit;
 
                   if (!load_data)
-                    {
-                       rc = LOAD_SUCCESS;
-                       goto quit;
-                    }
+                     QUIT_WITH_RC(LOAD_SUCCESS);
 
                   UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
                   header = 0;
 
+                  rc = LOAD_BADIMAGE;   /* Format accepted */
+
                   ptr = __imlib_AllocateData(im);
                   if (!ptr)
-                     goto quit;
+                     QUIT_WITH_RC(LOAD_OOM);
                }
              else
                {
+                  /* Quit if we don't have the header in N lines */
+                  if (nl >= 30)
+                     break;
                   continue;
                }
           }
@@ -194,10 +196,7 @@ load2(ImlibImage * im, int load_data)
                   if (x >= im->w)
                     {
                        if (im->lc && __imlib_LoadProgressRows(im, y, 1))
-                         {
-                            rc = LOAD_BREAK;
-                            goto quit;
-                         }
+                          QUIT_WITH_RC(LOAD_BREAK);
 
                        x = 0;
                        y += 1;
@@ -209,13 +208,13 @@ load2(ImlibImage * im, int load_data)
      }
 
  done:
-   rc = LOAD_SUCCESS;
+   if (!header)
+      rc = LOAD_SUCCESS;
 
  quit:
    if (rc <= 0)
       __imlib_FreeData(im);
-   if (fdata != MAP_FAILED)
-      munmap(fdata, im->fsize);
+   munmap(fdata, im->fsize);
 
    return rc;
 }

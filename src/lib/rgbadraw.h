@@ -37,27 +37,20 @@ do {                           \
 #define MULT(na, a0, a1, tmp) \
   DIV_255(na, (a0) * (a1), tmp)
 
-typedef struct _imlib_point ImlibPoint;
-
-struct _imlib_point {
+typedef struct {
    int                 x, y;
-};
+} ImlibPoint;
 
-typedef struct _imlib_rectangle Imlib_Rectangle;
-
-struct _imlib_rectangle {
+typedef struct {
    int                 x, y, w, h;
-};
+} Imlib_Rectangle;
 
-typedef struct _imlib_polygon _ImlibPoly;
-typedef _ImlibPoly *ImlibPoly;
-
-struct _imlib_polygon {
+typedef struct {
    ImlibPoint         *points;
    int                 pointcount;
    int                 lx, rx;
    int                 ty, by;
-};
+} ImlibPoly;
 
 /* image related operations: in rgbadraw.c */
 
@@ -125,24 +118,24 @@ void                __imlib_Ellipse_FillToImage(int xc, int yc, int a, int b,
 
 /* polygon handling functions: in polygon.c */
 
-ImlibPoly           __imlib_polygon_new(void);
-void                __imlib_polygon_free(ImlibPoly poly);
-void                __imlib_polygon_add_point(ImlibPoly poly, int x, int y);
-unsigned char       __imlib_polygon_contains_point(ImlibPoly poly,
+ImlibPoly          *__imlib_polygon_new(void);
+void                __imlib_polygon_free(ImlibPoly * poly);
+void                __imlib_polygon_add_point(ImlibPoly * poly, int x, int y);
+unsigned char       __imlib_polygon_contains_point(ImlibPoly * poly,
                                                    int x, int y);
-void                __imlib_polygon_get_bounds(ImlibPoly poly,
+void                __imlib_polygon_get_bounds(ImlibPoly * poly,
                                                int *px1, int *py1,
                                                int *px2, int *py2);
 
 /* polygon drawing and filling: in polygon.c */
 
-void                __imlib_Polygon_DrawToImage(ImlibPoly poly, char closed,
+void                __imlib_Polygon_DrawToImage(ImlibPoly * poly, char closed,
                                                 DATA32 color, ImlibImage * im,
                                                 int clx, int cly,
                                                 int clw, int clh,
                                                 ImlibOp op, char blend,
                                                 char anti_alias);
-void                __imlib_Polygon_FillToImage(ImlibPoly poly, DATA32 color,
+void                __imlib_Polygon_FillToImage(ImlibPoly * poly, DATA32 color,
                                                 ImlibImage * im,
                                                 int clx, int cly,
                                                 int clw, int clh,

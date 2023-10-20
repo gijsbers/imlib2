@@ -51,7 +51,7 @@ load2(ImlibImage * im, int load_data)
 
    fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
-      return rc;
+      return LOAD_BADFILE;
 
    mm_init(fdata, im->fsize);
 
@@ -67,22 +67,24 @@ load2(ImlibImage * im, int load_data)
    im->w = im->h = alpha = 0;
    sscanf(fptr, "ARGB %i %i %i", &im->w, &im->h, &alpha);
 
+   if (im->w <= 0 || im->h <= 0)
+      goto quit;
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
+
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
    UPDATE_FLAG(im->flags, F_HAS_ALPHA, alpha);
 
    if (!load_data)
-     {
-        rc = LOAD_SUCCESS;
-        goto quit;
-     }
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
    /* Load data */
 
    ptr = __imlib_AllocateData(im);
    if (!ptr)
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
    mm_seek(row - fptr);
 
@@ -98,10 +100,7 @@ load2(ImlibImage * im, int load_data)
         ptr += im->w;
 
         if (im->lc && __imlib_LoadProgressRows(im, y, 1))
-          {
-             rc = LOAD_BREAK;
-             goto quit;
-          }
+           QUIT_WITH_RC(LOAD_BREAK);
      }
 
    rc = LOAD_SUCCESS;
@@ -109,8 +108,7 @@ load2(ImlibImage * im, int load_data)
  quit:
    if (rc <= 0)
       __imlib_FreeData(im);
-   if (fdata != MAP_FAILED)
-      munmap(fdata, im->fsize);
+   munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -154,10 +152,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
         ptr += im->w;
 
         if (im->lc && __imlib_LoadProgressRows(im, y, 1))
-          {
-             rc = LOAD_BREAK;
-             goto quit;
-          }
+           QUIT_WITH_RC(LOAD_BREAK);
      }
 
    rc = LOAD_SUCCESS;

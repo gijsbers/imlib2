@@ -496,28 +496,30 @@ write_tags(ImlibImage * im, lopt * opt)
 int
 load2(ImlibImage * im, int load_data)
 {
+   int                 rc;
    ImlibLoader        *loader;
    lopt                opt;
-   int                 res;
 
-   res = LOAD_FAIL;
+   rc = LOAD_FAIL;
    opt.ctx = NULL;
 
    if (!get_options(&opt, im))
-      goto fail_context;
+      goto quit;
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
 
    if (!get_loader(&opt, &loader))
-      goto fail_context;
+      goto quit;
 
    if (loader)
      {
         char                tmp[] = "/tmp/imlib2_loader_id3-XXXXXX";
-        int                 dest;
+        int                 dest, res;
 
         if ((dest = mkstemp(tmp)) < 0)
           {
              fprintf(stderr, "Unable to create a temporary file\n");
-             goto fail_context;
+             goto quit;
           }
 
         res = extract_pic(id3_tag_get_frame(opt.ctx->tag, opt.index - 1), dest);
@@ -526,10 +528,10 @@ load2(ImlibImage * im, int load_data)
         if (!res)
           {
              unlink(tmp);
-             goto fail_context;
+             goto quit;
           }
 
-        res = __imlib_LoadEmbedded(loader, im, tmp, load_data);
+        rc = __imlib_LoadEmbedded(loader, im, tmp, load_data);
 
         unlink(tmp);
      }
@@ -550,7 +552,7 @@ load2(ImlibImage * im, int load_data)
         if (!data || !length)
           {
              fprintf(stderr, "No link image URL present\n");
-             goto fail_context;
+             goto quit;
           }
         url = (char *)malloc((length + 1) * sizeof(char));
         strncpy(url, data, length);
@@ -560,10 +562,10 @@ load2(ImlibImage * im, int load_data)
           {
              fprintf(stderr, "No loader found for file %s\n", file);
              free(url);
-             goto fail_context;
+             goto quit;
           }
 
-        res = __imlib_LoadEmbedded(loader, im, file, load_data);
+        rc = __imlib_LoadEmbedded(loader, im, file, load_data);
 
         if (!im->loader)
            __imlib_AttachTag(im, "id3-link-url", 0, url, destructor_data);
@@ -589,11 +591,11 @@ load2(ImlibImage * im, int load_data)
      }
 #endif
 
- fail_context:
+ quit:
    if (opt.ctx)
       context_delref(opt.ctx);
 
-   return res;
+   return rc;
 }
 
 void

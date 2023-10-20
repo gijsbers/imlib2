@@ -257,7 +257,7 @@ load2(ImlibImage * im, int load_data)
 
    fdata = mmap(NULL, TIFF_BYTES_TO_CHECK, PROT_READ, MAP_SHARED, fd, 0);
    if (fdata == MAP_FAILED)
-      return rc;
+      return LOAD_BADFILE;
 
    magic_number = *(uint16_t *) fdata;
 
@@ -277,6 +277,8 @@ load2(ImlibImage * im, int load_data)
    strcpy(txt, "Cannot be processed by libtiff");
    if (!TIFFRGBAImageOK(tif, txt))
       goto quit;
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
 
    strcpy(txt, "Cannot begin reading tiff");
    if (!TIFFRGBAImageBegin((TIFFRGBAImage *) & rgba_image, tif, 1, txt))
@@ -315,21 +317,18 @@ load2(ImlibImage * im, int load_data)
                rgba_image.rgba.alpha != EXTRASAMPLE_UNSPECIFIED);
 
    if (!load_data)
-     {
-        rc = LOAD_SUCCESS;
-        goto quit;
-     }
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
    /* Load data */
 
    if (!__imlib_AllocateData(im))
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
    rast = _TIFFmalloc(sizeof(uint32_t) * im->w * im->h);
    if (!rast)
      {
         fprintf(stderr, "imlib2-tiffloader: Out of memory\n");
-        goto quit;
+        QUIT_WITH_RC(LOAD_OOM);
      }
 
    if (rgba_image.rgba.isContig)
@@ -490,10 +489,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
            goto quit;
 
         if (im->lc && __imlib_LoadProgressRows(im, y, 1))
-          {
-             rc = LOAD_BREAK;
-             goto quit;
-          }
+           QUIT_WITH_RC(LOAD_BREAK);
      }
 
    rc = LOAD_SUCCESS;

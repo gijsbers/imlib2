@@ -3,18 +3,15 @@
 
 #include "common.h"
 
-typedef struct _imlib_range ImlibRange;
-typedef struct _imlib_range_color ImlibRangeColor;
-
-struct _imlib_range_color {
+typedef struct _ImlibRangeColor {
    DATA8               red, green, blue, alpha;
    int                 distance;
-   ImlibRangeColor    *next;
-};
+   struct _ImlibRangeColor *next;
+} ImlibRangeColor;
 
-struct _imlib_range {
+typedef struct {
    ImlibRangeColor    *color;
-};
+} ImlibRange;
 
 ImlibRange         *__imlib_CreateRange(void);
 void                __imlib_FreeRange(ImlibRange * rg);

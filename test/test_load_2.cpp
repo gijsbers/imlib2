@@ -4,15 +4,11 @@
 #include <fcntl.h>
 #include <zlib.h>
 
-int                 debug = 0;
-
-#define D(...) if (debug) printf(__VA_ARGS__)
+#include "config.h"
+#include "test.h"
 
 #define EXPECT_OK(x)  EXPECT_FALSE(x)
 #define EXPECT_ERR(x) EXPECT_TRUE(x)
-
-#define TOPDIR  	SRC_DIR
-#define IMGDIR		TOPDIR "/test/images"
 
 typedef struct {
    const char         *name;
@@ -24,21 +20,40 @@ static tii_t        tii[] = {
    { "icon-64.argb",		1153555547 },
    { "icon-64.bmp",		1153555547 },
    { "icon-64.ff",		1153555547 },
+#ifdef BUILD_BZ2_LOADER
    { "icon-64.ff.bz2",		1153555547 },
-   { "icon-64.gif",		1768448874 },
+#endif
+#ifdef BUILD_ZLIB_LOADER
+   { "icon-64.ff.gz",		1153555547 },
+#endif
+#ifdef BUILD_LZMA_LOADER
+   { "icon-64.ff.xz",		1153555547 },
+#endif
+   { "icon-64.gif",		4016720483 },
+#ifdef BUILD_HEIF_LOADER
+   { "icon-64.heif",		 174609659 },
+#endif
    { "icon-64.ico",		1153555547 },
    { "icon-64.ilbm",		1153555547 },
-   { "icon-64.jpeg",		4132154843 },
    { "icon-64.jpg",		4132154843 },
    { "icon-64.jpg.mp3",		4132154843 },
-   { "icon-64.pbm",		 907392323 },
    { "icon-64.png",		1153555547 },
    { "icon-64.ppm",		1153555547 },
+   { "icon-64.pgm",		 140949526 },
+   { "icon-64.pbm",		2153856013 },
+   { "icon-64-P3.ppm",		1153555547 },
+   { "icon-64-P2.pgm",		 140949526 },
+   { "icon-64-P1.pbm",		2153856013 },
    { "icon-64.tga",		1153555547 },
    { "icon-64.tiff",		1153555547 },
    { "icon-64.webp",		1698406918 },
-   { "icon-64.xbm",		 907392323 },
-   { "icon-64.xpm",		1768448874 },
+   { "icon-64.xbm",		2153856013 },
+   { "icon-64.xpm",		4016720483 },
+
+   { "icon-128.ico",		 218415319 },
+   { "icon-128-d1.ico",		3776822558 },
+   { "icon-128-d4.ico",		1822311162 },
+   { "icon-128-d8.ico",		2584400446 },
 /**INDENT-ON**/
 };
 #define NT3_IMGS (sizeof(tii) / sizeof(tii_t))
@@ -56,7 +71,7 @@ TEST(LOAD2, load_1)
         fn = tii[i].name;
         if (*fn != '/')
           {
-             snprintf(buf, sizeof(buf), "%s/%s", IMGDIR, fn);
+             snprintf(buf, sizeof(buf), "%s/%s", IMG_SRC, fn);
              fn = buf;
           }
         D("Load '%s'\n", fn);
@@ -69,27 +84,4 @@ TEST(LOAD2, load_1)
         crc = crc32(0, data, w * h * sizeof(DATA32));
         EXPECT_EQ(crc, tii[i].crc);
      }
-}
-
-int
-main(int argc, char **argv)
-{
-   const char         *s;
-
-   ::testing::InitGoogleTest(&argc, argv);
-
-   for (argc--, argv++; argc > 0; argc--, argv++)
-     {
-        s = argv[0];
-        if (*s++ != '-')
-           break;
-        switch (*s)
-          {
-          case 'd':
-             debug++;
-             break;
-          }
-     }
-
-   return RUN_ALL_TESTS();
 }

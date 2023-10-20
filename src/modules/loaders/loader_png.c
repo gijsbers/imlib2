@@ -1,79 +1,151 @@
 #include "loader_common.h"
 
 #include <png.h>
+#include <stdint.h>
 #include <sys/mman.h>
+#include <arpa/inet.h>
 
-/* this is a quick sample png loader module... nice and small isn't it? */
+#define DBG_PFX "LDR-png"
 
-/* PNG stuff */
-#define PNG_BYTES_TO_CHECK 4
+#define USE_IMLIB2_COMMENT_TAG 0
+
+#define _PNG_MIN_SIZE	60      /* Min. PNG file size (8 + 3*12 + 13 (+3) */
+#define _PNG_SIG_SIZE	8       /* Signature size */
+
+#define T(a,b,c,d) ((a << 0) | (b << 8) | (c << 16) | (d << 24))
+
+#define PNG_TYPE_IHDR	T('I', 'H', 'D', 'R')
+#define PNG_TYPE_acTL	T('a', 'c', 'T', 'L')
+#define PNG_TYPE_fcTL	T('f', 'c', 'T', 'L')
+#define PNG_TYPE_fdAT	T('f', 'd', 'A', 'T')
+#define PNG_TYPE_IDAT	T('I', 'D', 'A', 'T')
+#define PNG_TYPE_IEND	T('I', 'E', 'N', 'D')
+
+#define APNG_DISPOSE_OP_NONE		0
+#define APNG_DISPOSE_OP_BACKGROUND	1
+#define APNG_DISPOSE_OP_PREVIOUS	2
+
+#define APNG_BLEND_OP_SOURCE	0
+#define APNG_BLEND_OP_OVER	1
 
 typedef struct {
-   unsigned char     **lines;
-} ImLib_PNG_data;
+   uint32_t            len;
+   union {
+      uint32_t            type;
+      char                name[4];
+   };
+} png_chunk_hdr_t;
 
+/* IHDR */
+typedef struct {
+   uint32_t            w;       // Width
+   uint32_t            h;       // Height
+   uint8_t             depth;   // Bit depth  (1, 2, 4, 8, or 16)
+   uint8_t             color;   // Color type (0, 2, 3, 4, or 6)
+   uint8_t             comp;    // Compression method (0)
+   uint8_t             filt;    // filter method (0)
+   uint8_t             interl;  // interlace method (0 "no interlace" or 1 "Adam7 interlace")
+} png_ihdr_t;
+
+#define _PNG_IHDR_SIZE	(4 + 4 + 13 + 4)
+
+/* acTL */
+typedef struct {
+   uint32_t            num_frames;      // Number of frames
+   uint32_t            num_plays;       // Number of times to loop this APNG.  0 indicates infinite looping.
+} png_actl_t;
+
+/* fcTL */
+typedef struct {
+   uint32_t            frame;   // --   // Sequence number of the animation chunk, starting from 0
+   uint32_t            w;       // --   // Width of the following frame
+   uint32_t            h;       // --   // Height of the following frame
+   uint32_t            x;       // --   // X position at which to render the following frame
+   uint32_t            y;       // --   // Y position at which to render the following frame
+   uint16_t            delay_num;       // Frame delay fraction numerator
+   uint16_t            delay_den;       // Frame delay fraction denominator
+   uint8_t             dispose_op;      // Type of frame area disposal to be done after rendering this frame
+   uint8_t             blend_op;        // Type of frame area rendering for this frame
+} png_fctl_t;
+
+/* fdAT */
+typedef struct {
+   uint32_t            frame;   // --   // Sequence number of the animation chunk, starting from 0
+   uint8_t             data[];
+} png_fdat_t;
+
+typedef struct {
+   png_chunk_hdr_t     hdr;
+   union {
+      png_ihdr_t          ihdr;
+      png_actl_t          actl;
+      png_fctl_t          fctl;
+      png_fdat_t          fdat;
+   };
+   uint32_t            crc;     // Misplaced - just indication
+} png_chunk_t;
+
+typedef struct {
+   ImlibImage         *im;
+   char                load_data;
+   char                rc;
+
+   const png_chunk_t  *pch_fctl;        // Placed here to avoid clobber warning
+   char                interlace;
+} ctx_t;
+
+#if 0
+static const unsigned char png_sig[] = {
+   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+};
+#endif
+
+#if USE_IMLIB2_COMMENT_TAG
 static void
 comment_free(ImlibImage * im, void *data)
 {
    free(data);
 }
+#endif
 
-int
-load2(ImlibImage * im, int load_data)
+static void
+user_error_fn(png_struct * png_ptr, const char *txt)
 {
-   int                 rc, ok;
-   void               *fdata;
+#if 0
+   D("%s: %s\n", __func__, txt);
+#endif
+}
+
+static void
+user_warning_fn(png_struct * png_ptr, const char *txt)
+{
+   D("%s: %s\n", __func__, txt);
+}
+
+static void
+info_callback(png_struct * png_ptr, png_info * info_ptr)
+{
+   int                 rc;
+   ctx_t              *ctx = png_get_progressive_ptr(png_ptr);
+   ImlibImage         *im = ctx->im;
    png_uint_32         w32, h32;
-   char                hasa;
-   png_structp         png_ptr = NULL;
-   png_infop           info_ptr = NULL;
    int                 bit_depth, color_type, interlace_type;
-   ImLib_PNG_data      pdata;
-   int                 i;
+   int                 hasa;
 
-   /* read header */
-   rc = LOAD_FAIL;
-   pdata.lines = NULL;
+   rc = LOAD_BADIMAGE;          /* Format accepted */
 
-   if (im->fsize < PNG_BYTES_TO_CHECK)
-      return rc;
-
-   fdata =
-      mmap(NULL, PNG_BYTES_TO_CHECK, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return rc;
-
-   ok = png_sig_cmp(fdata, 0, PNG_BYTES_TO_CHECK) == 0;
-
-   munmap(fdata, PNG_BYTES_TO_CHECK);
-
-   if (!ok)
-      return rc;
-
-   png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-   if (!png_ptr)
-      goto quit;
-
-   info_ptr = png_create_info_struct(png_ptr);
-   if (!info_ptr)
-      goto quit;
-
-   if (setjmp(png_jmpbuf(png_ptr)))
-     {
-        rc = LOAD_FAIL;
-        goto quit;
-     }
-
-   png_init_io(png_ptr, im->fp);
-   png_read_info(png_ptr, info_ptr);
-   png_get_IHDR(png_ptr, info_ptr, (png_uint_32 *) (&w32),
-                (png_uint_32 *) (&h32), &bit_depth, &color_type,
+   /* Semi-redundant fetch/check */
+   png_get_IHDR(png_ptr, info_ptr, &w32, &h32, &bit_depth, &color_type,
                 &interlace_type, NULL, NULL);
+
+   D("%s: WxH=%dx%d depth=%d color=%d interlace=%d\n", __func__,
+     w32, h32, bit_depth, color_type, interlace_type);
+
+   im->w = w32;
+   im->h = h32;
+
    if (!IMAGE_DIMENSIONS_OK(w32, h32))
       goto quit;
-
-   im->w = (int)w32;
-   im->h = (int)h32;
 
    hasa = 0;
    if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
@@ -84,13 +156,11 @@ load2(ImlibImage * im, int load_data)
       hasa = 1;
    UPDATE_FLAG(im->flags, F_HAS_ALPHA, hasa);
 
-   if (!load_data)
-     {
-        rc = LOAD_SUCCESS;
-        goto quit;
-     }
+   if (!ctx->load_data)
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
    /* Load data */
+   ctx->interlace = interlace_type;
 
    /* Prep for transformations...  ultimately we want ARGB */
    /* expand palette -> RGB if necessary */
@@ -128,48 +198,358 @@ load2(ImlibImage * im, int load_data)
       png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
 #endif
 
+   /* NB! If png_read_update_info() isn't called processing stops here */
+   png_read_update_info(png_ptr, info_ptr);
+
    if (!__imlib_AllocateData(im))
-      goto quit;
-
-   pdata.lines = malloc(im->h * sizeof(unsigned char *));
-   if (!pdata.lines)
-      goto quit;
-
-   for (i = 0; i < im->h; i++)
-      pdata.lines[i] = (unsigned char *)(im->data + i * im->w);
-
-   if (im->lc)
-     {
-        int                 y, pass, n_passes, nrows = 1;
-
-        n_passes = png_set_interlace_handling(png_ptr);
-        for (pass = 0; pass < n_passes; pass++)
-          {
-             __imlib_LoadProgressSetPass(im, pass, n_passes);
-
-             for (y = 0; y < im->h; y += nrows)
-               {
-                  png_read_rows(png_ptr, &pdata.lines[y], NULL, nrows);
-
-                  if (__imlib_LoadProgressRows(im, y, nrows))
-                    {
-                       rc = LOAD_BREAK;
-                       goto quit1;
-                    }
-               }
-          }
-     }
-   else
-     {
-        png_read_image(png_ptr, pdata.lines);
-     }
+      QUIT_WITH_RC(LOAD_OOM);
 
    rc = LOAD_SUCCESS;
 
+ quit:
+   ctx->rc = rc;
+   if (!ctx->load_data || rc != LOAD_SUCCESS)
+      png_longjmp(png_ptr, 1);
+}
+
+static void
+row_callback(png_struct * png_ptr, png_byte * new_row,
+             png_uint_32 row_num, int pass)
+{
+   ctx_t              *ctx = png_get_progressive_ptr(png_ptr);
+   ImlibImage         *im = ctx->im;
+   DATA32             *dptr;
+   const DATA32       *sptr;
+   int                 x, y, x0, dx, y0, dy;
+   int                 done;
+
+   DL("%s: png=%p data=%p row=%d, pass=%d\n", __func__, png_ptr, new_row,
+      row_num, pass);
+
+   if (!im->data)
+      return;
+
+   if (ctx->interlace)
+     {
+        x0 = PNG_PASS_START_COL(pass);
+        dx = PNG_PASS_COL_OFFSET(pass);
+        y0 = PNG_PASS_START_ROW(pass);
+        dy = PNG_PASS_ROW_OFFSET(pass);
+
+        DL("x0, dx = %d,%d y0,dy = %d,%d cols/rows=%d/%d\n",
+           x0, dx, y0, dy,
+           PNG_PASS_COLS(im->w, pass), PNG_PASS_ROWS(im->h, pass));
+        y = y0 + dy * row_num;
+
+        sptr = (const DATA32 *)new_row; /* Assuming aligned */
+        dptr = im->data + y * im->w;
+        for (x = x0; x < im->w; x += dx)
+          {
+#if 0
+             dptr[x] = PIXEL_ARGB(new_row[ii + 3], new_row[ii + 2],
+                                  new_row[ii + 1], new_row[ii + 0]);
+             D("x,y = %d,%d (i,j, ii=%d,%d %d): %08x\n", x, y,
+               ii / 4, row_num, ii, dptr[x]);
+#else
+             dptr[x] = *sptr++;
+#endif
+          }
+
+        done = pass >= 6 && (int)row_num >= PNG_PASS_ROWS(im->h, pass) - 1;
+        if (im->lc && done)
+           __imlib_LoadProgress(im, im->frame_x, im->frame_y, im->w, im->h);
+     }
+   else
+     {
+        y = row_num;
+
+        dptr = im->data + y * im->w;
+        memcpy(dptr, new_row, sizeof(DATA32) * im->w);
+
+        done = (int)row_num >= im->h - 1;
+
+        if (im->lc)
+          {
+             if (im->frame_count > 1)
+               {
+                  if (done)
+                     __imlib_LoadProgress(im, im->frame_x, im->frame_y, im->w,
+                                          im->h);
+               }
+             else if (__imlib_LoadProgressRows(im, y, 1))
+               {
+                  png_process_data_pause(png_ptr, 0);
+                  ctx->rc = LOAD_BREAK;
+               }
+          }
+     }
+}
+
+int
+load2(ImlibImage * im, int load_data)
+{
+   int                 rc;
+   void               *fdata;
+   png_structp         png_ptr = NULL;
+   png_infop           info_ptr = NULL;
+   ctx_t               ctx = { 0 };
+   int                 ic;
+   unsigned char      *fptr;
+   const png_chunk_t  *chunk;
+   const png_fctl_t   *pfctl;
+   unsigned int        len, val;
+   int                 w, h, frame, save_fdat;
+   png_chunk_t         cbuf;
+
+   /* read header */
+   rc = LOAD_FAIL;
+
+   if (im->fsize < _PNG_MIN_SIZE)
+      return rc;
+
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   if (fdata == MAP_FAILED)
+      return LOAD_BADFILE;
+
+   /* Signature check */
+   if (png_sig_cmp(fdata, 0, _PNG_SIG_SIZE))
+      goto quit;
+
+   png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL,
+                                    user_error_fn, user_warning_fn);
+   if (!png_ptr)
+      goto quit;
+
+   info_ptr = png_create_info_struct(png_ptr);
+   if (!info_ptr)
+      goto quit;
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
+
+   ctx.im = im;
+   ctx.load_data = load_data;
+   ctx.rc = rc;
+
+   if (setjmp(png_jmpbuf(png_ptr)))
+      QUIT_WITH_RC(ctx.rc);
+
+   /* Set up processing via callbacks */
+   png_set_progressive_read_fn(png_ptr, &ctx,
+                               info_callback, row_callback, NULL);
+
+   if (im->frame_num <= 0)
+      goto scan_done;
+
+   /* Animation info requested. Look it up to find the frame's
+    * w,h which we need for making a "fake" IHDR in next pass. */
+
+   frame = 0;                   /* Frame number */
+   ctx.pch_fctl = NULL;         /* Ponter to requested frame fcTL chunk */
+   fptr = (unsigned char *)fdata + _PNG_SIG_SIZE;
+
+   for (ic = 0;; ic++, fptr += 8 + len + 4)
+     {
+        chunk = (const png_chunk_t *)fptr;
+        len = htonl(chunk->hdr.len);
+        D("Scan %3d: %06lx: %6d: %.4s: ", ic,
+          fptr - (unsigned char *)fdata, len, chunk->hdr.name);
+        if (fptr + len - (unsigned char *)fdata > im->fsize)
+           break;
+
+        switch (chunk->hdr.type)
+          {
+          case PNG_TYPE_IDAT:
+             D("\n");
+             if (im->frame_count == 0)
+                goto scan_done; /* No acTL before IDAT - Regular PNG */
+             break;
+
+          case PNG_TYPE_acTL:
+#define P (&chunk->actl)
+             im->frame_count = htonl(P->num_frames);
+             D("num_frames=%d num_plays=%d\n", im->frame_count,
+               htonl(P->num_plays));
+             if (im->frame_num > im->frame_count)
+                QUIT_WITH_RC(LOAD_BADFRAME);
+             break;
+#undef P
+
+          case PNG_TYPE_fcTL:
+#define P (&chunk->fctl)
+             frame++;
+             D("frame=%d(%d) x,y=%d,%d wxh=%dx%d delay=%d/%d disp=%d blend=%d\n",       //
+               frame, htonl(P->frame),
+               htonl(P->x), htonl(P->y), htonl(P->w), htonl(P->h),
+               htons(P->delay_num), htons(P->delay_den),
+               P->dispose_op, P->blend_op);
+             if (im->frame_num != frame)
+                break;
+             ctx.pch_fctl = chunk;      /* Remember fcTL location */
+#if IMLIB2_DEBUG
+             break;             /* Show all frames */
+#else
+             goto scan_done;
+#endif
+#undef P
+
+          case PNG_TYPE_IEND:
+             D("\n");
+             goto scan_check;
+
+          default:
+             D("\n");
+             break;
+          }
+     }
+
+ scan_check:
+   if (!ctx.pch_fctl)
+      goto quit;                /* Requested frame not found */
+
+ scan_done:
+   /* Now feed data into libpng to extract requested frame */
+
+   save_fdat = 0;
+
+   /* At this point we start "progressive" PNG data processing */
+   fptr = fdata;
+   png_process_data(png_ptr, info_ptr, fptr, _PNG_SIG_SIZE);
+
+   fptr = (unsigned char *)fdata + _PNG_SIG_SIZE;
+
+   for (ic = 0;; ic++, fptr += 8 + len + 4)
+     {
+        chunk = (const png_chunk_t *)fptr;
+        len = htonl(chunk->hdr.len);
+        D("Chunk %3d: %06lx: %6d: %.4s: ", ic,
+          fptr - (unsigned char *)fdata, len, chunk->hdr.name);
+        if (fptr + len - (unsigned char *)fdata > im->fsize)
+           break;
+
+        switch (chunk->hdr.type)
+          {
+          case PNG_TYPE_IHDR:
+#define P (&chunk->ihdr)
+             w = htonl(P->w);
+             h = htonl(P->h);
+             if (!ctx.pch_fctl)
+               {
+                  D("WxH=%dx%d depth=%d color=%d comp=%d filt=%d interlace=%d\n",       //
+                    w, h, P->depth, P->color, P->comp, P->filt, P->interl);
+                  break;        /* Process actual IHDR chunk */
+               }
+
+             /* Deal with frame animation info */
+             pfctl = &ctx.pch_fctl->fctl;
+#if 0
+             im->w = htonl(pfctl->w);
+             im->h = htonl(pfctl->h);
+#endif
+             im->canvas_w = w;
+             im->canvas_h = h;
+             im->frame_x = htonl(pfctl->x);
+             im->frame_y = htonl(pfctl->y);
+             if (pfctl->dispose_op == APNG_DISPOSE_OP_BACKGROUND)
+                im->frame_flags |= FF_FRAME_DISPOSE_CLEAR;
+             else if (pfctl->dispose_op == APNG_DISPOSE_OP_PREVIOUS)
+                im->frame_flags |= FF_FRAME_DISPOSE_PREV;
+             if (pfctl->blend_op != APNG_BLEND_OP_SOURCE)
+                im->frame_flags |= FF_FRAME_BLEND;
+             val = htons(pfctl->delay_den);
+             im->frame_delay =
+                val > 0 ? 1000 * htons(pfctl->delay_num) / val : 100;
+
+             D("WxH=%dx%d(%dx%d) X,Y=%d,%d depth=%d color=%d comp=%d filt=%d interlace=%d disp=%d blend=%d delay=%d/%d\n",      //
+               htonl(pfctl->w), htonl(pfctl->h),
+               im->canvas_w, im->canvas_h, im->frame_x, im->frame_y,
+               P->depth, P->color, P->comp, P->filt, P->interl,
+               pfctl->dispose_op, pfctl->blend_op,
+               pfctl->delay_num, pfctl->delay_den);
+
+             if (im->frame_num <= 1)
+                break;          /* Process actual IHDR chunk */
+
+             /* Process fake IHDR for frame */
+             memcpy(&cbuf, fptr, len + 12);
+             cbuf.ihdr.w = pfctl->w;
+             cbuf.ihdr.h = pfctl->h;
+             png_set_crc_action(png_ptr, PNG_CRC_QUIET_USE, PNG_CRC_QUIET_USE);
+             png_process_data(png_ptr, info_ptr, (void *)&cbuf, len + 12);
+             png_set_crc_action(png_ptr, PNG_CRC_DEFAULT, PNG_CRC_DEFAULT);
+             continue;
+#undef P
+
+          case PNG_TYPE_IDAT:
+             D("\n");
+             /* Needed chunks should now be read */
+             /* Note - Just before starting to process data chunks libpng will
+              * call info_callback() */
+             if (im->frame_num <= 1)
+                break;          /* Process actual IDAT chunk */
+             /* Jump to the record after the frame's fcTL, will typically be
+              * the frame's first fdAT chunk */
+             fptr = (unsigned char *)ctx.pch_fctl;
+             len = htonl(ctx.pch_fctl->hdr.len);
+             save_fdat = 1;     /* Save fdAT's as of now (until next fcTL) */
+             continue;
+
+          case PNG_TYPE_acTL:
+#define P (&chunk->actl)
+             if (im->frame_count > 1)
+                im->frame_flags |= FF_IMAGE_ANIMATED;
+             D("num_frames=%d num_plays=%d\n",
+               im->frame_count, htonl(P->num_plays));
+             continue;
+#undef P
+
+          case PNG_TYPE_fcTL:
+             D("\n");
+             if (save_fdat)
+                goto done;      /* First fcTL after frame's fdAT's - done */
+             continue;
+
+          case PNG_TYPE_fdAT:
+#define P (&chunk->fdat)
+             D("\n");
+             if (im->frame_num <= 1)
+                continue;
+             if (!save_fdat)
+                continue;
+             /* Process fake IDAT frame data */
+             cbuf.hdr.len = htonl(len - 4);
+             memcpy(cbuf.hdr.name, "IDAT", 4);
+             png_process_data(png_ptr, info_ptr, (void *)&cbuf, 8);
+
+             png_set_crc_action(png_ptr, PNG_CRC_QUIET_USE, PNG_CRC_QUIET_USE);
+             png_process_data(png_ptr, info_ptr, (void *)P->data, len + 4 - 4);
+             png_set_crc_action(png_ptr, PNG_CRC_DEFAULT, PNG_CRC_DEFAULT);
+             continue;
+#undef P
+
+          default:
+             D("\n");
+             break;
+          }
+
+        png_process_data(png_ptr, info_ptr, fptr, len + 12);
+
+        if (chunk->hdr.type == PNG_TYPE_IEND)
+           break;
+     }
+
+ done:
+
+   rc = ctx.rc;
+   if (rc <= 0)
+      goto quit;
+
+   rc = LOAD_SUCCESS;
+
+#if USE_IMLIB2_COMMENT_TAG
 #ifdef PNG_TEXT_SUPPORTED
    {
       png_textp           text;
-      int                 num;
+      int                 i, num;
 
       num = 0;
       png_get_text(png_ptr, info_ptr, &text, &num);
@@ -181,14 +561,13 @@ load2(ImlibImage * im, int load_data)
         }
    }
 #endif
+#endif
 
- quit1:
-   png_read_end(png_ptr, info_ptr);
  quit:
-   free(pdata.lines);
    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
    if (rc <= 0)
       __imlib_FreeData(im);
+   munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -262,6 +641,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    sig_bit.blue = 8;
    sig_bit.alpha = 8;
    png_set_sBIT(png_ptr, info_ptr, &sig_bit);
+
    /* quality */
    tag = __imlib_GetTag(im, "quality");
    if (tag)
@@ -283,6 +663,9 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
       compression = 0;
    if (compression > 9)
       compression = 9;
+   png_set_compression_level(png_ptr, compression);
+
+#if USE_IMLIB2_COMMENT_TAG
    tag = __imlib_GetTag(im, "comment");
    if (tag)
      {
@@ -295,7 +678,8 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
         png_set_text(png_ptr, info_ptr, &(text), 1);
 #endif
      }
-   png_set_compression_level(png_ptr, compression);
+#endif
+
    png_write_info(png_ptr, info_ptr);
    png_set_shift(png_ptr, &sig_bit);
    png_set_packing(png_ptr);
@@ -330,10 +714,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
              png_write_rows(png_ptr, &row_ptr, 1);
 
              if (im->lc && __imlib_LoadProgressRows(im, y, 1))
-               {
-                  rc = LOAD_BREAK;
-                  goto quit;
-               }
+                QUIT_WITH_RC(LOAD_BREAK);
 
              ptr += im->w;
           }

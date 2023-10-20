@@ -449,12 +449,13 @@ load2(ImlibImage * im, int load_data)
    ILBM                ilbm;
 
    rc = LOAD_FAIL;
-   plane[0] = NULL;
-   memset(&ilbm, 0, sizeof(ilbm));
 
    fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
-      return rc;
+      return LOAD_BADFILE;
+
+   plane[0] = NULL;
+   memset(&ilbm, 0, sizeof(ilbm));
 
   /*----------
    * Load the chunk(s) we're interested in. If load_data is not true, then we only
@@ -462,6 +463,8 @@ load2(ImlibImage * im, int load_data)
    *----------*/
    if (!loadchunks(fdata, im->fsize, &ilbm, load_data))
       goto quit;
+
+   rc = LOAD_BADIMAGE;          /* Format accepted */
 
   /*----------
    * Use and check header.
@@ -495,10 +498,7 @@ load2(ImlibImage * im, int load_data)
       UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
    if (!load_data)
-     {
-        rc = LOAD_SUCCESS;
-        goto quit;
-     }
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
    ilbm.ham = 0;
    ilbm.hbrite = 0;
@@ -528,16 +528,15 @@ load2(ImlibImage * im, int load_data)
    * 0 bit.
    *----------*/
 
-   __imlib_AllocateData(im);
-   if (!im->data)
-      goto quit;
+   if (!__imlib_AllocateData(im))
+      QUIT_WITH_RC(LOAD_OOM);
 
    n = ilbm.depth;
    if (ilbm.mask == 1)
       n++;
    plane[0] = malloc(((im->w + 15) / 16) * 2 * n);
    if (!plane[0])
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
    for (i = 1; i < n; i++)
       plane[i] = plane[i - 1] + ((im->w + 15) / 16) * 2;
@@ -554,10 +553,7 @@ load2(ImlibImage * im, int load_data)
         ilbm.row++;
 
         if (im->lc && __imlib_LoadProgressRows(im, y, 1))
-          {
-             rc = LOAD_BREAK;
-             goto quit;
-          }
+           QUIT_WITH_RC(LOAD_BREAK);
      }
 
    rc = LOAD_SUCCESS;
@@ -574,8 +570,7 @@ load2(ImlibImage * im, int load_data)
 
    freeilbm(&ilbm);
 
-   if (fdata != MAP_FAILED)
-      munmap(fdata, im->fsize);
+   munmap(fdata, im->fsize);
 
    return rc;
 }

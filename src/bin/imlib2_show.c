@@ -10,7 +10,7 @@
 #include <math.h>
 #include <locale.h>
 
-#include "Imlib2.h"
+#include <Imlib2.h>
 
 Display            *disp;
 Window              win;

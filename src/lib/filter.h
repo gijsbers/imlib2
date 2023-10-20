@@ -3,24 +3,20 @@
 
 #include "common.h"
 
-typedef struct _imlib_filter ImlibFilter;
-typedef struct _imlib_filter_color ImlibFilterColor;
-typedef struct _imlib_filter_pixel ImlibFilterPixel;
-
-struct _imlib_filter_pixel {
+typedef struct {
    int                 xoff, yoff;
    int                 a, r, g, b;
-};
+} ImlibFilterPixel;
 
-struct _imlib_filter_color {
+typedef struct {
    int                 size, entries;
    int                 div, cons;
    ImlibFilterPixel   *pixels;
-};
+} ImlibFilterColor;
 
-struct _imlib_filter {
+typedef struct {
    ImlibFilterColor    alpha, red, green, blue;
-};
+} ImlibFilter;
 
 ImlibFilter        *__imlib_CreateFilter(int size);
 void                __imlib_FreeFilter(ImlibFilter * fil);

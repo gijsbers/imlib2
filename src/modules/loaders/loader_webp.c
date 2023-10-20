@@ -22,9 +22,9 @@ load2(ImlibImage * im, int load_data)
    if (im->fsize < 12)
       return rc;
 
-   fdata = mmap(0, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
+   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
    if (fdata == MAP_FAILED)
-      return rc;
+      return LOAD_BADFILE;
 
    webp_data.bytes = fdata;
    webp_data.size = im->fsize;
@@ -34,26 +34,44 @@ load2(ImlibImage * im, int load_data)
    if (!demux)
       goto quit;
 
-   /* Key may select frame other than first */
+   rc = LOAD_BADIMAGE;          /* Format accepted */
+
    frame = 1;
-   if (im->key)
+   if (im->frame_num > 0)
      {
-        frame = atoi(im->key);
-        iter.num_frames = WebPDemuxGetI(demux, WEBP_FF_FRAME_COUNT);
-        if (frame > iter.num_frames)
-           frame = 0;           /* Select last */
+        frame = im->frame_num;
+        im->frame_count = WebPDemuxGetI(demux, WEBP_FF_FRAME_COUNT);
+        if (im->frame_count > 1)
+           im->frame_flags |= FF_IMAGE_ANIMATED;
+        im->canvas_w = WebPDemuxGetI(demux, WEBP_FF_CANVAS_WIDTH);
+        im->canvas_h = WebPDemuxGetI(demux, WEBP_FF_CANVAS_HEIGHT);
+
+        D("Canvas WxH=%dx%d frames=%d\n",
+          im->canvas_w, im->canvas_h, im->frame_count);
+
+        if (frame > 1 && frame > im->frame_count)
+           QUIT_WITH_RC(LOAD_BADFRAME);
      }
 
    if (!WebPDemuxGetFrame(demux, frame, &iter))
       goto quit;
 
-   D("Frame=%d/%d X,Y=%d,%d WxH=%dx%d\n", iter.frame_num, iter.num_frames,
-     iter.x_offset, iter.y_offset, iter.width, iter.height);
-
    WebPDemuxReleaseIterator(&iter);
 
    im->w = iter.width;
    im->h = iter.height;
+   im->frame_x = iter.x_offset;
+   im->frame_y = iter.y_offset;
+   im->frame_delay = iter.duration;
+   if (iter.dispose_method == WEBP_MUX_DISPOSE_BACKGROUND)
+      im->frame_flags |= FF_FRAME_DISPOSE_CLEAR;
+   if (iter.blend_method == WEBP_MUX_BLEND)
+      im->frame_flags |= FF_FRAME_BLEND;
+
+   D("Canvas WxH=%dx%d frame=%d/%d X,Y=%d,%d WxH=%dx%d alpha=%d T=%d dm=%d co=%d bl=%d\n",      //
+     im->canvas_w, im->canvas_h, iter.frame_num, im->frame_count,
+     im->frame_x, im->frame_y, im->w, im->h, iter.has_alpha,
+     im->frame_delay, iter.dispose_method, iter.complete, iter.blend_method);
 
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
@@ -61,15 +79,12 @@ load2(ImlibImage * im, int load_data)
    UPDATE_FLAG(im->flags, F_HAS_ALPHA, iter.has_alpha);
 
    if (!load_data)
-     {
-        rc = LOAD_SUCCESS;
-        goto quit;
-     }
+      QUIT_WITH_RC(LOAD_SUCCESS);
 
    /* Load data */
 
    if (!__imlib_AllocateData(im))
-      goto quit;
+      QUIT_WITH_RC(LOAD_OOM);
 
    if (WebPDecodeBGRAInto
        (iter.fragment.bytes, iter.fragment.size, (uint8_t *) im->data,
@@ -77,7 +92,7 @@ load2(ImlibImage * im, int load_data)
       goto quit;
 
    if (im->lc)
-      __imlib_LoadProgressRows(im, 0, im->h);
+      __imlib_LoadProgress(im, im->frame_x, im->frame_y, im->w, im->h);
 
    rc = LOAD_SUCCESS;
 
@@ -86,8 +101,7 @@ load2(ImlibImage * im, int load_data)
       __imlib_FreeData(im);
    if (demux)
       WebPDemuxDelete(demux);
-   if (fdata != MAP_FAILED)
-      munmap(fdata, im->fsize);
+   munmap(fdata, im->fsize);
 
    return rc;
 }
