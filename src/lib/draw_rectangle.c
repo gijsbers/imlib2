@@ -145,12 +145,12 @@ __imlib_Rectangle_DrawToImage(int x, int y, int w, int h, uint32_t color,
    if (clw <= 0 || clh <= 0)
       return;
 
-   if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
+   if (blend && im->has_alpha)
       __imlib_build_pow_lut();
 
    __imlib_Rectangle_DrawToData(x, y, w, h, color,
                                 im->data, im->w, clx, cly, clw, clh,
-                                op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
+                                op, im->has_alpha, blend);
 }
 
 void
@@ -184,10 +184,10 @@ __imlib_Rectangle_FillToImage(int x, int y, int w, int h, uint32_t color,
    if (clw <= 0 || clh <= 0)
       return;
 
-   if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
+   if (blend && im->has_alpha)
       __imlib_build_pow_lut();
 
    __imlib_Rectangle_FillToData(x, y, w, h, color,
                                 im->data, im->w, clx, cly, clw, clh,
-                                op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
+                                op, im->has_alpha, blend);
 }

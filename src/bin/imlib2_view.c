@@ -5,16 +5,15 @@
 #include <X11/keysym.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <stdbool.h>
 #include <unistd.h>
 
-#include "props.h"
+#include "prog_x11.h"
 
 #define MIN(a, b) ((a < b) ? a : b)
 #define MAX(a, b) ((a > b) ? a : b)
-
-Display            *disp;
 
 typedef struct {
    int                 x, y;    /* Origin */
@@ -30,6 +29,7 @@ static int          window_width = 0, window_height = 0;
 static Imlib_Image  bg_im = NULL;
 static Imlib_Image  bg_im_clean = NULL;
 static Imlib_Image  fg_im = NULL;       /* The animated image */
+static Imlib_Image  im_curr = NULL;     /* The current image */
 
 static bool         opt_cache = false;
 static bool         opt_progr = true;   /* Render through progress callback */
@@ -47,6 +47,7 @@ static bool         multiframe = false; /* Image has multiple frames     */
 static bool         fixedframe = false; /* We have selected single frame */
 static bool         animated = false;   /* Image has animation sequence  */
 static bool         animate = false;    /* Animation is active           */
+static int          animloop = 0;       /* Animation loop count          */
 
 #define Dprintf(fmt...)  if (debug)        printf(fmt)
 #define Vprintf(fmt...)  if (verbose)      printf(fmt)
@@ -198,12 +199,12 @@ anim_init(int w, int h)
 }
 
 static void
-anim_update(Imlib_Image im, const rect_t * up_in, rect_t * up_out, int flags)
+anim_update(Imlib_Image im, const rect_t * r_up, const rect_t * r_out,
+            rect_t * r_dam, int flags)
 {
    static const rect_t r_zero = { };
    static rect_t       r_prev = { };
    static Imlib_Image  im_prev = NULL;
-   Imlib_Image         im_save = NULL;
 
    if (!im)
      {
@@ -218,13 +219,6 @@ anim_update(Imlib_Image im, const rect_t * up_in, rect_t * up_out, int flags)
      }
 
    imlib_context_set_image(fg_im);
-
-   if (flags & IMLIB_FRAME_DISPOSE_PREV)
-     {
-        Dprintf(" Save  %d,%d %dx%d\n", up_in->x, up_in->y, up_in->w, up_in->h);
-        im_save =
-           imlib_create_cropped_image(up_in->x, up_in->y, up_in->w, up_in->h);
-     }
 
    if (r_prev.w > 0)
      {
@@ -252,30 +246,53 @@ anim_update(Imlib_Image im, const rect_t * up_in, rect_t * up_out, int flags)
           }
 
         /* Damaged area is (cleared + new frame) */
-        up_out->x = MIN(r_prev.x, up_in->x);
-        up_out->y = MIN(r_prev.y, up_in->y);
-        up_out->w = MAX(r_prev.x + r_prev.w, up_in->x + up_in->w) - up_out->x;
-        up_out->h = MAX(r_prev.y + r_prev.h, up_in->y + up_in->h) - up_out->y;
+        r_dam->x = MIN(r_prev.x, r_out->x);
+        r_dam->y = MIN(r_prev.y, r_out->y);
+        r_dam->w = MAX(r_prev.x + r_prev.w, r_out->x + r_out->w) - r_dam->x;
+        r_dam->h = MAX(r_prev.y + r_prev.h, r_out->y + r_out->h) - r_dam->y;
      }
    else
      {
-        *up_out = *up_in;
+        *r_dam = *r_out;
      }
-   im_prev = im_save;
+
+   if (flags & IMLIB_FRAME_DISPOSE_PREV)
+     {
+        Dprintf(" Save  %d,%d %dx%d\n", r_out->x, r_out->y, r_out->w, r_out->h);
+        im_prev =
+           imlib_create_cropped_image(r_out->x, r_out->y, r_out->w, r_out->h);
+     }
 
    if (flags & (IMLIB_FRAME_DISPOSE_CLEAR | IMLIB_FRAME_DISPOSE_PREV))
-      r_prev = *up_in;          /* Clear/revert next time around */
+      r_prev = *r_out;          /* Clear/revert next time around */
    else
       r_prev = r_zero;          /* No clearing before next frame */
 
    /* Render new frame on canvas */
-   Dprintf(" Render %d,%d %dx%d\n", up_in->x, up_in->y, up_in->w, up_in->h);
+   Dprintf(" Render %d,%d %dx%d -> %d,%d\n", r_up->x, r_up->y, r_up->w, r_up->h,
+           r_out->x, r_out->y);
    if (flags & IMLIB_FRAME_BLEND)
       imlib_context_set_blend(1);
    else
       imlib_context_set_blend(0);
-   imlib_blend_image_onto_image(im, 1, 0, 0, up_in->w, up_in->h,
-                                up_in->x, up_in->y, up_in->w, up_in->h);
+   imlib_blend_image_onto_image(im, 1, r_up->x, r_up->y, r_up->w, r_up->h,
+                                r_out->x, r_out->y, r_up->w, r_up->h);
+}
+
+static void
+free_image(Imlib_Image im)
+{
+   Dprintf(" Cache usage: %d/%d\n", imlib_get_cache_used(),
+           imlib_get_cache_size());
+
+   if (!im)
+      return;
+
+   imlib_context_set_image(im);
+   if (opt_cache)
+      imlib_free_image();
+   else
+      imlib_free_image_and_decache();
 }
 
 static int
@@ -284,7 +301,7 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
 {
    static double       scale_x = 0., scale_y = 0.;
    int                 up_wx, up_wy, up_ww, up_wh;
-   rect_t              r_up;
+   rect_t              r_up, r_out;
 
    if (opt_progress_print)
       printf("%s: %3d%% %4d,%4d %4dx%4d\n",
@@ -294,6 +311,34 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
    imlib_image_get_frame_info(&finfo);
    multiframe = finfo.frame_count > 1;
    animated = finfo.frame_flags & IMLIB_IMAGE_ANIMATED;
+
+   if (update_w <= 0 || update_h <= 0)
+     {
+        /* Explicit rendering (not doing callbacks) */
+        r_up.x = 0;
+        r_up.y = 0;
+        r_up.w = finfo.frame_w;
+        r_up.h = finfo.frame_h;
+     }
+   else
+     {
+        r_up.x = update_x;
+        r_up.y = update_y;
+        r_up.w = update_w;
+        r_up.h = update_h;
+     }
+
+   r_out = r_up;
+   if (!fixedframe)
+     {
+        r_out.x += finfo.frame_x;
+        r_out.y += finfo.frame_y;
+     }
+
+   Dprintf("U=%d,%d %dx%d F=%d,%d %dx%d O=%d,%d %dx%d\n",
+           r_up.x, r_up.y, r_up.w, r_up.h,
+           finfo.frame_x, finfo.frame_y, finfo.frame_w, finfo.frame_h,
+           r_out.x, r_out.y, r_out.w, r_out.h);
 
    /* first time it's called */
    if (image_width == 0)
@@ -365,22 +410,6 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
         anim_init(image_width, image_height);
      }
 
-   r_up.x = update_x;
-   r_up.y = update_y;
-   r_up.w = update_w;
-   r_up.h = update_h;
-   if (update_w <= 0 || update_h <= 0)
-     {
-        /* Explicit rendering (not doing callbacks) */
-        r_up.x = finfo.frame_x;
-        r_up.y = finfo.frame_y;
-        r_up.w = finfo.frame_w;
-        r_up.h = finfo.frame_h;
-     }
-
-   if (fixedframe)
-      r_up.x = r_up.y = 0;
-
    imlib_context_set_anti_alias(0);
    imlib_context_set_dither(0);
 
@@ -389,36 +418,37 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
         rect_t              r_dam = { };
 
         /* Update animated "target" canvas image (fg_im) */
-        anim_update(im, &r_up, &r_dam, finfo.frame_flags);
-        r_up = r_dam;           /* r_up is now the "damaged" (to be re-rendered) area */
+        anim_update(im, &r_up, &r_out, &r_dam, finfo.frame_flags);
+        r_out = r_dam;          /* r_up is now the "damaged" (to be re-rendered) area */
         im = fg_im;
 
         /* Re-render checkered background where animated image has changes */
         imlib_context_set_image(bg_im);
         imlib_context_set_blend(0);
         imlib_blend_image_onto_image(bg_im_clean, 0,
-                                     r_up.x, r_up.y, r_up.w, r_up.h,
-                                     r_up.x, r_up.y, r_up.w, r_up.h);
+                                     r_out.x, r_out.y, r_out.w, r_out.h,
+                                     r_out.x, r_out.y, r_out.w, r_out.h);
      }
 
    /* Render image on background image */
-   Dprintf(" Update %d,%d %dx%d\n", r_up.x, r_up.y, r_up.w, r_up.h);
+   Dprintf(" Update %d,%d %dx%d\n", r_out.x, r_out.y, r_out.w, r_out.h);
    imlib_context_set_image(bg_im);
    imlib_context_set_blend(1);
    imlib_blend_image_onto_image(im, 1,
-                                r_up.x, r_up.y, r_up.w, r_up.h,
-                                r_up.x, r_up.y, r_up.w, r_up.h);
+                                r_out.x, r_out.y, r_out.w, r_out.h,
+                                r_out.x, r_out.y, r_out.w, r_out.h);
 
    /* Render image (part) (or updated canvas) on window background pixmap */
-   up_wx = SCALE_X(r_up.x);
-   up_wy = SCALE_Y(r_up.y);
-   up_ww = SCALE_X(r_up.w);
-   up_wh = SCALE_Y(r_up.h);
+   up_wx = SCALE_X(r_out.x);
+   up_wy = SCALE_Y(r_out.y);
+   up_ww = SCALE_X(r_out.w);
+   up_wh = SCALE_Y(r_out.h);
    Dprintf(" Paint  %d,%d %dx%d\n", up_wx, up_wy, up_ww, up_wh);
    imlib_context_set_blend(0);
    imlib_context_set_drawable(bg_pm);
-   imlib_render_image_part_on_drawable_at_size(r_up.x, r_up.y, r_up.w, r_up.h,
-                                               up_wx, up_wy, up_ww, up_wh);
+   imlib_render_image_part_on_drawable_at_size(r_out.x, r_out.y, r_out.w,
+                                               r_out.h, up_wx, up_wy, up_ww,
+                                               up_wh);
 
    /* Update window */
    XClearArea(disp, win, up_wx, up_wy, up_ww, up_wh, False);
@@ -435,10 +465,13 @@ load_image_frame(const char *name, int frame, int inc)
 {
    Imlib_Image         im;
 
+   free_image(im_curr);
+
    if (inc && finfo.frame_count > 0)
       frame = (finfo.frame_count + frame + inc - 1) % finfo.frame_count + 1;
 
    im = imlib_load_image_frame(name, frame);
+   im_curr = im;
    if (!im)
       return im;
 
@@ -466,16 +499,17 @@ load_image_frame(const char *name, int frame, int inc)
    return im;
 }
 
-static              Imlib_Image
+static int
 load_image(int no, const char *name)
 {
+   int                 err;
    Imlib_Image         im;
    char               *ptr;
    Drawable            draw;
 
    Vprintf("Show  %d: '%s'\n", no, name);
 
-   anim_update(NULL, NULL, NULL, 0);    /* Clean up previous animation */
+   anim_update(NULL, NULL, NULL, NULL, 0);      /* Clean up previous animation */
 
    image_width = 0;             /* Force redraw in progress() */
 
@@ -503,8 +537,15 @@ load_image(int no, const char *name)
         ho = h * opt_sgrab_y;
         im = imlib_create_scaled_image_from_drawable(None, 0, 0, w, h, wo, ho,
                                                      1, (get_alpha) ? 1 : 0);
+        if (!im)
+           return -1;
 
         progress(im, 100, 0, 0, wo, ho);
+
+        imlib_context_set_image(im);
+        imlib_free_image();     /* Grabbed image is never cached */
+
+        err = 0;
      }
    else
      {
@@ -527,20 +568,23 @@ load_image(int no, const char *name)
              animate = true;
              fixedframe = false;
           }
+        animloop = 0;
 
+        memset(&finfo, 0, sizeof(finfo));
         im = load_image_frame(nbuf, frame, 0);
 
         animate = animate && animated;
+
+        err = !im;
      }
 
-   return im;
+   return err;
 }
 
 int
 main(int argc, char **argv)
 {
-   int                 opt;
-   Imlib_Image        *im;
+   int                 opt, err;
    int                 no, inc;
 
    verbose = 0;
@@ -599,23 +643,9 @@ main(int argc, char **argv)
         return 1;
      }
 
-   disp = XOpenDisplay(NULL);
-   if (!disp)
-     {
-        fprintf(stderr, "Cannot open display\n");
-        return 1;
-     }
+   prog_x11_init();
 
-   win = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0, 10, 10,
-                             0, 0, 0);
-   XSelectInput(disp, win, KeyPressMask | ButtonPressMask | ButtonReleaseMask |
-                ButtonMotionMask | PointerMotionMask);
-
-   props_win_set_proto_quit(win);
-
-   imlib_context_set_display(disp);
-   imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
-   imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
+   win = prog_x11_create_window("imlib2_view", 10, 10);
 
    if (opt_progr)
      {
@@ -627,16 +657,16 @@ main(int argc, char **argv)
    if (opt_cache)
       imlib_set_cache_size(32 * 1024 * 1024);
 
-   no = -1;
-   for (im = NULL; !im;)
+   for (no = 0; no < argc; no++)
      {
-        no++;
-        if (no == argc)
-          {
-             fprintf(stderr, "No loadable image\n");
-             exit(0);
-          }
-        im = load_image(no, argv[no]);
+        err = load_image(no, argv[no]);
+        if (!err)
+           break;
+     }
+   if (no >= argc)
+     {
+        fprintf(stderr, "No loadable image\n");
+        exit(0);
      }
 
    for (;;)
@@ -648,25 +678,21 @@ main(int argc, char **argv)
         struct timeval      tval;
         fd_set              fdset;
         KeySym              key;
-        Imlib_Image        *im2;
         int                 no2;
 
-        if (im)
+        if (animate)
           {
-             Dprintf(" Cache usage: %d/%d\n", imlib_get_cache_used(),
-                     imlib_get_cache_size());
-             imlib_context_set_image(im);
-             if (opt_cache)
-                imlib_free_image();
-             else
-                imlib_free_image_and_decache();
-             im = NULL;
+             if (finfo.frame_num == 1)
+                animloop++;
+             if (finfo.loop_count == animloop &&
+                 finfo.frame_num == finfo.frame_count)
+                animate = false;
           }
 
         if (animate)
           {
              usleep(1e3 * finfo.frame_delay);
-             im = load_image_frame(argv[no], finfo.frame_num, 1);
+             load_image_frame(argv[no], finfo.frame_num, 1);
              if (!XPending(disp))
                 continue;
           }
@@ -674,136 +700,138 @@ main(int argc, char **argv)
         timeout = 0;
 
         XFlush(disp);
-        XNextEvent(disp, &ev);
-        switch (ev.type)
+        do
           {
-          default:
-             break;
-
-          case ClientMessage:
-             if (props_clientmsg_check_quit(&ev.xclient))
-                goto quit;
-             break;
-          case KeyPress:
-             while (XCheckTypedWindowEvent(disp, win, KeyPress, &ev))
-                ;
-             key = XLookupKeysym(&ev.xkey, 0);
-             switch (key)
+             XNextEvent(disp, &ev);
+             switch (ev.type)
                {
                default:
+                  if (prog_x11_event(&ev))
+                     goto quit;
                   break;
-               case XK_q:
-               case XK_Escape:
-                  goto quit;
-               case XK_r:
-                  goto show_cur;
-               case XK_Right:
-                  goto show_next;
-               case XK_Left:
-                  goto show_prev;
-               case XK_p:
-                  animate = animated && !animate;
+               case KeyPress:
+                  while (XCheckTypedWindowEvent(disp, win, KeyPress, &ev))
+                     ;
+                  key = XLookupKeysym(&ev.xkey, 0);
+                  switch (key)
+                    {
+                    default:
+                       break;
+                    case XK_q:
+                    case XK_Escape:
+                       goto quit;
+                    case XK_r:
+                       goto show_cur;
+                    case XK_Right:
+                       goto show_next;
+                    case XK_Left:
+                       goto show_prev;
+                    case XK_p:
+                       animate = animated && !animate;
+                       break;
+                    case XK_Up:
+                       goto show_next_frame;
+                    case XK_Down:
+                       goto show_prev_frame;
+                    }
                   break;
-               case XK_Up:
-                  goto show_next_frame;
-               case XK_Down:
-                  goto show_prev_frame;
-               }
-             break;
-          case ButtonPress:
-             b = ev.xbutton.button;
-             x = ev.xbutton.x;
-             y = ev.xbutton.y;
-             if (b == 3)
-               {
-                  zoom_mode = 1;
-                  zx = x;
-                  zy = y;
-                  bg_pm_redraw(zx, zy, 0., 0);
-               }
-             break;
-          case ButtonRelease:
-             b = ev.xbutton.button;
-             if (b == 3)
-                zoom_mode = 0;
-             if (b == 1)
-                goto show_next;
-             if (b == 2)
-                goto show_prev;
-             break;
-          case MotionNotify:
-             while (XCheckTypedWindowEvent(disp, win, MotionNotify, &ev))
-                ;
-             x = ev.xmotion.x;
-             if (zoom_mode)
-               {
-                  zoom = ((double)x - (double)zx) / 32.0;
-                  if (zoom < 0)
-                     zoom = 1.0 + ((zoom * 32.0) / ((double)(zx + 1)));
-                  else
-                     zoom += 1.0;
-                  if (zoom <= 0.0001)
-                     zoom = 0.0001;
+               case ButtonPress:
+                  b = ev.xbutton.button;
+                  x = ev.xbutton.x;
+                  y = ev.xbutton.y;
+                  if (b == 3)
+                    {
+                       zoom_mode = 1;
+                       zx = x;
+                       zy = y;
+                       bg_pm_redraw(zx, zy, 0., 0);
+                    }
+                  break;
+               case ButtonRelease:
+                  b = ev.xbutton.button;
+                  if (b == 3)
+                     zoom_mode = 0;
+                  if (b == 1)
+                     goto show_next;
+                  if (b == 2)
+                     goto show_prev;
+                  break;
+               case MotionNotify:
+                  while (XCheckTypedWindowEvent(disp, win, MotionNotify, &ev))
+                     ;
+                  x = ev.xmotion.x;
+                  if (zoom_mode)
+                    {
+                       zoom = ((double)x - (double)zx) / 32.0;
+                       if (zoom < 0)
+                          zoom = 1.0 + ((zoom * 32.0) / ((double)(zx + 1)));
+                       else
+                          zoom += 1.0;
+                       if (zoom <= 0.0001)
+                          zoom = 0.0001;
 
-                  bg_pm_redraw(zx, zy, zoom, 0);
-                  timeout = 200000;     /* .2 s */
-               }
-             break;
+                       bg_pm_redraw(zx, zy, zoom, 0);
+                       timeout = 200000;        /* .2 s */
+                    }
+                  break;
 
-           show_cur:
-             inc = 0;
-             goto show_next_prev;
-           show_next:
-             inc = 1;
-             goto show_next_prev;
-           show_prev:
-             inc = -1;
-             goto show_next_prev;
-           show_next_prev:
-             for (no2 = no;;)
-               {
-                  no2 += inc;
+                show_cur:
+                  inc = 0;
+                  goto show_next_prev;
+                show_next:
+                  inc = 1;
+                  goto show_next_prev;
+                show_prev:
+                  inc = -1;
+                  goto show_next_prev;
+                show_next_prev:
+                  no2 = no + inc;
                   if (no2 >= argc)
-                    {
-                       inc = -1;
-                       continue;
-                    }
-                  else if (no2 < 0)
-                    {
-                       inc = 1;
-                       continue;
-                    }
-                  if (no2 == no && inc != 0)
                      break;
-                  im2 = load_image(no2, argv[no2]);
-                  if (!im2)
+                  if (no2 < 0)
+                     break;
+                  for (;;)
                     {
+                       err = load_image(no2, argv[no2]);
+                       if (err == 0)
+                         {
+                            zoom = 1.0;
+                            zoom_mode = 0;
+                            no = no2;
+                            break;
+                         }
                        Vprintf("*** Error loading image: %s\n", argv[no2]);
-                       continue;
+                       no2 += inc;
+                       if (no2 >= argc)
+                         {
+                            no2 = argc - 2;
+                            inc = -1;
+                         }
+                       else if (no2 < 0)
+                         {
+                            no2 = 1;
+                            inc = 1;
+                         }
                     }
-                  zoom = 1.0;
-                  zoom_mode = 0;
-                  no = no2;
-                  im = im2;
+                  break;
+                show_next_frame:
+                  inc = 1;
+                  goto show_next_prev_frame;
+                show_prev_frame:
+                  inc = -1;
+                  goto show_next_prev_frame;
+                show_next_prev_frame:
+                  if (!multiframe)
+                     break;
+                  if (!animated)
+                     image_width = 0;   /* Reset window size */
+                  load_image_frame(argv[no], finfo.frame_num, inc);
                   break;
                }
-             break;
-           show_next_frame:
-             inc = 1;
-             goto show_next_prev_frame;
-           show_prev_frame:
-             inc = -1;
-             goto show_next_prev_frame;
-           show_next_prev_frame:
-             if (!multiframe)
-                break;
-             if (!animated)
-                image_width = 0;        /* Reset window size */
-             im = load_image_frame(argv[no], finfo.frame_num, inc);
-             break;
           }
+        while (XPending(disp));
 
-        if (multiframe || XPending(disp))
+        if (multiframe)
            continue;
 
         xfd = ConnectionNumber(disp);

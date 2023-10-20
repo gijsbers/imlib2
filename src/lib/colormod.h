@@ -48,7 +48,7 @@ void                __imlib_CmodSetTables(ImlibColorModifier * cm, uint8_t * r,
                                           uint8_t * a);
 void                __imlib_CmodReset(ImlibColorModifier * cm);
 void                __imlib_DataCmodApply(uint32_t * data, int w, int h,
-                                          int jump, ImlibImageFlags * fl,
+                                          int jump, bool has_alpha,
                                           ImlibColorModifier * cm);
 
 void                __imlib_CmodGetTables(ImlibColorModifier * cm, uint8_t * r,

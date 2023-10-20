@@ -146,13 +146,19 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkgdir)"
 LTLIBRARIES = $(pkg_LTLIBRARIES)
-argb_la_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
-am_argb_la_OBJECTS = argb_la-loader_argb.lo
-argb_la_OBJECTS = $(am_argb_la_OBJECTS)
+ani_la_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+am_ani_la_OBJECTS = ani_la-loader_ani.lo
+ani_la_OBJECTS = $(am_ani_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+ani_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(ani_la_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(ani_la_LDFLAGS) $(LDFLAGS) -o $@
+argb_la_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+am_argb_la_OBJECTS = argb_la-loader_argb.lo
+argb_la_OBJECTS = $(am_argb_la_OBJECTS)
 argb_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(argb_la_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(argb_la_LDFLAGS) $(LDFLAGS) -o $@
@@ -332,7 +338,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/argb_la-loader_argb.Plo \
+am__depfiles_remade = ./$(DEPDIR)/ani_la-loader_ani.Plo \
+	./$(DEPDIR)/argb_la-loader_argb.Plo \
 	./$(DEPDIR)/bmp_la-loader_bmp.Plo \
 	./$(DEPDIR)/bz2_la-decompress_load.Plo \
 	./$(DEPDIR)/bz2_la-loader_bz2.Plo \
@@ -377,22 +384,22 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(argb_la_SOURCES) $(bmp_la_SOURCES) $(bz2_la_SOURCES) \
-	$(ff_la_SOURCES) $(gif_la_SOURCES) $(heif_la_SOURCES) \
-	$(ico_la_SOURCES) $(id3_la_SOURCES) $(j2k_la_SOURCES) \
-	$(jpeg_la_SOURCES) $(jxl_la_SOURCES) $(lbm_la_SOURCES) \
-	$(lzma_la_SOURCES) $(png_la_SOURCES) $(pnm_la_SOURCES) \
-	$(ps_la_SOURCES) $(svg_la_SOURCES) $(tga_la_SOURCES) \
-	$(tiff_la_SOURCES) $(webp_la_SOURCES) $(xbm_la_SOURCES) \
-	$(xpm_la_SOURCES) $(zlib_la_SOURCES)
-DIST_SOURCES = $(argb_la_SOURCES) $(bmp_la_SOURCES) $(bz2_la_SOURCES) \
-	$(ff_la_SOURCES) $(gif_la_SOURCES) $(heif_la_SOURCES) \
-	$(ico_la_SOURCES) $(id3_la_SOURCES) $(j2k_la_SOURCES) \
-	$(jpeg_la_SOURCES) $(jxl_la_SOURCES) $(lbm_la_SOURCES) \
-	$(lzma_la_SOURCES) $(png_la_SOURCES) $(pnm_la_SOURCES) \
-	$(ps_la_SOURCES) $(svg_la_SOURCES) $(tga_la_SOURCES) \
-	$(tiff_la_SOURCES) $(webp_la_SOURCES) $(xbm_la_SOURCES) \
-	$(xpm_la_SOURCES) $(zlib_la_SOURCES)
+SOURCES = $(ani_la_SOURCES) $(argb_la_SOURCES) $(bmp_la_SOURCES) \
+	$(bz2_la_SOURCES) $(ff_la_SOURCES) $(gif_la_SOURCES) \
+	$(heif_la_SOURCES) $(ico_la_SOURCES) $(id3_la_SOURCES) \
+	$(j2k_la_SOURCES) $(jpeg_la_SOURCES) $(jxl_la_SOURCES) \
+	$(lbm_la_SOURCES) $(lzma_la_SOURCES) $(png_la_SOURCES) \
+	$(pnm_la_SOURCES) $(ps_la_SOURCES) $(svg_la_SOURCES) \
+	$(tga_la_SOURCES) $(tiff_la_SOURCES) $(webp_la_SOURCES) \
+	$(xbm_la_SOURCES) $(xpm_la_SOURCES) $(zlib_la_SOURCES)
+DIST_SOURCES = $(ani_la_SOURCES) $(argb_la_SOURCES) $(bmp_la_SOURCES) \
+	$(bz2_la_SOURCES) $(ff_la_SOURCES) $(gif_la_SOURCES) \
+	$(heif_la_SOURCES) $(ico_la_SOURCES) $(id3_la_SOURCES) \
+	$(j2k_la_SOURCES) $(jpeg_la_SOURCES) $(jxl_la_SOURCES) \
+	$(lbm_la_SOURCES) $(lzma_la_SOURCES) $(png_la_SOURCES) \
+	$(pnm_la_SOURCES) $(ps_la_SOURCES) $(svg_la_SOURCES) \
+	$(tga_la_SOURCES) $(tiff_la_SOURCES) $(webp_la_SOURCES) \
+	$(xbm_la_SOURCES) $(xpm_la_SOURCES) $(zlib_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -597,13 +604,16 @@ top_srcdir = @top_srcdir@
 AM_CFLAGS = $(CFLAGS_WARNINGS) $(CFLAGS_VISIBILITY) $(CFLAGS_ASAN)
 AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/src/lib
 pkgdir = $(libdir)/imlib2/loaders
-pkg_LTLIBRARIES = argb.la bmp.la ff.la ico.la lbm.la pnm.la tga.la \
-	xbm.la xpm.la $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_7) $(am__append_8) $(am__append_9) \
-	$(am__append_10) $(am__append_11) $(am__append_12) \
-	$(am__append_13) $(am__append_14)
-EXTRA_DIST = loader_common.h
+pkg_LTLIBRARIES = ani.la argb.la bmp.la ff.la ico.la lbm.la pnm.la \
+	tga.la xbm.la xpm.la $(am__append_1) $(am__append_2) \
+	$(am__append_3) $(am__append_4) $(am__append_5) \
+	$(am__append_6) $(am__append_7) $(am__append_8) \
+	$(am__append_9) $(am__append_10) $(am__append_11) \
+	$(am__append_12) $(am__append_13) $(am__append_14)
+ani_la_SOURCES = loader_ani.c
+ani_la_LDFLAGS = -module -avoid-version
+ani_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
+ani_la_LIBTOOLFLAGS = --tag=disable-static
 argb_la_SOURCES = loader_argb.c
 argb_la_LDFLAGS = -module -avoid-version
 argb_la_LIBADD = $(top_builddir)/src/lib/libImlib2.la
@@ -778,6 +788,9 @@ clean-pkgLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
+ani.la: $(ani_la_OBJECTS) $(ani_la_DEPENDENCIES) $(EXTRA_ani_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(ani_la_LINK) -rpath $(pkgdir) $(ani_la_OBJECTS) $(ani_la_LIBADD) $(LIBS)
+
 argb.la: $(argb_la_OBJECTS) $(argb_la_DEPENDENCIES) $(EXTRA_argb_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(argb_la_LINK) -rpath $(pkgdir) $(argb_la_OBJECTS) $(argb_la_LIBADD) $(LIBS)
 
@@ -853,6 +866,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ani_la-loader_ani.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/argb_la-loader_argb.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bmp_la-loader_bmp.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bz2_la-decompress_load.Plo@am__quote@ # am--include-marker
@@ -907,6 +921,13 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+ani_la-loader_ani.lo: loader_ani.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(ani_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ani_la-loader_ani.lo -MD -MP -MF $(DEPDIR)/ani_la-loader_ani.Tpo -c -o ani_la-loader_ani.lo `test -f 'loader_ani.c' || echo '$(srcdir)/'`loader_ani.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ani_la-loader_ani.Tpo $(DEPDIR)/ani_la-loader_ani.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='loader_ani.c' object='ani_la-loader_ani.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(ani_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ani_la-loader_ani.lo `test -f 'loader_ani.c' || echo '$(srcdir)/'`loader_ani.c
 
 argb_la-loader_argb.lo: loader_argb.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(argb_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT argb_la-loader_argb.lo -MD -MP -MF $(DEPDIR)/argb_la-loader_argb.Tpo -c -o argb_la-loader_argb.lo `test -f 'loader_argb.c' || echo '$(srcdir)/'`loader_argb.c
@@ -1230,7 +1251,8 @@ clean-am: clean-generic clean-libtool clean-pkgLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/argb_la-loader_argb.Plo
+		-rm -f ./$(DEPDIR)/ani_la-loader_ani.Plo
+	-rm -f ./$(DEPDIR)/argb_la-loader_argb.Plo
 	-rm -f ./$(DEPDIR)/bmp_la-loader_bmp.Plo
 	-rm -f ./$(DEPDIR)/bz2_la-decompress_load.Plo
 	-rm -f ./$(DEPDIR)/bz2_la-loader_bz2.Plo
@@ -1302,7 +1324,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/argb_la-loader_argb.Plo
+		-rm -f ./$(DEPDIR)/ani_la-loader_ani.Plo
+	-rm -f ./$(DEPDIR)/argb_la-loader_argb.Plo
 	-rm -f ./$(DEPDIR)/bmp_la-loader_bmp.Plo
 	-rm -f ./$(DEPDIR)/bz2_la-decompress_load.Plo
 	-rm -f ./$(DEPDIR)/bz2_la-loader_bz2.Plo

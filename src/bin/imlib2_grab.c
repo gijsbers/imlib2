@@ -6,8 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-Display            *disp;
-int                 image_width = 0, image_height = 0;
+#include "prog_x11.h"
 
 static void
 usage(void)
@@ -24,7 +23,6 @@ main(int argc, char **argv)
    char               *file = NULL;
    int                 verbose;
    int                 get_alpha;
-   const char         *display_name = getenv("DISPLAY");
    Drawable            draw;
    int                 x, y;
    unsigned int        w, h, bw;
@@ -93,18 +91,7 @@ main(int argc, char **argv)
 
    file = argv[0];
 
-   if (!display_name)
-      display_name = ":0";
-   disp = XOpenDisplay(display_name);
-   if (!disp)
-     {
-        fprintf(stderr, "Can't open display %s\n", display_name);
-        return 1;
-     }
-
-   imlib_context_set_display(disp);
-   imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
-   imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
+   prog_x11_init();
 
    if (draw == None)
       draw = DefaultRootWindow(disp);

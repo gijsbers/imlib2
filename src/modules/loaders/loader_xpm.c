@@ -1,5 +1,7 @@
-#define _GNU_SOURCE             /* memmem() */
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
+
+static const char  *const _formats[] = { "xpm" };
 
 static struct {
    const char         *data, *dptr;
@@ -150,11 +152,10 @@ xpm_cmap_lookup(const cmap_t * cmap, int nc, int cpp, const char *s)
    return cmap[i1].pixel;
 }
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    uint32_t           *ptr;
    int                 pc, c, i, j, k, w, h, ncolors, cpp;
    int                 comment, transp, quote, context, len, done, backslash;
@@ -171,16 +172,13 @@ load2(ImlibImage * im, int load_data)
    line = NULL;
    cmap = NULL;
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
-
-   if (!memmem(fdata, im->fsize <= 256 ? im->fsize : 256, " XPM */", 7))
+   if (!memmem(im->fi->fdata,
+               im->fi->fsize <= 256 ? im->fi->fsize : 256, " XPM */", 7))
       goto quit;
 
    rc = LOAD_BADIMAGE;          /* Format accepted */
 
-   mm_init(fdata, im->fsize);
+   mm_init(im->fi->fdata, im->fi->fsize);
 
    j = 0;
    w = 10;
@@ -360,7 +358,7 @@ load2(ImlibImage * im, int load_data)
                           qsort(cmap, ncolors, sizeof(cmap_t), xpm_cmap_sort);
                        context++;
 
-                       IM_FLAG_UPDATE(im, F_HAS_ALPHA, transp >= 0);
+                       im->has_alpha = transp >= 0;
 
                        if (!load_data)
                           QUIT_WITH_RC(LOAD_SUCCESS);
@@ -469,14 +467,7 @@ load2(ImlibImage * im, int load_data)
 
    xpm_parse_done();
 
-   munmap(fdata, im->fsize);
-
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "xpm" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, NULL);

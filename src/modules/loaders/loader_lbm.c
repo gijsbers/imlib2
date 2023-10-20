@@ -11,9 +11,12 @@
  * Version: 2004-08-28
  *------------------------------------------------------------------------------*/
 
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #define DBG_PFX "LDR-lbm"
+
+static const char  *const _formats[] = { "iff", "ilbm", "lbm" };
 
 #define L2RLONG(a) ((((int)((a)[0]) & 0xff) << 24) + (((int)((a)[1]) & 0xff) << 16) + (((int)((a)[2]) & 0xff) << 8) + ((int)((a)[3]) & 0xff))
 #define L2RWORD(a) ((((int)((a)[0]) & 0xff) << 8) + ((int)((a)[1]) & 0xff))
@@ -436,21 +439,16 @@ deplane(uint32_t * row, int w, ILBM * ilbm, unsigned char *plane[])
  *
  * Imlib2 doesn't support reading comment chunks like ANNO.
  *------------------------------------------------------------------------------*/
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    char               *env;
    int                 i, n, y, z;
    unsigned char      *plane[40];
    ILBM                ilbm;
 
    rc = LOAD_FAIL;
-
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
 
    plane[0] = NULL;
    memset(&ilbm, 0, sizeof(ilbm));
@@ -459,7 +457,7 @@ load2(ImlibImage * im, int load_data)
    * Load the chunk(s) we're interested in. If load_data is not true, then we only
    * want the image size and format.
    *----------*/
-   if (!loadchunks(fdata, im->fsize, &ilbm, load_data))
+   if (!loadchunks(im->fi->fdata, im->fi->fsize, &ilbm, load_data))
       goto quit;
 
    rc = LOAD_BADIMAGE;          /* Format accepted */
@@ -487,13 +485,13 @@ load2(ImlibImage * im, int load_data)
 
    ilbm.mask = ilbm.bmhd.data[9];
 
-   IM_FLAG_UPDATE(im, F_HAS_ALPHA, ilbm.mask || ilbm.depth == 32);
+   im->has_alpha = ilbm.mask != 0 || ilbm.depth == 32;
 
    env = getenv("IMLIB2_LBM_NOMASK");
    if (env
        && (!strcmp(env, "true") || !strcmp(env, "1") || !strcmp(env, "yes")
            || !strcmp(env, "on")))
-      IM_FLAG_CLR(im, F_HAS_ALPHA);
+      im->has_alpha = 0;
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -565,26 +563,7 @@ load2(ImlibImage * im, int load_data)
 
    freeilbm(&ilbm);
 
-   munmap(fdata, im->fsize);
-
    return rc;
 }
 
-/*------------------------------------------------------------------------------
- * Perhaps save only in 32-bit format? The IFF ILBM format has pretty much gone
- * the way of the Amiga, who saves in this format any more?
- *------------------------------------------------------------------------------*/
-#if 0
-char
-save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
-{
-   return 0;
-}
-#endif
-
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "iff", "ilbm", "lbm" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, NULL);

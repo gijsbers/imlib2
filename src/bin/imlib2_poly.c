@@ -6,40 +6,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Display            *disp;
-Window              win;
+#include "prog_x11.h"
 
 int
 main(int argc, char **argv)
 {
+   Window              win;
    int                 w, h;
    Imlib_Image         im_bg = NULL;
    XEvent              ev;
    KeySym              keysym;
    ImlibPolygon        poly, poly1, poly2;
 
-   /**
-    * First tests to determine which rendering task to perform
-    */
-   disp = XOpenDisplay(NULL);
-   if (!disp)
-     {
-        fprintf(stderr, "Cannot open display\n");
-        return 1;
-     }
+   prog_x11_init();
 
-   win = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0, 100, 100,
-                             0, 0, 0);
-   XSelectInput(disp, win,
-                ButtonPressMask | ButtonReleaseMask | ButtonMotionMask |
-                PointerMotionMask | ExposureMask | KeyPressMask);
+   win = prog_x11_create_window("imlib2_poly", 100, 100);
 
    /**
     * Start rendering
     */
-   imlib_context_set_display(disp);
-   imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
-   imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
    imlib_context_set_drawable(win);
    imlib_context_set_blend(0);
    imlib_context_set_color_modifier(NULL);
@@ -79,6 +64,10 @@ main(int argc, char **argv)
              XNextEvent(disp, &ev);
              switch (ev.type)
                {
+               default:
+                  if (prog_x11_event(&ev))
+                     goto quit;
+                  break;
                case KeyPress:
                   keysym = XLookupKeysym(&ev.xkey, 0);
                   switch (keysym)
@@ -98,9 +87,6 @@ main(int argc, char **argv)
                   break;
                case ButtonRelease:
                   goto quit;
-               default:
-                  break;
-
                }
           }
         while (XPending(disp));

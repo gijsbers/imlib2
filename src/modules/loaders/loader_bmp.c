@@ -7,10 +7,13 @@
  * - Simplify and make secure RLE encoding
  * - Fix 16 and 32 bit depth (old code was incorrect and it's commented)
  */
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #define DBG_PFX "LDR-bmp"
 #define Dx(fmt...)
+
+static const char  *const _formats[] = { "bmp" };
 
 static struct {
    const unsigned char *data, *dptr;
@@ -151,11 +154,10 @@ WriteleLong(FILE * file, unsigned long val)
    return 1;
 }
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    const unsigned char *fptr;
    bfh_t               bfh;
    unsigned int        bfh_offset;
@@ -176,12 +178,8 @@ load2(ImlibImage * im, int load_data)
 
    rc = LOAD_FAIL;
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
-
-   fptr = fdata;
-   mm_init(fdata, im->fsize);
+   fptr = im->fi->fdata;
+   mm_init(im->fi->fdata, im->fi->fsize);
 
    /* Load header */
 
@@ -191,7 +189,7 @@ load2(ImlibImage * im, int load_data)
    if (bfh.header[0] != 'B' || bfh.header[1] != 'M')
       goto quit;
 
-   size = im->fsize;
+   size = im->fi->fsize;
 #define WORD_LE_32(p8) (((p8)[3] << 24) | ((p8)[2] << 16) | ((p8)[1] << 8) | (p8)[0])
    bfh_offset = WORD_LE_32(bfh.offs);
 
@@ -256,7 +254,7 @@ load2(ImlibImage * im, int load_data)
         goto quit;
      }
 
-   IM_FLAG_UPDATE(im, F_HAS_ALPHA, amask);
+   im->has_alpha = amask;
 
    imgsize = size - bfh_offset;
    D("w=%3d h=%3d bitcount=%d comp=%d imgsize=%d\n",
@@ -685,7 +683,7 @@ load2(ImlibImage * im, int load_data)
                {
                   pixel = *(unsigned short *)buffer_ptr;
 
-                  if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
+                  if (im->has_alpha)
                      a = SCALE(a, pixel);
                   else
                      a = 0xff;
@@ -734,7 +732,7 @@ load2(ImlibImage * im, int load_data)
                {
                   pixel = *(unsigned int *)buffer_ptr;
 
-                  if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
+                  if (im->has_alpha)
                      a = SCALE(a, pixel);
                   else
                      a = 0xff;
@@ -756,20 +754,18 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   munmap(fdata, im->fsize);
-
    return rc;
 }
 
-char
-save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
+static int
+_save(ImlibImage * im)
 {
    int                 rc;
    FILE               *f;
    int                 i, j, pad;
    uint32_t            pixel;
 
-   f = fopen(im->real_file, "wb");
+   f = fopen(im->fi->name, "wb");
    if (!f)
       return LOAD_FAIL;
 
@@ -815,9 +811,4 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "bmp" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, _save);

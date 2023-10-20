@@ -89,7 +89,7 @@ __imlib_render_str(ImlibImage * im, ImlibFont * fn, int drx, int dry,
         free(data);
         return;
      }
-   IM_FLAG_SET(im2, F_HAS_ALPHA);
+   im2->has_alpha = 1;
 
    ascent = __imlib_font_max_ascent_get(fn);
 
@@ -125,7 +125,7 @@ __imlib_render_str(ImlibImage * im, ImlibFont * fn, int drx, int dry,
    if (angle == 0.0)
      {
         __imlib_BlendImageToImage(im2, im, 0, 1,
-                                  IM_FLAG_ISSET(im, F_HAS_ALPHA), 0, 0,
+                                  im->has_alpha, 0, 0,
                                   im2->w, im2->h, drx, dry, im2->w, im2->h,
                                   NULL, op, clx, cly, clw, clh);
      }
@@ -148,7 +148,7 @@ __imlib_render_str(ImlibImage * im, ImlibFont * fn, int drx, int dry,
              yy -= ca * im2->h;
           }
         __imlib_BlendImageToImageSkewed(im2, im, 1, 1,
-                                        IM_FLAG_ISSET(im, F_HAS_ALPHA), 0,
+                                        im->has_alpha, 0,
                                         0, im2->w, im2->h, xx, yy, (w * ca),
                                         (w * sa), 0, 0, NULL, op, clx, cly, clw,
                                         clh);

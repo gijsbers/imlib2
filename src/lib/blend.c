@@ -1814,9 +1814,9 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
 
    if ((ssw == ddw) && (ssh == ddh))
      {
-        if (!IM_FLAG_ISSET(im_dst, F_HAS_ALPHA))
+        if (!im_dst->has_alpha)
            merge_alpha = 0;
-        if (!IM_FLAG_ISSET(im_src, F_HAS_ALPHA))
+        if (!im_src->has_alpha)
           {
              rgb_src = 1;
              if (merge_alpha)
@@ -1928,9 +1928,9 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
 
         /* setup h */
         h = dh;
-        if (!IM_FLAG_ISSET(im_dst, F_HAS_ALPHA))
+        if (!im_dst->has_alpha)
            merge_alpha = 0;
-        if (!IM_FLAG_ISSET(im_src, F_HAS_ALPHA))
+        if (!im_src->has_alpha)
           {
              rgb_src = 1;
              if (merge_alpha)
@@ -1946,7 +1946,7 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
              /* scale the imagedata for this LINESIZE lines chunk of image */
              if (aa)
                {
-                  if (IM_FLAG_ISSET(im_src, F_HAS_ALPHA))
+                  if (im_src->has_alpha)
                      __imlib_ScaleAARGBA(scaleinfo, buf, dxx, dyy + y,
                                          0, 0, dw, hh, dw, im_src->w);
                   else

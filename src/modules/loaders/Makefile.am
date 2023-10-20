@@ -4,6 +4,7 @@ AM_CPPFLAGS          = -I$(top_builddir) -I$(top_srcdir)/src/lib
 pkgdir               = $(libdir)/imlib2/loaders
 
 pkg_LTLIBRARIES = \
+ani.la \
 argb.la \
 bmp.la \
 ff.la \
@@ -59,7 +60,10 @@ if BUILD_ID3_LOADER
 pkg_LTLIBRARIES += id3.la
 endif
 
-EXTRA_DIST = loader_common.h
+ani_la_SOURCES       = loader_ani.c
+ani_la_LDFLAGS       = -module -avoid-version
+ani_la_LIBADD        = $(top_builddir)/src/lib/libImlib2.la
+ani_la_LIBTOOLFLAGS  = --tag=disable-static
 
 argb_la_SOURCES      = loader_argb.c
 argb_la_LDFLAGS      = -module -avoid-version

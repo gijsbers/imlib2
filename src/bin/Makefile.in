@@ -88,8 +88,9 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@BUILD_X11_TRUE@@ENABLE_FILTERS_TRUE@am__append_1 = imlib2_bumpmap
 bin_PROGRAMS = imlib2_conv$(EXEEXT) imlib2_load$(EXEEXT) \
-	$(am__EXEEXT_1)
+	$(am__EXEEXT_2)
 subdir = src/bin
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ec_asan.m4 \
@@ -105,27 +106,31 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@BUILD_X11_TRUE@am__EXEEXT_1 = imlib2_show$(EXEEXT) \
-@BUILD_X11_TRUE@	imlib2_test$(EXEEXT) imlib2_bumpmap$(EXEEXT) \
-@BUILD_X11_TRUE@	imlib2_poly$(EXEEXT) \
+@BUILD_X11_TRUE@@ENABLE_FILTERS_TRUE@am__EXEEXT_1 =  \
+@BUILD_X11_TRUE@@ENABLE_FILTERS_TRUE@	imlib2_bumpmap$(EXEEXT)
+@BUILD_X11_TRUE@am__EXEEXT_2 = imlib2_show$(EXEEXT) \
+@BUILD_X11_TRUE@	imlib2_test$(EXEEXT) imlib2_poly$(EXEEXT) \
 @BUILD_X11_TRUE@	imlib2_colorspace$(EXEEXT) \
-@BUILD_X11_TRUE@	imlib2_view$(EXEEXT) imlib2_grab$(EXEEXT)
+@BUILD_X11_TRUE@	imlib2_view$(EXEEXT) imlib2_grab$(EXEEXT) \
+@BUILD_X11_TRUE@	$(am__EXEEXT_1)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_imlib2_bumpmap_OBJECTS = imlib2_bumpmap.$(OBJEXT)
+am__objects_1 = prog_x11.$(OBJEXT)
+am_imlib2_bumpmap_OBJECTS = imlib2_bumpmap.$(OBJEXT) $(am__objects_1)
 imlib2_bumpmap_OBJECTS = $(am_imlib2_bumpmap_OBJECTS)
 imlib2_bumpmap_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_imlib2_colorspace_OBJECTS = imlib2_colorspace.$(OBJEXT)
+am_imlib2_colorspace_OBJECTS = imlib2_colorspace.$(OBJEXT) \
+	$(am__objects_1)
 imlib2_colorspace_OBJECTS = $(am_imlib2_colorspace_OBJECTS)
 imlib2_colorspace_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_imlib2_conv_OBJECTS = imlib2_conv.$(OBJEXT)
 imlib2_conv_OBJECTS = $(am_imlib2_conv_OBJECTS)
 imlib2_conv_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
-am_imlib2_grab_OBJECTS = imlib2_grab.$(OBJEXT)
+am_imlib2_grab_OBJECTS = imlib2_grab.$(OBJEXT) $(am__objects_1)
 imlib2_grab_OBJECTS = $(am_imlib2_grab_OBJECTS)
 imlib2_grab_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_imlib2_load_OBJECTS = imlib2_load.$(OBJEXT)
@@ -133,16 +138,16 @@ imlib2_load_OBJECTS = $(am_imlib2_load_OBJECTS)
 am__DEPENDENCIES_1 =
 imlib2_load_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la \
 	$(am__DEPENDENCIES_1)
-am_imlib2_poly_OBJECTS = imlib2_poly.$(OBJEXT)
+am_imlib2_poly_OBJECTS = imlib2_poly.$(OBJEXT) $(am__objects_1)
 imlib2_poly_OBJECTS = $(am_imlib2_poly_OBJECTS)
 imlib2_poly_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
-am_imlib2_show_OBJECTS = imlib2_show.$(OBJEXT)
+am_imlib2_show_OBJECTS = imlib2_show.$(OBJEXT) $(am__objects_1)
 imlib2_show_OBJECTS = $(am_imlib2_show_OBJECTS)
 imlib2_show_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
-am_imlib2_test_OBJECTS = imlib2_test.$(OBJEXT)
+am_imlib2_test_OBJECTS = imlib2_test.$(OBJEXT) $(am__objects_1)
 imlib2_test_OBJECTS = $(am_imlib2_test_OBJECTS)
 imlib2_test_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
-am_imlib2_view_OBJECTS = imlib2_view.$(OBJEXT) props.$(OBJEXT)
+am_imlib2_view_OBJECTS = imlib2_view.$(OBJEXT) $(am__objects_1)
 imlib2_view_OBJECTS = $(am_imlib2_view_OBJECTS)
 imlib2_view_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 AM_V_P = $(am__v_P_@AM_V@)
@@ -165,7 +170,7 @@ am__depfiles_remade = ./$(DEPDIR)/imlib2_bumpmap.Po \
 	./$(DEPDIR)/imlib2_grab.Po ./$(DEPDIR)/imlib2_load.Po \
 	./$(DEPDIR)/imlib2_poly.Po ./$(DEPDIR)/imlib2_show.Po \
 	./$(DEPDIR)/imlib2_test.Po ./$(DEPDIR)/imlib2_view.Po \
-	./$(DEPDIR)/props.Po
+	./$(DEPDIR)/prog_x11.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -402,24 +407,27 @@ AM_CPPFLAGS = \
 -I$(top_builddir)/src/lib \
 $(X_CFLAGS)
 
-@BUILD_X11_TRUE@X_BASED_PROGS = imlib2_show imlib2_test imlib2_bumpmap imlib2_poly imlib2_colorspace imlib2_view imlib2_grab
+@BUILD_X11_TRUE@X_BASED_PROGS = imlib2_show imlib2_test imlib2_poly \
+@BUILD_X11_TRUE@	imlib2_colorspace imlib2_view imlib2_grab \
+@BUILD_X11_TRUE@	$(am__append_1)
+SRCS_COMMON_X11 = prog_x11.c prog_x11.h
 imlib2_conv_SOURCES = imlib2_conv.c
 imlib2_conv_LDADD = $(top_builddir)/src/lib/libImlib2.la
 imlib2_load_SOURCES = imlib2_load.c
 imlib2_load_LDADD = $(top_builddir)/src/lib/libImlib2.la $(CLOCK_LIBS)
-imlib2_show_SOURCES = imlib2_show.c
+imlib2_show_SOURCES = imlib2_show.c $(SRCS_COMMON_X11)
 imlib2_show_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11 -lm
-imlib2_test_SOURCES = imlib2_test.c
+imlib2_test_SOURCES = imlib2_test.c $(SRCS_COMMON_X11)
 imlib2_test_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
-imlib2_bumpmap_SOURCES = imlib2_bumpmap.c
+imlib2_bumpmap_SOURCES = imlib2_bumpmap.c $(SRCS_COMMON_X11)
 imlib2_bumpmap_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
-imlib2_poly_SOURCES = imlib2_poly.c
+imlib2_poly_SOURCES = imlib2_poly.c $(SRCS_COMMON_X11)
 imlib2_poly_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
-imlib2_colorspace_SOURCES = imlib2_colorspace.c
+imlib2_colorspace_SOURCES = imlib2_colorspace.c $(SRCS_COMMON_X11)
 imlib2_colorspace_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
-imlib2_view_SOURCES = imlib2_view.c props.c props.h
+imlib2_view_SOURCES = imlib2_view.c $(SRCS_COMMON_X11)
 imlib2_view_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
-imlib2_grab_SOURCES = imlib2_grab.c
+imlib2_grab_SOURCES = imlib2_grab.c $(SRCS_COMMON_X11)
 imlib2_grab_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
 all: all-am
 
@@ -555,7 +563,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_show.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_view.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/props.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prog_x11.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -725,7 +733,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/imlib2_show.Po
 	-rm -f ./$(DEPDIR)/imlib2_test.Po
 	-rm -f ./$(DEPDIR)/imlib2_view.Po
-	-rm -f ./$(DEPDIR)/props.Po
+	-rm -f ./$(DEPDIR)/prog_x11.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -780,7 +788,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/imlib2_show.Po
 	-rm -f ./$(DEPDIR)/imlib2_test.Po
 	-rm -f ./$(DEPDIR)/imlib2_view.Po
-	-rm -f ./$(DEPDIR)/props.Po
+	-rm -f ./$(DEPDIR)/prog_x11.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

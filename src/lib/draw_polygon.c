@@ -1077,19 +1077,18 @@ __imlib_Polygon_DrawToImage(ImlibPoly * poly, char close, uint32_t color,
    if (clw <= 0 || clh <= 0)
       return;
 
-   if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
+   if (blend && im->has_alpha)
       __imlib_build_pow_lut();
 
    if (anti_alias)
       __imlib_Polygon_DrawToData_AA(poly, close, color,
                                     im->data, im->w,
                                     clx, cly, clw, clh,
-                                    op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
+                                    op, im->has_alpha, blend);
    else
       __imlib_Polygon_DrawToData(poly, close, color,
                                  im->data, im->w,
-                                 clx, cly, clw, clh,
-                                 op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
+                                 clx, cly, clw, clh, op, im->has_alpha, blend);
 }
 
 /** Polygon Filling **/
@@ -1833,17 +1832,16 @@ __imlib_Polygon_FillToImage(ImlibPoly * poly, uint32_t color,
    if (clw <= 0 || clh <= 0)
       return;
 
-   if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
+   if (blend && im->has_alpha)
       __imlib_build_pow_lut();
 
    if (anti_alias)
       __imlib_Polygon_FillToData_AA(poly, color,
                                     im->data, im->w,
                                     clx, cly, clw, clh,
-                                    op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
+                                    op, im->has_alpha, blend);
    else
       __imlib_Polygon_FillToData(poly, color,
                                  im->data, im->w,
-                                 clx, cly, clw, clh,
-                                 op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
+                                 clx, cly, clw, clh, op, im->has_alpha, blend);
 }

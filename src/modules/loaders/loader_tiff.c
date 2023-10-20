@@ -1,9 +1,12 @@
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #include <setjmp.h>
 #include <tiffio.h>
 
 #define DBG_PFX "LDR-tiff"
+
+static const char  *const _formats[] = { "tiff", "tif" };
 
 #define DD(fmt...)  DC(0x80, fmt)
 
@@ -329,11 +332,10 @@ put_separate_and_raster(TIFFRGBAImage * img, uint32_t * rast,
    raster((TIFFRGBAImage_Extra *) img, rast, x, y, w, h);
 }
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    TIFF               *tif = NULL;
    uint16_t            magic_number;
    TIFFRGBAImage_Extra rgba_image;
@@ -346,21 +348,17 @@ load2(ImlibImage * im, int load_data)
    /* Do initial signature check */
 #define TIFF_BYTES_TO_CHECK sizeof(magic_number)
 
-   if (im->fsize < (int)TIFF_BYTES_TO_CHECK)
+   if (im->fi->fsize < (int)TIFF_BYTES_TO_CHECK)
       return rc;
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
-
-   magic_number = *(uint16_t *) fdata;
+   magic_number = *(const uint16_t *)im->fi->fdata;
 
    if (magic_number != TIFF_BIGENDIAN && magic_number != TIFF_LITTLEENDIAN)
       return rc;
 
-   mm_init(fdata, im->fsize);
+   mm_init(im->fi->fdata, im->fi->fsize);
 
-   tif = TIFFClientOpen(im->real_file, "r", NULL, _tiff_read, _tiff_write,
+   tif = TIFFClientOpen(im->fi->name, "r", NULL, _tiff_read, _tiff_write,
                         _tiff_seek, _tiff_close, _tiff_size,
                         _tiff_map, _tiff_unmap);
    if (!tif)
@@ -405,8 +403,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   IM_FLAG_UPDATE(im, F_HAS_ALPHA,
-                  rgba_image.rgba.alpha != EXTRASAMPLE_UNSPECIFIED);
+   im->has_alpha = rgba_image.rgba.alpha != EXTRASAMPLE_UNSPECIFIED;
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -447,7 +444,6 @@ load2(ImlibImage * im, int load_data)
       TIFFRGBAImageEnd((TIFFRGBAImage *) & rgba_image);
    if (tif)
       TIFFClose(tif);
-   munmap(fdata, im->fsize);
 
    return rc;
 }
@@ -455,8 +451,8 @@ load2(ImlibImage * im, int load_data)
 /* this seems to work, except the magic number isn't written. I'm guessing */
 /* this is a problem in libtiff */
 
-char
-save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
+static int
+_save(ImlibImage * im)
 {
    int                 rc;
    TIFF               *tif = NULL;
@@ -465,12 +461,12 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    double              alpha_factor;
    int                 x, y;
    uint8_t             r, g, b, a = 0;
-   int                 has_alpha = IM_FLAG_ISSET(im, F_HAS_ALPHA);
+   int                 has_alpha = im->has_alpha;
    int                 compression_type;
    int                 i;
    ImlibImageTag      *tag;
 
-   tif = TIFFOpen(im->real_file, "w");
+   tif = TIFFOpen(im->fi->name, "w");
    if (!tif)
       return LOAD_FAIL;
 
@@ -591,9 +587,4 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "tiff", "tif" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, _save);

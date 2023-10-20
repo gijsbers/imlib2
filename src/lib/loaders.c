@@ -22,6 +22,7 @@ typedef struct {
    const char         *const *ext;
 } KnownLoader;
 
+static const char  *const ext_ani[] = { "ani", NULL };
 static const char  *const ext_argb[] = { "argb", NULL };
 static const char  *const ext_bmp[] = { "bmp", NULL };
 static const char  *const ext_ff[] = { "ff", NULL };
@@ -79,6 +80,7 @@ static const char  *const ext_id3[] = { "mp3", NULL };
 #endif
 
 static const KnownLoader loaders_known[] = {
+   {"ani", ext_ani},
    {"argb", ext_argb},
    {"bmp", ext_bmp},
    {"ff", ext_ff},
@@ -152,41 +154,39 @@ static ImlibLoader *
 __imlib_ProduceLoader(const char *file)
 {
    ImlibLoader        *l;
-   void                (*l_formats)(ImlibLoader * l);
+   ImlibLoaderModule  *m;
 
    DP("%s: %s\n", __func__, file);
 
    l = malloc(sizeof(ImlibLoader));
-   l->num_formats = 0;
-   l->formats = NULL;
+
    l->handle = dlopen(file, RTLD_NOW | RTLD_LOCAL);
    if (!l->handle)
-     {
-        free(l);
-        return NULL;
-     }
-   l->load2 = dlsym(l->handle, "load2");
-   l->load = NULL;
-   if (!l->load2)
-      l->load = dlsym(l->handle, "load");
-   l->save = dlsym(l->handle, "save");
-   l_formats = dlsym(l->handle, "formats");
+      goto bail;
 
-   /* each loader must provide formats() and at least load() or save() */
-   if (!l_formats || !(l->load2 || l->load || l->save))
+   l->module = m = dlsym(l->handle, "loader");
+   if (!l->module)
+      goto bail;
+
+   /* Check version and that we have at least load() or save() */
+   if (m->ldr_version != IMLIB2_LOADER_VERSION ||
+       !m->formats || m->num_formats <= 0 || !(m->load || m->save))
      {
         dlclose(l->handle);
-        free(l);
-        return NULL;
+        goto bail;
      }
-   l_formats(l);
+
    l->file = strdup(file);
-   l->next = NULL;
+   l->name = m->formats[0];
 
    l->next = loaders;
    loaders = l;
 
    return l;
+
+ bail:
+   free(l);
+   return NULL;
 }
 
 /* fre the struct for a loader and close its dlopen'd handle */
@@ -196,14 +196,6 @@ __imlib_ConsumeLoader(ImlibLoader * l)
    free(l->file);
    if (l->handle)
       dlclose(l->handle);
-   if (l->formats)
-     {
-        int                 i;
-
-        for (i = 0; i < l->num_formats; i++)
-           free(l->formats[i]);
-        free(l->formats);
-     }
    free(l);
 }
 
@@ -295,13 +287,14 @@ __imlib_LookupKnownLoader(const char *format)
 static int
 _loader_ok_for(const ImlibLoader * l, int for_save)
 {
-   return (for_save && l->save) || (!for_save && (l->load2 || l->load));
+   return (for_save && l->module->save) || (!for_save && l->module->load);
 }
 
 static ImlibLoader *
 __imlib_LookupLoadedLoader(const char *format, int for_save)
 {
    ImlibLoader        *l;
+   ImlibLoaderModule  *m;
 
    DP("%s: fmt='%s'\n", __func__, format);
 
@@ -321,11 +314,13 @@ __imlib_LookupLoadedLoader(const char *format, int for_save)
      {
         int                 i;
 
+        m = l->module;
+
         /* go through all the formats that loader supports */
-        for (i = 0; i < l->num_formats; i++)
+        for (i = 0; i < m->num_formats; i++)
           {
              /* does it match ? */
-             if (strcasecmp(l->formats[i], format) == 0)
+             if (strcasecmp(m->formats[i], format) == 0)
                {
                   /* does it provide the function we need? */
                   if (_loader_ok_for(l, for_save))
@@ -371,17 +366,4 @@ __imlib_FindBestLoader(const char *file, const char *format, int for_save)
  done:
    DP("%s: fmt='%s': %s\n", __func__, format, l ? l->file : "-");
    return l;
-}
-
-__EXPORT__ void
-__imlib_LoaderSetFormats(ImlibLoader * l,
-                         const char *const *fmt, unsigned int num)
-{
-   unsigned int        i;
-
-   l->num_formats = num;
-   l->formats = malloc(sizeof(char *) * num);
-
-   for (i = 0; i < num; i++)
-      l->formats[i] = strdup(fmt[i]);
 }

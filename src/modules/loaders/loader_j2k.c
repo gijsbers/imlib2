@@ -1,4 +1,5 @@
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #include <openjpeg.h>
 
@@ -8,6 +9,8 @@
 #define JP2_MAGIC "\x0d\x0a\x87\x0a"
 /* position 45: "\xff\x52" */
 #define J2K_CODESTREAM_MAGIC "\xff\x4f\xff\x51"
+
+static const char  *const _formats[] = { "jp2", "j2k" };
 
 #if IMLIB2_DEBUG
 static void
@@ -89,11 +92,10 @@ mm_seek_set(OPJ_OFF_T offs, void *data)
    return OPJ_TRUE;
 }
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    int                 ok;
    opj_dparameters_t   jparam;
    opj_codec_t        *jcodec;
@@ -105,23 +107,19 @@ load2(ImlibImage * im, int load_data)
    OPJ_INT32          *pa, *pr, *pg, *pb;
    unsigned char       a, r, g, b;
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
-
    rc = LOAD_FAIL;
    jcodec = NULL;
    jstream = NULL;
    jimage = NULL;
 
    /* Signature check */
-   if (im->fsize < 12)
+   if (im->fi->fsize < 12)
       goto quit;
 
-   if (memcmp(fdata, JP2_MAGIC, 4) == 0 ||
-       memcmp(fdata, JP2_RFC3745_MAGIC, 12) == 0)
+   if (memcmp(im->fi->fdata, JP2_MAGIC, 4) == 0 ||
+       memcmp(im->fi->fdata, JP2_RFC3745_MAGIC, 12) == 0)
       jfmt = OPJ_CODEC_JP2;
-   else if (memcmp(fdata, J2K_CODESTREAM_MAGIC, 4) == 0)
+   else if (memcmp(im->fi->fdata, J2K_CODESTREAM_MAGIC, 4) == 0)
       jfmt = OPJ_CODEC_J2K;
    else
       goto quit;
@@ -152,8 +150,7 @@ load2(ImlibImage * im, int load_data)
 
    if (getenv("JP2_USE_FILE"))
      {
-        jstream =
-           opj_stream_create_default_file_stream(im->real_file, OPJ_TRUE);
+        jstream = opj_stream_create_default_file_stream(im->fi->name, OPJ_TRUE);
      }
    else
      {
@@ -161,9 +158,9 @@ load2(ImlibImage * im, int load_data)
         if (!jstream)
            goto quit;
 
-        mm_init(fdata, im->fsize);
+        mm_init(im->fi->fdata, im->fi->fsize);
         opj_stream_set_user_data(jstream, &mdata, NULL);
-        opj_stream_set_user_data_length(jstream, im->fsize);
+        opj_stream_set_user_data_length(jstream, im->fi->fsize);
         opj_stream_set_read_function(jstream, mm_read);
         opj_stream_set_skip_function(jstream, mm_seek_cur);
         opj_stream_set_seek_function(jstream, mm_seek_set);
@@ -174,18 +171,16 @@ load2(ImlibImage * im, int load_data)
       goto quit;
    im->w = jimage->x1 - jimage->x0;
    im->h = jimage->y1 - jimage->y0;
-   IM_FLAG_UPDATE(im, F_HAS_ALPHA,
-                  jimage->numcomps == 4 || jimage->numcomps == 2);
+   im->has_alpha = jimage->numcomps == 4 || jimage->numcomps == 2;
    D("WxH=%dx%d alpha=%d numcomp=%d colorspace=%d\n",
-     im->w, im->h, IM_FLAG_ISSET(im, F_HAS_ALPHA),
-     jimage->numcomps, jimage->color_space);
+     im->w, im->h, im->has_alpha, jimage->numcomps, jimage->color_space);
 
    for (i = 0; i < (int)jimage->numcomps; i++)
      {
-        DL("%d: dx/y=%d/%d wxh=%d,%d prec=%d bpp=%d sgnd=%d fact=%d\n", i,
+        DL("%d: dx/y=%d/%d wxh=%d,%d prec=%d sgnd=%d fact=%d\n", i,
            jimage->comps[i].dx, jimage->comps[i].dy,
            jimage->comps[i].w, jimage->comps[i].h,
-           jimage->comps[i].prec, jimage->comps[i].bpp,
+           jimage->comps[i].prec,
            jimage->comps[i].sgnd, jimage->comps[i].factor);
         if (jimage->comps[0].dx != jimage->comps[i].dx ||
             jimage->comps[0].dy != jimage->comps[i].dy ||
@@ -274,14 +269,8 @@ load2(ImlibImage * im, int load_data)
       opj_stream_destroy(jstream);
    if (jcodec)
       opj_destroy_codec(jcodec);
-   munmap(fdata, im->fsize);
 
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "jp2", "j2k" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, NULL);

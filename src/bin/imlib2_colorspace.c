@@ -6,43 +6,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Display            *disp;
-Window              win;
+#include "prog_x11.h"
 
 int
 main(int argc, char **argv)
 {
-   int                 w, h, tw, th;
+   Window              win;
+   int                 w, h;
    Imlib_Image         im_bg = NULL;
    XEvent              ev;
    KeySym              keysym;
-   Imlib_Font          font;
    Imlib_Color_Range   range;
 
-   /**
-    * First tests to determine which rendering task to perform
-    */
-   disp = XOpenDisplay(NULL);
-   if (!disp)
-     {
-        fprintf(stderr, "Cannot open display\n");
-        return 1;
-     }
+#if ENABLE_TEXT
+   Imlib_Font          font;
+   int                 tw, th;
+#endif
 
-   win = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0, 100, 100,
-                             0, 0, 0);
-   XSelectInput(disp, win,
-                ButtonPressMask | ButtonReleaseMask | ButtonMotionMask |
-                PointerMotionMask | ExposureMask | KeyPressMask);
+   prog_x11_init();
+
+   win = prog_x11_create_window("imlib2_colorspace", 100, 100);
 
    /**
     * Start rendering
     */
+#if ENABLE_TEXT
    imlib_set_font_cache_size(512 * 1024);
    imlib_add_path_to_font_path(PACKAGE_DATA_DIR "/data/fonts");
-   imlib_context_set_display(disp);
-   imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
-   imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
+#endif
    imlib_context_set_drawable(win);
    imlib_context_set_blend(0);
    imlib_context_set_color_modifier(NULL);
@@ -66,6 +57,10 @@ main(int argc, char **argv)
              XNextEvent(disp, &ev);
              switch (ev.type)
                {
+               default:
+                  if (prog_x11_event(&ev))
+                     goto quit;
+                  break;
                case KeyPress:
                   keysym = XLookupKeysym(&ev.xkey, 0);
                   if (keysym == XK_q || keysym == XK_Escape)
@@ -73,9 +68,6 @@ main(int argc, char **argv)
                   break;
                case ButtonRelease:
                   goto quit;
-               default:
-                  break;
-
                }
           }
         while (XPending(disp));
@@ -86,6 +78,7 @@ main(int argc, char **argv)
         imlib_context_set_color(0, 0, 0, 255);
         imlib_image_draw_rectangle(20, 20, 560, 140);
         imlib_image_draw_rectangle(20, 220, 560, 140);
+#if ENABLE_TEXT
         font = imlib_load_font("notepad/15");
         if (font)
           {
@@ -101,6 +94,7 @@ main(int argc, char **argv)
              imlib_text_draw(300 - tw / 2, 380 - th / 2, text);
              imlib_free_font();
           }
+#endif
 
         /* Draw rectangle w/ RGBA gradient */
         range = imlib_create_color_range();

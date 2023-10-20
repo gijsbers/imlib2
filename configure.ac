@@ -1,4 +1,4 @@
-AC_INIT([imlib2],[1.9.1],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.10.0],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -7,8 +7,7 @@ AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE(1.6 dist-xz -Wno-portability)
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-AM_CONDITIONAL(SRC_IS_GIT, test -d $srcdir/.git)
-
+AC_USE_SYSTEM_EXTENSIONS
 AC_C_BIGENDIAN
 AC_PROG_CC
 AM_PROG_AS
@@ -21,9 +20,9 @@ define([AC_LIBTOOL_LANG_CXX_CONFIG], [:])dnl
 define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
-VERSION_CUR=10
-VERSION_REV=1
-VERSION_AGE=9
+VERSION_CUR=11
+VERSION_REV=0
+VERSION_AGE=10
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
 
@@ -223,6 +222,26 @@ EC_LOADER_CHECK(ID3,  auto, id3tag)
 
 AM_CONDITIONAL(BUILD_TEST, false)
 
+AC_ARG_ENABLE([filters],
+  [AS_HELP_STRING([--enable-filters], [Enable filters @<:@default=yes@:>@])],
+  enable_filters="$enableval",
+  enable_filters="yes"
+)
+if test "$enable_filters" = "yes"; then
+  AC_DEFINE(ENABLE_FILTERS, 1, [Enable filters])
+fi
+AM_CONDITIONAL(ENABLE_FILTERS, test "$enable_filters" = "yes")
+
+AC_ARG_ENABLE([text],
+  [AS_HELP_STRING([--enable-text], [Enable text (TrueType font functions) @<:@default=yes@:>@])],
+  enable_text="$enableval",
+  enable_text="yes"
+)
+if test "$enable_text" = "yes"; then
+  AC_DEFINE(ENABLE_TEXT, 1, [Enable text functions])
+fi
+AM_CONDITIONAL(ENABLE_TEXT, test "$enable_text" = "yes")
+
 AC_ARG_ENABLE([debug],
   [AS_HELP_STRING([--enable-debug], [Enable debug features @<:@default=no@:>@])],
   [
@@ -260,6 +279,7 @@ src/bin/Makefile
 src/modules/Makefile
 src/modules/filters/Makefile
 src/modules/loaders/Makefile
+test/Makefile
 data/Makefile
 data/fonts/Makefile
 data/images/Makefile
@@ -268,7 +288,6 @@ doc/Doxyfile
 doc/imlib2_intro.dox
 README
 ])
-AM_COND_IF([SRC_IS_GIT], [ AC_CONFIG_FILES([test/Makefile]) ])
 AC_OUTPUT
 
 #####################################################################
@@ -306,6 +325,8 @@ echo
 echo "Use X86 MMX for speed.....: $mmx"
 echo "Use AMD64 for speed.......: $amd64"
 echo
+echo "Include filters...........: $enable_filters"
+echo "Include text functions....: $enable_text"
 echo "Use visibility hiding.....: $enable_visibility_hiding"
 echo
 echo "Installation path.........: $prefix"

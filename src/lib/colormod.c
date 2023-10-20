@@ -79,13 +79,13 @@ __imlib_CmodReset(ImlibColorModifier * cm)
 
 void
 __imlib_DataCmodApply(uint32_t * data, int w, int h, int jump,
-                      ImlibImageFlags * fl, ImlibColorModifier * cm)
+                      bool has_alpha, ImlibColorModifier * cm)
 {
    int                 x, y;
    uint32_t           *p;
 
    /* We might be adding alpha */
-   if (fl && !(*fl & F_HAS_ALPHA))
+   if (!has_alpha)
      {
         p = data;
         for (y = 0; y < h; y++)

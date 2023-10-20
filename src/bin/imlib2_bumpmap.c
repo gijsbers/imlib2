@@ -6,7 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Display            *disp;
+#include "prog_x11.h"
+
 Window              win;
 
 int
@@ -22,29 +23,13 @@ main(int argc, char **argv)
     */
    printf("Initialising\n");
 
-   /**
-    * First tests to determine which rendering task to perform
-    */
-   disp = XOpenDisplay(NULL);
-   if (!disp)
-     {
-        fprintf(stderr, "Cannot open display\n");
-        return 1;
-     }
-
-   win = XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0, 100, 100,
-                             0, 0, 0);
-   XSelectInput(disp, win, KeyPressMask |
-                ButtonPressMask | ButtonReleaseMask | ButtonMotionMask |
-                PointerMotionMask | ExposureMask);
+   prog_x11_init();
+   win = prog_x11_create_window("imlib2_bumpmap", 100, 100);
 
    /**
     * Start rendering
     */
    printf("Rendering\n");
-   imlib_context_set_display(disp);
-   imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
-   imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
    imlib_context_set_drawable(win);
    imlib_context_set_dither(1);
    imlib_context_set_blend(0);
@@ -70,6 +55,10 @@ main(int argc, char **argv)
              XNextEvent(disp, &ev);
              switch (ev.type)
                {
+               default:
+                  if (prog_x11_event(&ev))
+                     goto quit;
+                  break;
                case KeyPress:
                   keysym = XLookupKeysym(&ev.xkey, 0);
                   if (keysym == XK_q || keysym == XK_Escape)
@@ -80,8 +69,6 @@ main(int argc, char **argv)
                case MotionNotify:
                   x = ev.xmotion.x;
                   y = ev.xmotion.y;
-                  break;
-               default:
                   break;
                }
           }

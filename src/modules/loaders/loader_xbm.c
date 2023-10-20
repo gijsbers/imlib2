@@ -1,10 +1,12 @@
 /*
  * XBM loader
  */
-#define _GNU_SOURCE             /* memmem() */
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #define DBG_PFX "LDR-xbm"
+
+static const char  *const _formats[] = { "xbm" };
 
 static struct {
    const char         *data, *dptr;
@@ -78,11 +80,10 @@ _bitmap_dither(int x, int y, uint32_t pixel)
    return set;
 }
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    char                buf[4096], tok1[1024], tok2[1024];
    uint32_t           *ptr, pixel;
    int                 i, x, y, bit, nl;
@@ -91,21 +92,17 @@ load2(ImlibImage * im, int load_data)
 
    rc = LOAD_FAIL;
 
-   if (im->fsize < 64)
+   if (im->fi->fsize < 64)
       return rc;                /* Not XBM */
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
-
    /* Signature check ("#define") allow longish initial comment */
-   s = fdata;
+   s = im->fi->fdata;
    nlen = s[0] == '/' && s[1] == '*' ? 4096 : 256;
-   nlen = im->fsize > nlen ? nlen : im->fsize;
+   nlen = im->fi->fsize > nlen ? nlen : im->fi->fsize;
    if (!memmem(s, nlen, "#define", 7))
       goto quit;
 
-   mm_init(fdata, im->fsize);
+   mm_init(im->fi->fdata, im->fi->fsize);
 
    ptr = NULL;
    x = y = 0;
@@ -208,13 +205,11 @@ load2(ImlibImage * im, int load_data)
       rc = LOAD_SUCCESS;
 
  quit:
-   munmap(fdata, im->fsize);
-
    return rc;
 }
 
-char
-save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
+static int
+_save(ImlibImage * im)
 {
    FILE               *f;
    int                 rc;
@@ -223,13 +218,13 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    int                 i, k, x, y, bits, nval, val;
    uint32_t           *ptr;
 
-   f = fopen(im->real_file, "wb");
+   f = fopen(im->fi->name, "wb");
    if (!f)
       return LOAD_FAIL;
 
    rc = LOAD_SUCCESS;
 
-   name = im->real_file;
+   name = im->fi->name;
    if ((s = strrchr(name, '/')) != 0)
       name = s + 1;
 
@@ -271,10 +266,4 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "xbm" };
-
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, _save);

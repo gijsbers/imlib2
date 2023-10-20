@@ -267,8 +267,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
    ImlibMaskFunction   masker = NULL;
    ImlibBlendFunction  blender = NULL;
 
-   blender = __imlib_GetBlendFunction(op, 1, 0,
-                                      !IM_FLAG_ISSET(im, F_HAS_ALPHA), NULL);
+   blender = __imlib_GetBlendFunction(op, 1, 0, !im->has_alpha, NULL);
 
    /* dont do anything if we have a 0 widht or height image to render */
    if ((dw == 0) || (dh == 0))
@@ -316,7 +315,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
    dh = abs(dh);
    ct = __imlib_GetContext(d, v, cm, depth);
    __imlib_RGBASetupContext(ct);
-   if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
+   if (blend && im->has_alpha)
      {
         back = malloc(dw * dh * sizeof(uint32_t));
         if (!__imlib_GrabDrawableToRGBA
@@ -381,7 +380,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
              /* scale the imagedata for this LINESIZE lines chunk of image data */
              if (antialias)
                {
-                  if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
+                  if (im->has_alpha)
                      __imlib_ScaleAARGBA(scaleinfo, buf, ((sx * dw) / sw),
                                          ((sy * dh) / sh) + y,
                                          0, 0, dw, hh, dw, im->w);
@@ -396,7 +395,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
              jump = 0;
              pointer = buf;
              if (cmod)
-                __imlib_DataCmodApply(buf, dw, hh, 0, NULL, cmod);
+                __imlib_DataCmodApply(buf, dw, hh, 0, true, cmod);
           }
         else
           {
@@ -415,7 +414,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
                     }
                   memcpy(buf, im->data + ((y + sy) * im->w),
                          im->w * hh * sizeof(uint32_t));
-                  __imlib_DataCmodApply(buf, im->w, hh, 0, NULL, cmod);
+                  __imlib_DataCmodApply(buf, im->w, hh, 0, true, cmod);
                   pointer = buf + sx;
                   jump = im->w - sw;
                }

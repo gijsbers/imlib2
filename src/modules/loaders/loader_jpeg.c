@@ -1,10 +1,13 @@
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #include <jpeglib.h>
 #include <setjmp.h>
 #include "exif.h"
 
 #define DBG_PFX "LDR-jpg"
+
+static const char  *const _formats[] = { "jpg", "jpeg", "jfif", "jfi" };
 
 typedef struct {
    struct jpeg_error_mgr jem;
@@ -61,11 +64,10 @@ _jdata_init(ImLib_JPEG_data * jd)
    return jem;
 }
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 w, h, rc;
-   void               *fdata;
    struct jpeg_decompress_struct jds;
    ImLib_JPEG_data     jdata;
    uint8_t            *ptr, *line[16];
@@ -75,17 +77,13 @@ load2(ImlibImage * im, int load_data)
 
    rc = LOAD_FAIL;
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return rc;
-
    /* set up error handling */
    jds.err = _jdata_init(&jdata);
    if (sigsetjmp(jdata.setjmp_buffer, 1))
       QUIT_WITH_RC(LOAD_FAIL);
 
    jpeg_create_decompress(&jds);
-   jpeg_mem_src(&jds, fdata, im->fsize);
+   jpeg_mem_src(&jds, im->fi->fdata, im->fi->fsize);
    jpeg_save_markers(&jds, JPEG_APP0 + 1, 256);
    jpeg_read_header(&jds, TRUE);
 
@@ -248,13 +246,12 @@ load2(ImlibImage * im, int load_data)
  quit:
    jpeg_destroy_decompress(&jds);
    free(jdata.data);
-   munmap(fdata, im->fsize);
 
    return rc;
 }
 
-char
-save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
+static int
+_save(ImlibImage * im)
 {
    int                 rc;
    struct jpeg_compress_struct jcs;
@@ -274,7 +271,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 
    rc = LOAD_FAIL;
 
-   f = fopen(im->real_file, "wb");
+   f = fopen(im->fi->name, "wb");
    if (!f)
       goto quit;
 
@@ -361,9 +358,4 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "jpg", "jpeg", "jfif", "jfi" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, _save);

@@ -9,9 +9,12 @@
  *
  * header/footer structures courtesy of the GIMP Targa plugin
  */
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #define DBG_PFX "LDR-tga"
+
+static const char  *const _formats[] = { "tga" };
 
 /* flip an inverted image - see RLE reading below */
 static void         tgaflip(uint32_t * in, int w, int h, int fliph, int flipv);
@@ -64,11 +67,10 @@ typedef struct {
  * There are several other (uncommon) Targa formats which this function can't currently handle
  */
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    const unsigned char *fptr;
    const tga_header   *header;
    const tga_footer   *footer;
@@ -83,20 +85,16 @@ load2(ImlibImage * im, int load_data)
 
    rc = LOAD_FAIL;
 
-   if (im->fsize < (int)(sizeof(tga_header)) ||
-       (uintmax_t) im->fsize > SIZE_MAX)
+   if (im->fi->fsize < (int)(sizeof(tga_header)) ||
+       (uintmax_t) im->fi->fsize > SIZE_MAX)
       return rc;
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
+   fptr = im->fi->fdata;
+   header = im->fi->fdata;
 
-   fptr = fdata;
-   header = fdata;
-
-   if (im->fsize > (int)(sizeof(tga_footer)))
+   if (im->fi->fsize > (int)(sizeof(tga_footer)))
      {
-        footer = (tga_footer *) (fptr + im->fsize - sizeof(tga_footer));
+        footer = (tga_footer *) (fptr + im->fi->fsize - sizeof(tga_footer));
 
         /* check the footer to see if we have a v2.0 TGA file */
         footer_present = memcmp(footer->signature, TGA_SIGNATURE,
@@ -107,7 +105,7 @@ load2(ImlibImage * im, int load_data)
         footer_present = 0;
      }
 
-   if ((size_t)im->fsize < sizeof(tga_header) + header->idLength +
+   if ((size_t)im->fi->fsize < sizeof(tga_header) + header->idLength +
        (footer_present ? sizeof(tga_footer) : 0))
       goto quit;
 
@@ -186,7 +184,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   IM_FLAG_UPDATE(im, F_HAS_ALPHA, hasa);
+   im->has_alpha = hasa;
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -194,7 +192,7 @@ load2(ImlibImage * im, int load_data)
    /* find out how much data must be read from the file */
    /* (this is NOT simply width*height*4, due to compression) */
 
-   datasize = im->fsize - sizeof(tga_header) - header->idLength -
+   datasize = im->fi->fsize - sizeof(tga_header) - header->idLength -
       (footer_present ? sizeof(tga_footer) : 0);
 
    palette = NULL;
@@ -462,8 +460,6 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   munmap(fdata, im->fsize);
-
    return rc;
 }
 
@@ -485,9 +481,9 @@ tgaflip(uint32_t * in, int w, int h, int fliph, int flipv)
         x2 = fliph ? w - 1 : 0;
         for (x = 0; x < nx; x++, x2 += dx)
           {
-             tmp = in[y * h + x];
-             in[y * h + x] = in[y2 * h + x2];
-             in[y2 * h + x2] = tmp;
+             tmp = in[y * w + x];
+             in[y * w + x] = in[y2 * w + x2];
+             in[y2 * w + x2] = tmp;
           }
      }
 }
@@ -497,8 +493,8 @@ tgaflip(uint32_t * in, int w, int h, int fliph, int flipv)
  * (If anyone wants to write a RLE saver, feel free =)
  */
 
-char
-save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
+static int
+_save(ImlibImage * im)
 {
    int                 rc;
    FILE               *f;
@@ -507,7 +503,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    int                 y;
    tga_header          header;
 
-   f = fopen(im->real_file, "wb");
+   f = fopen(im->fi->name, "wb");
    if (!f)
       return LOAD_FAIL;
 
@@ -532,15 +528,15 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    header.heightHi = im->h >> 8;
 
    /* total number of bits per pixel */
-   header.bpp = IM_FLAG_ISSET(im, F_HAS_ALPHA) ? 32 : 24;
+   header.bpp = im->has_alpha ? 32 : 24;
    /* number of extra (alpha) bits per pixel */
-   header.descriptor = IM_FLAG_ISSET(im, F_HAS_ALPHA) ? 8 : 0;
+   header.descriptor = im->has_alpha ? 8 : 0;
 
    /* top-to-bottom storage */
    header.descriptor |= TGA_DESC_VERTICAL;
 
    /* allocate a buffer to receive the BGRA-swapped pixel values */
-   buf = malloc(im->w * im->h * (IM_FLAG_ISSET(im, F_HAS_ALPHA) ? 4 : 3));
+   buf = malloc(im->w * im->h * (im->has_alpha ? 4 : 3));
    if (!buf)
       goto quit;
 
@@ -561,7 +557,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
              *bufptr++ = PIXEL_B(pixel);
              *bufptr++ = PIXEL_G(pixel);
              *bufptr++ = PIXEL_R(pixel);
-             if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
+             if (im->has_alpha)
                 *bufptr++ = PIXEL_A(pixel);
           }                     /* end for (each pixel in row) */
 
@@ -574,7 +570,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    fwrite(&header, sizeof(header), 1, f);
 
    /* write the image data */
-   fwrite(buf, 1, im->w * im->h * (IM_FLAG_ISSET(im, F_HAS_ALPHA) ? 4 : 3), f);
+   fwrite(buf, 1, im->w * im->h * (im->has_alpha ? 4 : 3), f);
 
    rc = LOAD_SUCCESS;
 
@@ -585,9 +581,4 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "tga" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, _save);

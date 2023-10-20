@@ -1,8 +1,11 @@
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #include <gif_lib.h>
 
 #define DBG_PFX "LDR-gif"
+
+static const char  *const _formats[] = { "gif" };
 
 static struct {
    const unsigned char *data, *dptr;
@@ -50,11 +53,10 @@ make_colormap(uint32_t * cmi, ColorMapObject * cmg, int bg, int tr)
       cmi[tr] = bg >= 0 && bg < 256 ? cmi[bg] & 0x00ffffff : 0x00000000;
 }
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc, err;
-   void               *fdata;
    uint32_t           *ptr;
    GifFileType        *gif;
    GifRowType         *rows;
@@ -63,16 +65,14 @@ load2(ImlibImage * im, int load_data)
    int                 i, j, bg, bits;
    int                 transp;
    uint32_t            colormap[256];
-   int                 fcount, frame, multiframe;
-
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
+   int                 fcount, frame;
+   bool                multiframe;
+   ImlibImageFrame    *pf;
 
    rc = LOAD_FAIL;
    rows = NULL;
 
-   mm_init(fdata, im->fsize);
+   mm_init(im->fi->fdata, im->fi->fsize);
 
 #if GIFLIB_MAJOR >= 5
    gif = DGifOpen(NULL, mm_read, &err);
@@ -84,25 +84,32 @@ load2(ImlibImage * im, int load_data)
 
    rc = LOAD_BADIMAGE;          /* Format accepted */
 
+   pf = NULL;
    transp = -1;
    fcount = 0;
-   frame = 1;
-   if (im->frame_num > 0)
+   frame = im->frame;
+   if (frame > 0)
      {
-        frame = im->frame_num;
-        im->frame_count = gif->ImageCount;
-        if (im->frame_count > 1)
-           im->frame_flags |= FF_IMAGE_ANIMATED;
-        im->canvas_w = gif->SWidth;
-        im->canvas_h = gif->SHeight;
-
-        D("Canvas WxH=%dx%d frames=%d\n",
-          im->canvas_w, im->canvas_h, im->frame_count);
-
 #if 0
-        if (frame > 1 && frame > im->frame_count)
-           goto quit;
+        if (frame > 1 && frame > gif->ImageCount)
+           QUIT_WITH_RC(LOAD_BADFRAME);
 #endif
+        pf = __imlib_GetFrame(im);
+        if (!pf)
+           QUIT_WITH_RC(LOAD_OOM);
+        pf->frame_count = gif->ImageCount;
+        pf->loop_count = 0;     /* Loop forever */
+        if (pf->frame_count > 1)
+           pf->frame_flags |= FF_IMAGE_ANIMATED;
+        pf->canvas_w = gif->SWidth;
+        pf->canvas_h = gif->SHeight;
+
+        D("Canvas WxH=%dx%d frames=%d repeat=%d\n",
+          pf->canvas_w, pf->canvas_h, pf->frame_count, pf->loop_count);
+     }
+   else
+     {
+        frame = 1;
      }
 
    bg = gif->SBackGroundColor;
@@ -157,15 +164,22 @@ load2(ImlibImage * im, int load_data)
 
              im->w = gif->Image.Width;
              im->h = gif->Image.Height;
-             im->frame_x = gif->Image.Left;
-             im->frame_y = gif->Image.Top;
+             if (pf)
+               {
+                  pf->frame_x = gif->Image.Left;
+                  pf->frame_y = gif->Image.Top;
+
+                  D("Canvas WxH=%dx%d frame=%d/%d X,Y=%d,%d WxH=%dx%d\n",
+                    pf->canvas_w, pf->canvas_h, gif->ImageCount,
+                    pf->frame_count, pf->frame_x, pf->frame_y, im->w, im->h);
+               }
+             else
+               {
+                  D("WxH=%dx%d\n", im->w, im->h);
+               }
 
              if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
                 goto quit;
-
-             D("Canvas WxH=%dx%d frame=%d/%d X,Y=%d,%d WxH=%dx%d\n",
-               im->canvas_w, im->canvas_h, gif->ImageCount, im->frame_count,
-               im->frame_x, im->frame_y, im->w, im->h);
 
              DL(" CM S=%p I=%p\n", cmap, gif->Image.ColorMap);
              if (gif->Image.ColorMap)
@@ -205,7 +219,7 @@ load2(ImlibImage * im, int load_data)
                }
 
              /* Break if no specific frame was requested */
-             if (im->frame_num == 0)
+             if (!pf)
                 break;
           }
         else if (rec == EXTENSION_RECORD_TYPE)
@@ -220,20 +234,20 @@ load2(ImlibImage * im, int load_data)
                   DL(" EXTENSION_RECORD_TYPE(%d): ic=%d: ext_code=%02x: %02x %02x %02x %02x %02x\n",    //
                      rec, gif->ImageCount, ext_code,
                      ext[0], ext[1], ext[2], ext[3], ext[4]);
-                  if (ext_code == GRAPHICS_EXT_FUNC_CODE
+                  if (pf && ext_code == GRAPHICS_EXT_FUNC_CODE
                       && gif->ImageCount == frame - 1)
                     {
                        bits = ext[1];
-                       im->frame_delay = 10 * (0x100 * ext[3] + ext[2]);
+                       pf->frame_delay = 10 * (0x100 * ext[3] + ext[2]);
                        if (bits & 1)
                           transp = ext[4];
                        disp = (bits >> 2) & 0x7;
                        if (disp == 2 || disp == 3)
-                          im->frame_flags |= FF_FRAME_DISPOSE_CLEAR;
-                       im->frame_flags |= FF_FRAME_BLEND;
+                          pf->frame_flags |= FF_FRAME_DISPOSE_CLEAR;
+                       pf->frame_flags |= FF_FRAME_BLEND;
                        D(" Frame %d: disp=%d ui=%d tr=%d, delay=%d transp = #%02x\n",   //
                          gif->ImageCount + 1, disp, (bits >> 1) & 1, bits & 1,
-                         im->frame_delay, transp);
+                         pf->frame_delay, transp);
                     }
                   ext = NULL;
                   DGifGetExtensionNext(gif, &ext);
@@ -245,15 +259,19 @@ load2(ImlibImage * im, int load_data)
           }
      }
 
-   IM_FLAG_UPDATE(im, F_HAS_ALPHA, transp >= 0);
-   im->frame_count = fcount;
-   multiframe = im->frame_count > 1;
-   if (multiframe)
-      im->frame_flags |= FF_IMAGE_ANIMATED;
+   im->has_alpha = transp >= 0;
+   multiframe = false;
+   if (pf)
+     {
+        pf->frame_count = fcount;
+        multiframe = pf->frame_count > 1;
+        if (multiframe)
+           pf->frame_flags |= FF_IMAGE_ANIMATED;
+     }
 
    if (!rows)
      {
-        if (frame > 1 && frame > im->frame_count)
+        if (pf && frame > 1 && frame > pf->frame_count)
            QUIT_WITH_RC(LOAD_BADFRAME);
 
         goto quit;
@@ -280,7 +298,7 @@ load2(ImlibImage * im, int load_data)
      }
 
    if (multiframe && im->lc)
-      __imlib_LoadProgress(im, im->frame_x, im->frame_y, im->w, im->h);
+      __imlib_LoadProgress(im, 0, 0, im->w, im->h);
 
    rc = LOAD_SUCCESS;
 
@@ -298,14 +316,7 @@ load2(ImlibImage * im, int load_data)
    DGifCloseFile(gif);
 #endif
 
-   munmap(fdata, im->fsize);
-
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "gif" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, NULL);

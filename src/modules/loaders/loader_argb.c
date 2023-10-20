@@ -1,4 +1,7 @@
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
+
+static const char  *const _formats[] = { "argb", "arg" };
 
 static struct {
    const unsigned char *data, *dptr;
@@ -30,11 +33,10 @@ mm_read(void *dst, unsigned int len)
    return 0;
 }
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    int                 alpha;
    uint32_t           *ptr;
    int                 y;
@@ -47,16 +49,12 @@ load2(ImlibImage * im, int load_data)
 
    rc = LOAD_FAIL;
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
-
-   mm_init(fdata, im->fsize);
+   mm_init(im->fi->fdata, im->fi->fsize);
 
    /* header */
 
-   fptr = fdata;
-   size = im->fsize > 31 ? 31 : im->fsize;      /* Look for \n in at most 31 byte */
+   fptr = im->fi->fdata;
+   size = im->fi->fsize > 31 ? 31 : im->fi->fsize;      /* Look for \n in at most 31 byte */
    row = memchr(fptr, '\n', size);
    if (!row)
       goto quit;
@@ -73,7 +71,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   IM_FLAG_UPDATE(im, F_HAS_ALPHA, alpha);
+   im->has_alpha = alpha;
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -104,20 +102,18 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   munmap(fdata, im->fsize);
-
    return rc;
 }
 
-char
-save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
+static int
+_save(ImlibImage * im)
 {
    int                 rc;
    FILE               *f;
    uint32_t           *ptr;
    int                 y, alpha = 0;
 
-   f = fopen(im->real_file, "wb");
+   f = fopen(im->fi->name, "wb");
    if (!f)
       return LOAD_FAIL;
 
@@ -125,8 +121,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    uint32_t           *buf = (uint32_t *) malloc(im->w * 4);
 #endif
 
-   if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
-      alpha = 1;
+   alpha = !!im->has_alpha;
 
    fprintf(f, "ARGB %i %i %i\n", im->w, im->h, alpha);
 
@@ -163,9 +158,4 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "argb", "arg" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, _save);

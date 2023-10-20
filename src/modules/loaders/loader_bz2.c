@@ -1,9 +1,12 @@
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #include <bzlib.h>
 
 #define OUTBUF_SIZE 16384
 #define INBUF_SIZE 1024
+
+static const char  *const _formats[] = { "bz2" };
 
 static int
 uncompress_file(const void *fdata, unsigned int fsize, int dest)
@@ -48,18 +51,12 @@ uncompress_file(const void *fdata, unsigned int fsize, int dest)
    return ok;
 }
 
-static const char  *const list_formats[] = { "bz2" };
-
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
 
-   return decompress_load(im, load_data, list_formats, ARRAY_SIZE(list_formats),
+   return decompress_load(im, load_data, _formats, ARRAY_SIZE(_formats),
                           uncompress_file);
 }
 
-void
-formats(ImlibLoader * l)
-{
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, NULL);

@@ -190,6 +190,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
+DIST_SUBDIRS = src data doc test
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/README.in \
 	$(srcdir)/config.h.in $(srcdir)/imlib2.pc.in AUTHORS COPYING \
 	ChangeLog INSTALL TODO compile config.guess config.sub \
@@ -418,7 +419,6 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = src data $(am__append_1) $(am__append_2)
-DIST_SUBDIRS = src data doc
 CLEANFILES = $(PACKAGE).spec
 MAINTAINERCLEANFILES = aclocal.m4 compile \
 		       config.guess config.h.in config.sub configure \
@@ -433,8 +433,10 @@ EXTRA_DIST = AUTHORS COPYING COPYING-PLAIN \
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = $(PACKAGE).pc
-@SRC_IS_GIT_FALSE@RPM_RELEASE = `echo -n "1.%(date '+%y%m%d')"`
-@SRC_IS_GIT_TRUE@RPM_RELEASE = `echo -n "1.%(date '+%y%m%d').git"; git rev-parse --short=8 HEAD`
+RPR_DEV = `echo -n "1.%(date '+%y%m%d').git"; git rev-parse --short=8 HEAD`
+RPR_REL = 1
+SED_DEV = "s/\@PACKAGE\@/@PACKAGE@/;s/\@VERSION\@/@VERSION@/;s/\@RPM_RELEASE\@/$(RPR_DEV)/"
+SED_REL = "s/\@PACKAGE\@/@PACKAGE@/;s/\@VERSION\@/@VERSION@/;s/\@RPM_RELEASE\@/$(RPR_REL)/"
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -960,15 +962,27 @@ uninstall-am: uninstall-pkgconfigDATA
 
 
 dist-hook: $(top_builddir)/$(PACKAGE).spec
+	if [ -s $(distdir)/test/Makefile.am ]; then \
+	  rm -f $(distdir)/test/*.*; \
+	  touch $(distdir)/test/Makefile.am; \
+	  cd $(top_srcdir) && $(AUTOMAKE) --foreign $(abs_builddir)/$(distdir)/test/Makefile; \
+	fi
 
 $(top_builddir)/$(PACKAGE).spec: FORCE
-	sed "s/\@PACKAGE\@/@PACKAGE@/;s/\@VERSION\@/@VERSION@/;s/\@RPM_RELEASE\@/$(RPM_RELEASE)/" \
-		$(top_srcdir)/$(PACKAGE).spec.in > $@
+	@if [ -f $(top_srcdir)/.git-src -a -z "$(release)" ]; then \
+	  sed $(SED_DEV) $(top_srcdir)/$(PACKAGE).spec.in > $@; \
+	else \
+	  sed $(SED_REL) $(top_srcdir)/$(PACKAGE).spec.in > $@; \
+	fi
 
 .PHONY: doc src test
 doc src test:
 	$(MAKE) -C $@
 test: src
+
+.PHONY: release
+release:
+	$(MAKE) dist release=y
 
 FORCE:
 

@@ -1,5 +1,5 @@
-#define _GNU_SOURCE             /* memmem() */
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #include <math.h>
 #pragma GCC diagnostic push
@@ -8,6 +8,8 @@
 #pragma GCC diagnostic pop
 
 #define DBG_PFX "LDR-svg"
+
+static const char  *const _formats[] = { "svg" };
 
 #define DPI 96
 
@@ -65,11 +67,10 @@ _handle_error(GError * error)
    g_error_free(error);
 }
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    RsvgHandle         *rsvg;
    GError             *error;
    gboolean            ok;
@@ -77,21 +78,16 @@ load2(ImlibImage * im, int load_data)
    cairo_t            *cr;
 
    rc = LOAD_FAIL;
-
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
-
    error = NULL;
    rsvg = NULL;
    surface = NULL;
    cr = NULL;
 
    /* Signature check */
-   if (_sig_check(fdata, im->fsize))
+   if (_sig_check(im->fi->fdata, im->fi->fsize))
       goto quit;
 
-   rsvg = rsvg_handle_new_from_data(fdata, im->fsize, &error);
+   rsvg = rsvg_handle_new_from_data(im->fi->fdata, im->fi->fsize, &error);
    if (!rsvg)
       goto quit;
 
@@ -191,7 +187,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   IM_FLAG_UPDATE(im, F_HAS_ALPHA, 1);
+   im->has_alpha = 1;
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -225,7 +221,7 @@ load2(ImlibImage * im, int load_data)
 #endif /* LIBRSVG need 2.46 */
 
    if (im->lc)
-      __imlib_LoadProgress(im, im->frame_x, im->frame_y, im->w, im->h);
+      __imlib_LoadProgress(im, 0, 0, im->w, im->h);
 
    rc = LOAD_SUCCESS;
 
@@ -238,14 +234,8 @@ load2(ImlibImage * im, int load_data)
       cairo_destroy(cr);
    if (rsvg)
       g_object_unref(rsvg);
-   munmap(fdata, im->fsize);
 
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "svg" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, NULL);

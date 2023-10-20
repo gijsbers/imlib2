@@ -4,8 +4,8 @@
  * Imlib2 library API
  */
 #define IMLIB2_VERSION_MAJOR 1
-#define IMLIB2_VERSION_MINOR 9
-#define IMLIB2_VERSION_MICRO 1
+#define IMLIB2_VERSION_MINOR 10
+#define IMLIB2_VERSION_MICRO 0
 
 #define IMLIB2_VERSION_(maj, min, mic) (10000 * (maj) + 100 * (min) + (mic))
 #define IMLIB2_VERSION IMLIB2_VERSION_(IMLIB2_VERSION_MAJOR, IMLIB2_VERSION_MINOR, IMLIB2_VERSION_MICRO)
@@ -686,6 +686,7 @@ EAPI int            imlib_get_cache_size(void);
  */
 EAPI void           imlib_set_cache_size(int bytes);
 
+#ifndef X_DISPLAY_MISSING
 /**
  * Get the maximum number of colors Imlib2 is allowed to allocate
  *
@@ -704,17 +705,6 @@ EAPI int            imlib_get_color_usage(void);
  */
 EAPI void           imlib_set_color_usage(int max);
 
-/**
- * Flush loader cache
- *
- * If you want Imlib2 to forcibly flush any cached loaders it has and
- * re-load them from disk (this is useful if the program just
- * installed a new loader and does not want to wait till Imlib2 deems
- * it an optimal time to rescan the loaders)
- */
-EAPI void           imlib_flush_loaders(void);
-
-#ifndef X_DISPLAY_MISSING
 /**
  * Convenience function that returns the depth of a visual
  *
@@ -737,6 +727,29 @@ EAPI int            imlib_get_visual_depth(Display * display, Visual * visual);
 EAPI Visual        *imlib_get_best_visual(Display * display, int screen,
                                           int *depth_return);
 #endif /* X_DISPLAY_MISSING */
+
+/**
+ * Flush loader cache
+ *
+ * If you want Imlib2 to forcibly flush any cached loaders it has and
+ * re-load them from disk (this is useful if the program just
+ * installed a new loader and does not want to wait till Imlib2 deems
+ * it an optimal time to rescan the loaders)
+ */
+EAPI void           imlib_flush_loaders(void);
+
+/**
+ * Get error code from previous imlib function call
+ *
+ * For now an error code is only meaningful when an image loading
+ * function (imlib_load_image...()) has failed (returned NULL).
+ *
+ * @return error code
+ *          0: Success,
+ *   positive: Regular errnos,
+ *   negative: IMLIB_ERR_... values, see above
+ */
+EAPI int            imlib_get_error(void);
 
 /**
  * Load an image from file (header only)
@@ -815,6 +828,22 @@ EAPI Imlib_Image    imlib_load_image_with_errno_return(const char *file,
  * @return Image handle (NULL on failure)
  */
 EAPI Imlib_Image    imlib_load_image_fd(int fd, const char *file);
+
+/**
+ * Read an image from memory
+ *
+ * The file name @p file is only used to guess the file format.
+ * The image is loaded without deferred image data decoding and without
+ * looking in the cache.
+ *
+ * @param file          File name
+ * @param data          Image data
+ * @param size          Image data size
+ *
+ * @return Image handle (NULL on failure)
+ */
+EAPI Imlib_Image    imlib_load_image_mem(const char *file,
+                                         const void *data, size_t size);
 
 /**
  * Free the current image
@@ -1468,7 +1497,8 @@ EAPI int            imlib_get_ximage_cache_size_max(void);
  * @param bytes         XImage cache max size in bytes
  */
 EAPI void           imlib_set_ximage_cache_size_max(int bytes);
-#endif
+
+#endif /* X_DISPLAY_MISSING */
 
 /*--------------------------------
  * Updates - lists of rectangles for storing required update draws
@@ -2803,6 +2833,7 @@ typedef struct {
    int                 frame_w, frame_h;        /* Frame size   */
    int                 frame_flags;     /* Frame info flags */
    int                 frame_delay;     /* Frame delay (ms) */
+   int                 loop_count;      /* Number of animation loops */
 } Imlib_Frame_Info;
 
 /* frame info flags */
@@ -2825,6 +2856,25 @@ typedef struct {
  * @return Image handle (NULL on failure)
  */
 EAPI Imlib_Image    imlib_load_image_frame(const char *file, int frame);
+
+/**
+ * Load image frame form memory
+ *
+ * Loads the specified frame within the image from memory.
+ * The file name @p file is only used to guess the file format.
+ * On success an image handle is returned, otherwise NULL is returned
+ * (e.g. if the requested frame does not exist).
+ * The image is loaded immediately.
+ *
+ * @param file          File name
+ * @param frame         Frame number
+ * @param data          Image data
+ * @param size          Image data size
+ *
+ * @return Image handle (NULL on failure)
+ */
+EAPI Imlib_Image    imlib_load_image_frame_mem(const char *file, int frame,
+                                               const void *data, size_t size);
 
 /**
  * Get information about current image frame

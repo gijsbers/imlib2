@@ -1,9 +1,12 @@
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #include <ctype.h>
 #include <stdbool.h>
 
 #define DBG_PFX "LDR-pnm"
+
+static const char  *const _formats[] = { "pnm", "ppm", "pgm", "pbm", "pam" };
 
 static struct {
    const unsigned char *data, *dptr;
@@ -111,11 +114,10 @@ mm_getu(unsigned int *pui)
    return 0;                    /* Ok */
 }
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    int                 c, p;
    int                 w, h, v, numbers, count;
    uint8_t            *data = NULL;     /* for the binary versions */
@@ -126,11 +128,7 @@ load2(ImlibImage * im, int load_data)
 
    rc = LOAD_FAIL;
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
-
-   mm_init(fdata, im->fsize);
+   mm_init(im->fi->fdata, im->fi->fsize);
 
    /* read the header info */
 
@@ -188,7 +186,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(w, h))
       goto quit;
 
-   IM_FLAG_UPDATE(im, F_HAS_ALPHA, p == '8');
+   im->has_alpha = p == '8';
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -461,13 +459,12 @@ load2(ImlibImage * im, int load_data)
  quit:
    free(idata);
    free(data);
-   munmap(fdata, im->fsize);
 
    return rc;
 }
 
-char
-save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
+static int
+_save(ImlibImage * im)
 {
    int                 rc;
    FILE               *f;
@@ -475,7 +472,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    uint32_t           *ptr;
    int                 x, y;
 
-   f = fopen(im->real_file, "wb");
+   f = fopen(im->fi->name, "wb");
    if (!f)
       return LOAD_FAIL;
 
@@ -489,7 +486,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    ptr = im->data;
 
    /* if the image has a useful alpha channel */
-   if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
+   if (im->has_alpha)
      {
         fprintf(f, "P8\n" "# PNM File written by Imlib2\n" "%i %i\n" "255\n",
                 im->w, im->h);
@@ -549,10 +546,4 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    goto quit;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] =
-      { "pnm", "ppm", "pgm", "pbm", "pam" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, _save);

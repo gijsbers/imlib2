@@ -1,10 +1,13 @@
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #include <errno.h>
 #include <limits.h>
 #include <id3tag.h>
 
 #define USE_TAGS 0
+
+static const char  *const _formats[] = { "mp3" };
 
 typedef struct context {
    int                 id;
@@ -284,8 +287,8 @@ get_options(lopt * opt, const ImlibImage * im)
      }
    if (handle)
       ctx = context_get(handle);
-   else if (!(ctx = context_get_by_name(im->real_file)) &&
-            !(ctx = context_create(im->real_file, im->fp)))
+   else if (!(ctx = context_get_by_name(im->fi->name)) &&
+            !(ctx = context_create(im->fi->name, im->fi->fp)))
       return 0;
 
    if (!index)
@@ -478,8 +481,8 @@ write_tags(ImlibImage * im, lopt * opt)
             <= id3_tag_get_numframes(opt->ctx->tag)
             && (opt->index + opt->traverse) > 0)
           {
-             buf = (char *)malloc((strlen(im->real_file) + 50) * sizeof(char));
-             sprintf(buf, "%s:index=%d,traverse=%d", im->real_file,
+             buf = (char *)malloc((strlen(im->fi->name) + 50) * sizeof(char));
+             sprintf(buf, "%s:index=%d,traverse=%d", im->fi->name,
                      opt->index + opt->traverse, opt->traverse);
           }
         __imlib_AttachTag(im, "next", 0, buf, destructor_data);
@@ -487,8 +490,8 @@ write_tags(ImlibImage * im, lopt * opt)
 }
 #endif
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
    ImlibLoader        *loader;
@@ -496,6 +499,9 @@ load2(ImlibImage * im, int load_data)
 
    rc = LOAD_FAIL;
    opt.ctx = NULL;
+
+   if (!im->fi->fp)
+      return rc;
 
    if (!get_options(&opt, im))
       goto quit;
@@ -525,7 +531,7 @@ load2(ImlibImage * im, int load_data)
              goto quit;
           }
 
-        rc = __imlib_LoadEmbedded(loader, im, tmp, load_data);
+        rc = __imlib_LoadEmbedded(loader, im, load_data, tmp);
 
         unlink(tmp);
      }
@@ -559,7 +565,7 @@ load2(ImlibImage * im, int load_data)
              goto quit;
           }
 
-        rc = __imlib_LoadEmbedded(loader, im, file, load_data);
+        rc = __imlib_LoadEmbedded(loader, im, load_data, file);
 
 #if USE_TAGS
         if (!im->loader)
@@ -596,9 +602,4 @@ load2(ImlibImage * im, int load_data)
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "mp3" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, NULL);

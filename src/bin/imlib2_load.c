@@ -4,6 +4,7 @@
 #endif
 #include <Imlib2.h>
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -15,6 +16,16 @@
 #else
 #include <sys/time.h>
 #endif
+#include <sys/mman.h>
+#include <sys/stat.h>
+
+#define PROG_NAME "imlib2_load"
+
+#define LOAD_DEFER	0
+#define LOAD_NODATA	1
+#define LOAD_IMMED	2
+#define LOAD_FROM_FD	3
+#define LOAD_FROM_MEM	4
 
 static char         progress_called;
 static FILE        *fout;
@@ -26,9 +37,12 @@ static FILE        *fout;
    "Usage:\n" \
    "  imlib2_load [OPTIONS] FILE...\n" \
    "OPTIONS:\n" \
+   "  -c  : Enable image caching\n" \
    "  -e  : Break on error\n" \
    "  -f  : Load with imlib_load_image_fd()\n" \
    "  -i  : Load image immediately (don't defer data loading)\n" \
+   "  -j  : Load image header only\n" \
+   "  -m  : Load with imlib_load_image_mem()\n" \
    "  -n N: Repeat load N times\n" \
    "  -p  : Check that progress is called\n" \
    "  -v  : Increase verbosity\n" \
@@ -59,7 +73,7 @@ time_us(void)
 }
 
 static Imlib_Image *
-image_load_fd(const char *file)
+image_load_fd(const char *file, int *perr)
 {
    Imlib_Image        *im;
    int                 fd;
@@ -72,9 +86,58 @@ image_load_fd(const char *file)
       ext = file;
 
    fd = open(file, O_RDONLY);
+   if (fd < 0)
+     {
+        *perr = errno;
+        return NULL;
+     }
+
    im = imlib_load_image_fd(fd, ext);
 
    return im;
+}
+
+static Imlib_Image *
+image_load_mem(const char *file, int *perr)
+{
+   Imlib_Image        *im;
+   int                 fd, err;
+   const char         *ext;
+   struct stat         st;
+   void               *fdata;
+
+   ext = strchr(file, '.');
+   if (ext)
+      ext += 1;
+   else
+      ext = file;
+
+   err = stat(file, &st);
+   if (err)
+      goto bail;
+
+   im = NULL;
+   fd = -1;
+   fdata = MAP_FAILED;
+
+   fd = open(file, O_RDONLY);
+   if (fd < 0)
+      goto bail;
+
+   fdata = mmap(NULL, st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+   close(fd);
+   if (fdata == MAP_FAILED)
+      goto bail;
+
+   im = imlib_load_image_mem(ext, fdata, st.st_size);
+
+ quit:
+   if (fdata != MAP_FAILED)
+      munmap(fdata, st.st_size);
+   return im;
+ bail:
+   *perr = errno;
+   goto quit;
 }
 
 static int
@@ -100,9 +163,8 @@ main(int argc, char **argv)
    int                 break_on_error;
    bool                show_time;
    int                 load_cnt, cnt;
-   bool                load_fd;
-   bool                load_now;
-   bool                load_nodata;
+   int                 load_mode;
+   bool                opt_cache;
 
    fout = stdout;
    verbose = 0;
@@ -110,25 +172,30 @@ main(int argc, char **argv)
    break_on_error = 0;
    show_time = false;
    load_cnt = 1;
-   load_fd = false;
-   load_now = false;
-   load_nodata = false;
+   load_mode = LOAD_DEFER;
+   opt_cache = false;
 
-   while ((opt = getopt(argc, argv, "efijn:pvx")) != -1)
+   while ((opt = getopt(argc, argv, "cefijmn:pvx")) != -1)
      {
         switch (opt)
           {
+          case 'c':
+             opt_cache = true;
+             break;
           case 'e':
              break_on_error += 1;
              break;
           case 'f':
-             load_fd = true;
+             load_mode = LOAD_FROM_FD;
              break;
           case 'i':
-             load_now = true;
+             load_mode = LOAD_IMMED;
              break;
           case 'j':
-             load_nodata = true;
+             load_mode = LOAD_NODATA;
+             break;
+          case 'm':
+             load_mode = LOAD_FROM_MEM;
              break;
           case 'n':
              load_cnt = atoi(optarg);
@@ -137,6 +204,7 @@ main(int argc, char **argv)
              break;
           case 'p':
              check_progress = true;
+             load_mode = LOAD_IMMED;
              verbose = 1;
              break;
           case 'v':
@@ -178,14 +246,22 @@ main(int argc, char **argv)
 
         for (cnt = 0; cnt < load_cnt; cnt++)
           {
-             err = -1000;
+             err = 0;
 
-             if (load_now || check_progress)
-                im = imlib_load_image_with_errno_return(argv[0], &err);
-             else if (load_fd)
-                im = image_load_fd(argv[0]);
-             else
+             switch (load_mode)
                {
+               case LOAD_IMMED:
+                  im = imlib_load_image_immediately(argv[0]);
+                  break;
+               case LOAD_FROM_FD:
+                  im = image_load_fd(argv[0], &err);
+                  break;
+               case LOAD_FROM_MEM:
+                  im = image_load_mem(argv[0], &err);
+                  break;
+               case LOAD_DEFER:
+               case LOAD_NODATA:
+               default:
                   frame = -1;
                   sscanf(argv[0], "%[^%]%%%d", nbuf, &frame);
 
@@ -193,15 +269,16 @@ main(int argc, char **argv)
                      im = imlib_load_image_frame(nbuf, frame);
                   else
                      im = imlib_load_image(argv[0]);
+                  break;
                }
 
              if (!im)
                {
-                  if (err > -1000)
-                     fprintf(fout, "*** Error %d:'%s' loading image: '%s'\n",
-                             err, imlib_strerror(err), argv[0]);
-                  else
-                     fprintf(fout, "*** Failed to load image: '%s'\n", argv[0]);
+                  if (err == 0)
+                     err = imlib_get_error();
+                  fprintf(fout, "*** Error %d:'%s' loading image: '%s'\n",
+                          err, imlib_strerror(err), argv[0]);
+
                   if (break_on_error & 2)
                      goto quit;
                   goto next;
@@ -211,10 +288,13 @@ main(int argc, char **argv)
              V2printf("- Image: fmt=%s WxH=%dx%d\n", imlib_image_format(),
                       imlib_image_get_width(), imlib_image_get_height());
 
-             if (!check_progress && !load_now && !load_nodata)
-                imlib_image_get_data();
+             if (load_mode == LOAD_DEFER)
+                imlib_image_get_data_for_reading_only();
 
-             imlib_free_image_and_decache();
+             if (opt_cache)
+                imlib_free_image();
+             else
+                imlib_free_image_and_decache();
           }
 
         if (show_time)

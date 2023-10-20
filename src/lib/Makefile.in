@@ -89,7 +89,23 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@BUILD_X11_TRUE@am__append_1 = \
+@ENABLE_FILTERS_TRUE@am__append_1 = \
+@ENABLE_FILTERS_TRUE@api_filter.c	\
+@ENABLE_FILTERS_TRUE@dynamic_filters.c	dynamic_filters.h	\
+@ENABLE_FILTERS_TRUE@filter.c	filter.h	\
+@ENABLE_FILTERS_TRUE@script.c	script.h
+
+@ENABLE_TEXT_TRUE@am__append_2 = \
+@ENABLE_TEXT_TRUE@api_text.c	\
+@ENABLE_TEXT_TRUE@font.h \
+@ENABLE_TEXT_TRUE@font_draw.c \
+@ENABLE_TEXT_TRUE@font_load.c \
+@ENABLE_TEXT_TRUE@font_main.c \
+@ENABLE_TEXT_TRUE@font_query.c
+
+@ENABLE_TEXT_TRUE@am__append_3 = $(FREETYPE_LIBS)
+@BUILD_X11_TRUE@am__append_4 = \
+@BUILD_X11_TRUE@api_x11.c	\
 @BUILD_X11_TRUE@x11_color.c	x11_color.h	\
 @BUILD_X11_TRUE@x11_context.c	x11_context.h	\
 @BUILD_X11_TRUE@x11_grab.c	x11_grab.h	\
@@ -98,10 +114,10 @@ host_triplet = @host@
 @BUILD_X11_TRUE@x11_rgba.c	x11_rgba.h	\
 @BUILD_X11_TRUE@x11_ximage.c	x11_ximage.h
 
-@BUILD_X11_TRUE@am__append_2 = -lXext -lX11 @X_SHM_FD_LIBS@
-@BUILD_DEBUG_TRUE@am__append_3 = $(CLOCK_LIBS)
-@BUILD_MMX_TRUE@am__append_4 = $(MMX_SRCS)
-@BUILD_AMD64_TRUE@am__append_5 = $(AMD64_SRCS)
+@BUILD_X11_TRUE@am__append_5 = -lXext -lX11 $(X_SHM_FD_LIBS)
+@BUILD_DEBUG_TRUE@am__append_6 = $(CLOCK_LIBS)
+@BUILD_MMX_TRUE@am__append_7 = $(MMX_SRCS)
+@BUILD_AMD64_TRUE@am__append_8 = $(AMD64_SRCS)
 subdir = src/lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ec_asan.m4 \
@@ -148,41 +164,46 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-@BUILD_DEBUG_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
-libImlib2_la_DEPENDENCIES = $(am__DEPENDENCIES_3)
-am__libImlib2_la_SOURCES_DIST = api.c api_obsolete.c asm.h asm_c.c \
-	asm_c.h blend.c blend.h color_helpers.c color_helpers.h \
-	colormod.c colormod.h common.h debug.c debug.h draw_ellipse.c \
-	draw_line.c draw_polygon.c draw_rectangle.c dynamic_filters.c \
-	dynamic_filters.h file.c file.h filter.c filter.h font.h \
-	font_draw.c font_load.c font_main.c font_query.c grad.c grad.h \
-	image.c image.h image_tags.c loaders.c loaders.h modules.c \
-	object.c object.h rgbadraw.c rgbadraw.h rotate.c rotate.h \
-	scale.c scale.h script.c script.h span.c span.h strutils.c \
-	strutils.h types.h updates.c updates.h x11_color.c x11_color.h \
-	x11_context.c x11_context.h x11_grab.c x11_grab.h x11_pixmap.c \
-	x11_pixmap.h x11_rend.c x11_rend.h x11_rgba.c x11_rgba.h \
-	x11_ximage.c x11_ximage.h asm_blend.S asm_blend_cmod.S \
-	asm_rgba.S asm_rotate.S asm_scale.S amd64_blend.S \
-	amd64_blend_cmod.S
-@BUILD_X11_TRUE@am__objects_1 = x11_color.lo x11_context.lo \
+@ENABLE_TEXT_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+@BUILD_X11_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+@BUILD_DEBUG_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
+libImlib2_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
+	$(am__DEPENDENCIES_1)
+am__libImlib2_la_SOURCES_DIST = api.c api.h api_obsolete.c asm.h \
+	asm_c.c asm_c.h blend.c blend.h color_helpers.c \
+	color_helpers.h colormod.c colormod.h common.h debug.c debug.h \
+	draw_ellipse.c draw_line.c draw_polygon.c draw_rectangle.c \
+	file.c file.h grad.c grad.h image.c image.h image_tags.c \
+	loaders.c loaders.h modules.c object.c object.h rgbadraw.c \
+	rgbadraw.h rotate.c rotate.h scale.c scale.h span.c span.h \
+	strutils.c strutils.h types.h updates.c updates.h api_filter.c \
+	dynamic_filters.c dynamic_filters.h filter.c filter.h script.c \
+	script.h api_text.c font.h font_draw.c font_load.c font_main.c \
+	font_query.c api_x11.c x11_color.c x11_color.h x11_context.c \
+	x11_context.h x11_grab.c x11_grab.h x11_pixmap.c x11_pixmap.h \
+	x11_rend.c x11_rend.h x11_rgba.c x11_rgba.h x11_ximage.c \
+	x11_ximage.h asm_blend.S asm_blend_cmod.S asm_rgba.S \
+	asm_rotate.S asm_scale.S amd64_blend.S amd64_blend_cmod.S
+@ENABLE_FILTERS_TRUE@am__objects_1 = api_filter.lo dynamic_filters.lo \
+@ENABLE_FILTERS_TRUE@	filter.lo script.lo
+@ENABLE_TEXT_TRUE@am__objects_2 = api_text.lo font_draw.lo \
+@ENABLE_TEXT_TRUE@	font_load.lo font_main.lo font_query.lo
+@BUILD_X11_TRUE@am__objects_3 = api_x11.lo x11_color.lo x11_context.lo \
 @BUILD_X11_TRUE@	x11_grab.lo x11_pixmap.lo x11_rend.lo \
 @BUILD_X11_TRUE@	x11_rgba.lo x11_ximage.lo
-am__objects_2 = asm_blend.lo asm_blend_cmod.lo asm_rgba.lo \
+am__objects_4 = asm_blend.lo asm_blend_cmod.lo asm_rgba.lo \
 	asm_rotate.lo asm_scale.lo
-@BUILD_MMX_TRUE@am__objects_3 = $(am__objects_2)
-am__objects_4 = amd64_blend.lo amd64_blend_cmod.lo
-@BUILD_AMD64_TRUE@am__objects_5 = $(am__objects_4)
+@BUILD_MMX_TRUE@am__objects_5 = $(am__objects_4)
+am__objects_6 = amd64_blend.lo amd64_blend_cmod.lo
+@BUILD_AMD64_TRUE@am__objects_7 = $(am__objects_6)
 am_libImlib2_la_OBJECTS = api.lo api_obsolete.lo asm_c.lo blend.lo \
 	color_helpers.lo colormod.lo debug.lo draw_ellipse.lo \
-	draw_line.lo draw_polygon.lo draw_rectangle.lo \
-	dynamic_filters.lo file.lo filter.lo font_draw.lo font_load.lo \
-	font_main.lo font_query.lo grad.lo image.lo image_tags.lo \
-	loaders.lo modules.lo object.lo rgbadraw.lo rotate.lo scale.lo \
-	script.lo span.lo strutils.lo updates.lo $(am__objects_1) \
-	$(am__objects_3) $(am__objects_5)
+	draw_line.lo draw_polygon.lo draw_rectangle.lo file.lo grad.lo \
+	image.lo image_tags.lo loaders.lo modules.lo object.lo \
+	rgbadraw.lo rotate.lo scale.lo span.lo strutils.lo updates.lo \
+	$(am__objects_1) $(am__objects_2) $(am__objects_3) \
+	$(am__objects_5) $(am__objects_7)
 libImlib2_la_OBJECTS = $(am_libImlib2_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -208,27 +229,29 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/amd64_blend.Plo \
 	./$(DEPDIR)/amd64_blend_cmod.Plo ./$(DEPDIR)/api.Plo \
-	./$(DEPDIR)/api_obsolete.Plo ./$(DEPDIR)/asm_blend.Plo \
-	./$(DEPDIR)/asm_blend_cmod.Plo ./$(DEPDIR)/asm_c.Plo \
-	./$(DEPDIR)/asm_rgba.Plo ./$(DEPDIR)/asm_rotate.Plo \
-	./$(DEPDIR)/asm_scale.Plo ./$(DEPDIR)/blend.Plo \
-	./$(DEPDIR)/color_helpers.Plo ./$(DEPDIR)/colormod.Plo \
-	./$(DEPDIR)/debug.Plo ./$(DEPDIR)/draw_ellipse.Plo \
-	./$(DEPDIR)/draw_line.Plo ./$(DEPDIR)/draw_polygon.Plo \
-	./$(DEPDIR)/draw_rectangle.Plo ./$(DEPDIR)/dynamic_filters.Plo \
-	./$(DEPDIR)/file.Plo ./$(DEPDIR)/filter.Plo \
-	./$(DEPDIR)/font_draw.Plo ./$(DEPDIR)/font_load.Plo \
-	./$(DEPDIR)/font_main.Plo ./$(DEPDIR)/font_query.Plo \
-	./$(DEPDIR)/grad.Plo ./$(DEPDIR)/image.Plo \
-	./$(DEPDIR)/image_tags.Plo ./$(DEPDIR)/loaders.Plo \
-	./$(DEPDIR)/modules.Plo ./$(DEPDIR)/object.Plo \
-	./$(DEPDIR)/rgbadraw.Plo ./$(DEPDIR)/rotate.Plo \
-	./$(DEPDIR)/scale.Plo ./$(DEPDIR)/script.Plo \
-	./$(DEPDIR)/span.Plo ./$(DEPDIR)/strutils.Plo \
-	./$(DEPDIR)/updates.Plo ./$(DEPDIR)/x11_color.Plo \
-	./$(DEPDIR)/x11_context.Plo ./$(DEPDIR)/x11_grab.Plo \
-	./$(DEPDIR)/x11_pixmap.Plo ./$(DEPDIR)/x11_rend.Plo \
-	./$(DEPDIR)/x11_rgba.Plo ./$(DEPDIR)/x11_ximage.Plo
+	./$(DEPDIR)/api_filter.Plo ./$(DEPDIR)/api_obsolete.Plo \
+	./$(DEPDIR)/api_text.Plo ./$(DEPDIR)/api_x11.Plo \
+	./$(DEPDIR)/asm_blend.Plo ./$(DEPDIR)/asm_blend_cmod.Plo \
+	./$(DEPDIR)/asm_c.Plo ./$(DEPDIR)/asm_rgba.Plo \
+	./$(DEPDIR)/asm_rotate.Plo ./$(DEPDIR)/asm_scale.Plo \
+	./$(DEPDIR)/blend.Plo ./$(DEPDIR)/color_helpers.Plo \
+	./$(DEPDIR)/colormod.Plo ./$(DEPDIR)/debug.Plo \
+	./$(DEPDIR)/draw_ellipse.Plo ./$(DEPDIR)/draw_line.Plo \
+	./$(DEPDIR)/draw_polygon.Plo ./$(DEPDIR)/draw_rectangle.Plo \
+	./$(DEPDIR)/dynamic_filters.Plo ./$(DEPDIR)/file.Plo \
+	./$(DEPDIR)/filter.Plo ./$(DEPDIR)/font_draw.Plo \
+	./$(DEPDIR)/font_load.Plo ./$(DEPDIR)/font_main.Plo \
+	./$(DEPDIR)/font_query.Plo ./$(DEPDIR)/grad.Plo \
+	./$(DEPDIR)/image.Plo ./$(DEPDIR)/image_tags.Plo \
+	./$(DEPDIR)/loaders.Plo ./$(DEPDIR)/modules.Plo \
+	./$(DEPDIR)/object.Plo ./$(DEPDIR)/rgbadraw.Plo \
+	./$(DEPDIR)/rotate.Plo ./$(DEPDIR)/scale.Plo \
+	./$(DEPDIR)/script.Plo ./$(DEPDIR)/span.Plo \
+	./$(DEPDIR)/strutils.Plo ./$(DEPDIR)/updates.Plo \
+	./$(DEPDIR)/x11_color.Plo ./$(DEPDIR)/x11_context.Plo \
+	./$(DEPDIR)/x11_grab.Plo ./$(DEPDIR)/x11_pixmap.Plo \
+	./$(DEPDIR)/x11_rend.Plo ./$(DEPDIR)/x11_rgba.Plo \
+	./$(DEPDIR)/x11_ximage.Plo
 am__mv = mv -f
 CPPASCOMPILE = $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
@@ -474,18 +497,18 @@ AM_CPPFLAGS = -DPACKAGE_LIB_DIR=\"$(libdir)\" \
 # Older automakes (<1.10) do not use INCLUDES when compiling .S files
 AM_CCASFLAGS = -I$(top_builddir)
 lib_LTLIBRARIES = libImlib2.la
-include_HEADERS = Imlib2.h
-libImlib2_la_SOURCES = api.c api_obsolete.c asm.h asm_c.c asm_c.h \
-	blend.c blend.h color_helpers.c color_helpers.h colormod.c \
-	colormod.h common.h debug.c debug.h draw_ellipse.c draw_line.c \
-	draw_polygon.c draw_rectangle.c dynamic_filters.c \
-	dynamic_filters.h file.c file.h filter.c filter.h font.h \
-	font_draw.c font_load.c font_main.c font_query.c grad.c grad.h \
-	image.c image.h image_tags.c loaders.c loaders.h modules.c \
-	object.c object.h rgbadraw.c rgbadraw.h rotate.c rotate.h \
-	scale.c scale.h script.c script.h span.c span.h strutils.c \
-	strutils.h types.h updates.c updates.h $(am__append_1) \
-	$(am__append_4) $(am__append_5)
+include_HEADERS = Imlib2.h Imlib2_Loader.h
+libImlib2_la_LIBADD = $(am__append_3) $(am__append_5) $(am__append_6) \
+	$(DLOPEN_LIBS) -lm
+libImlib2_la_SOURCES = api.c api.h api_obsolete.c asm.h asm_c.c \
+	asm_c.h blend.c blend.h color_helpers.c color_helpers.h \
+	colormod.c colormod.h common.h debug.c debug.h draw_ellipse.c \
+	draw_line.c draw_polygon.c draw_rectangle.c file.c file.h \
+	grad.c grad.h image.c image.h image_tags.c loaders.c loaders.h \
+	modules.c object.c object.h rgbadraw.c rgbadraw.h rotate.c \
+	rotate.h scale.c scale.h span.c span.h strutils.c strutils.h \
+	types.h updates.c updates.h $(am__append_1) $(am__append_2) \
+	$(am__append_4) $(am__append_7) $(am__append_8)
 MMX_SRCS = \
 asm_blend.S \
 asm_blend_cmod.S \
@@ -498,9 +521,6 @@ amd64_blend.S \
 amd64_blend_cmod.S
 
 EXTRA_DIST = $(MMX_SRCS) $(AMD64_SRCS) asm_loadimmq.S
-MY_LIBS = $(FREETYPE_LIBS) $(DLOPEN_LIBS) -lm $(am__append_2) \
-	$(am__append_3)
-libImlib2_la_LIBADD = $(MY_LIBS)
 libImlib2_la_LDFLAGS = -version-info @lt_version@
 all: all-am
 
@@ -585,7 +605,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/amd64_blend.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/amd64_blend_cmod.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/api.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/api_filter.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/api_obsolete.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/api_text.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/api_x11.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asm_blend.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asm_blend_cmod.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asm_c.Plo@am__quote@ # am--include-marker
@@ -833,7 +856,10 @@ distclean: distclean-am
 		-rm -f ./$(DEPDIR)/amd64_blend.Plo
 	-rm -f ./$(DEPDIR)/amd64_blend_cmod.Plo
 	-rm -f ./$(DEPDIR)/api.Plo
+	-rm -f ./$(DEPDIR)/api_filter.Plo
 	-rm -f ./$(DEPDIR)/api_obsolete.Plo
+	-rm -f ./$(DEPDIR)/api_text.Plo
+	-rm -f ./$(DEPDIR)/api_x11.Plo
 	-rm -f ./$(DEPDIR)/asm_blend.Plo
 	-rm -f ./$(DEPDIR)/asm_blend_cmod.Plo
 	-rm -f ./$(DEPDIR)/asm_c.Plo
@@ -923,7 +949,10 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/amd64_blend.Plo
 	-rm -f ./$(DEPDIR)/amd64_blend_cmod.Plo
 	-rm -f ./$(DEPDIR)/api.Plo
+	-rm -f ./$(DEPDIR)/api_filter.Plo
 	-rm -f ./$(DEPDIR)/api_obsolete.Plo
+	-rm -f ./$(DEPDIR)/api_text.Plo
+	-rm -f ./$(DEPDIR)/api_x11.Plo
 	-rm -f ./$(DEPDIR)/asm_blend.Plo
 	-rm -f ./$(DEPDIR)/asm_blend_cmod.Plo
 	-rm -f ./$(DEPDIR)/asm_c.Plo

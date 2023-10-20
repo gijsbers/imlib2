@@ -729,17 +729,17 @@ __imlib_Ellipse_DrawToImage(int xc, int yc, int a, int b, uint32_t color,
    if (w <= 0 || h <= 0)
       return;
 
-   if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
+   if (blend && im->has_alpha)
       __imlib_build_pow_lut();
 
    if (anti_alias)
       __imlib_Ellipse_DrawToData_AA(xc, yc, a, b, color,
                                     im->data, im->w, clx, cly, clw, clh,
-                                    op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
+                                    op, im->has_alpha, blend);
    else
       __imlib_Ellipse_DrawToData(xc, yc, a, b, color,
                                  im->data, im->w, clx, cly, clw, clh,
-                                 op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
+                                 op, im->has_alpha, blend);
 }
 
 void
@@ -797,15 +797,15 @@ __imlib_Ellipse_FillToImage(int xc, int yc, int a, int b, uint32_t color,
    if (w <= 0 || h <= 0)
       return;
 
-   if (blend && IM_FLAG_ISSET(im, F_HAS_ALPHA))
+   if (blend && im->has_alpha)
       __imlib_build_pow_lut();
 
    if (anti_alias)
       __imlib_Ellipse_FillToData_AA(xc, yc, a, b, color,
                                     im->data, im->w, clx, cly, clw, clh,
-                                    op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
+                                    op, im->has_alpha, blend);
    else
       __imlib_Ellipse_FillToData(xc, yc, a, b, color,
                                  im->data, im->w, clx, cly, clw, clh,
-                                 op, IM_FLAG_ISSET(im, F_HAS_ALPHA), blend);
+                                 op, im->has_alpha, blend);
 }

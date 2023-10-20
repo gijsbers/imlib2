@@ -365,7 +365,7 @@ __imlib_CreatePixmapsForImage(Display * d, Drawable w, Visual * v, int depth,
      }
    if (m)
      {
-        if (IM_FLAG_ISSET(im, F_HAS_ALPHA))
+        if (im->has_alpha)
            mask = XCreatePixmap(d, w, dw, dh, 1);
         *m = mask;
      }

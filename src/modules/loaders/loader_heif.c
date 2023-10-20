@@ -4,19 +4,22 @@
  * Only loads the primary image for any file, whether it be a still image or an
  * image sequence.
  */
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #include <libheif/heif.h>
+
+static const char  *const _formats[] =
+   { "heif", "heifs", "heic", "heics", "avci", "avcs", "avif", "avifs" };
 
 #define HEIF_BYTES_TO_CHECK 12L
 #define HEIF_8BIT_TO_PIXEL_ARGB(plane, has_alpha) \
    PIXEL_ARGB((has_alpha) ? (plane)[3] : 0xff, (plane)[0], (plane)[1], (plane)[2])
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    int                 img_has_alpha;
    int                 stride = 0;
    int                 bytes_per_px;
@@ -32,15 +35,11 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_FAIL;
 
    /* input data needs to be atleast 12 bytes */
-   if (im->fsize < HEIF_BYTES_TO_CHECK)
+   if (im->fi->fsize < HEIF_BYTES_TO_CHECK)
       return rc;
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
-
    /* check signature */
-   switch (heif_check_filetype(fdata, im->fsize))
+   switch (heif_check_filetype(im->fi->fdata, im->fi->fsize))
      {
      case heif_filetype_no:
      case heif_filetype_yes_unsupported:
@@ -57,8 +56,8 @@ load2(ImlibImage * im, int load_data)
    if (!ctx)
       goto quit;
 
-   error = heif_context_read_from_memory_without_copy(ctx, fdata,
-                                                      im->fsize, NULL);
+   error = heif_context_read_from_memory_without_copy(ctx, im->fi->fdata,
+                                                      im->fi->fsize, NULL);
    if (error.code != heif_error_Ok)
       goto quit;
 
@@ -78,7 +77,7 @@ load2(ImlibImage * im, int load_data)
       goto quit;
 
    img_has_alpha = heif_image_handle_has_alpha_channel(img_handle);
-   IM_FLAG_UPDATE(im, F_HAS_ALPHA, img_has_alpha);
+   im->has_alpha = img_has_alpha;
 
    if (!load_data)
      {
@@ -151,16 +150,7 @@ load2(ImlibImage * im, int load_data)
    heif_context_free(ctx);
    heif_decoding_options_free(decode_opts);
 
-   munmap(fdata, im->fsize);
-
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] =
-      { "heif", "heifs", "heic", "heics", "avci", "avcs", "avif", "avifs" };
-   __imlib_LoaderSetFormats(l, list_formats,
-                            sizeof(list_formats) / sizeof(char *));
-}
+IMLIB_LOADER(_formats, _load, NULL);

@@ -11,8 +11,9 @@
 #include <math.h>
 #include <locale.h>
 
-Display            *disp;
-Window              win;
+#include "prog_x11.h"
+
+static Window       win;
 
 void                progress(Imlib_Image * im, char percent, int update_x,
                              int update_y, int update_w, int update_h);
@@ -21,7 +22,6 @@ void
 progress(Imlib_Image * im, char percent,
          int update_x, int update_y, int update_w, int update_h)
 {
-   imlib_context_set_display(disp);
    imlib_context_set_drawable(win);
    imlib_context_set_dither(0);
    imlib_context_set_blend(0);
@@ -44,7 +44,6 @@ main(int argc, char **argv)
    struct timeval      timev;
    double              sec;
    const char         *file = NULL;
-   const char         *fon = NULL, *str = NULL;
 
    int                 root = 0;
    int                 scale = 0;
@@ -56,7 +55,10 @@ main(int argc, char **argv)
    int                 blend = 1;
    int                 interactive = 1;
    int                 blendtest = 0;
+
+#if ENABLE_FILTERS
    int                 filter = 0;
+#endif
    int                 pol = 0;
    int                 rotate = 0;
    int                 rottest = 0;
@@ -69,11 +71,15 @@ main(int argc, char **argv)
 #endif
    Imlib_Color_Modifier colormod = 0;
    ImlibPolygon        poly, poly2, poly3;
+
+#if ENABLE_TEXT
+   const char         *fon = NULL, *str = NULL;
    int                 textdir = IMLIB_TEXT_TO_RIGHT;
-   int                 xfdtest = 0;
    int                 xfdcachetest = 0;
    char               *xfdfname = NULL;
    int                 xfdloop = 1;
+   int                 xfdtest = 0;
+#endif
 
    /* now we'll set the locale */
    setlocale(LC_ALL, "");
@@ -112,18 +118,24 @@ main(int argc, char **argv)
            ("-font\t\tLoads a font. The parameter must follow the police_name/size format. Example: loading the grunge font at size 18 is : grunge/18.\n\t\tThe XFD font also can be specified. Ex. 'notepad/32,-*--24-*'.\n");
         printf("-poly\t\tPerforms a poly test\n");
         printf("The following options requires a file to work properly.\n");
+#if ENABLE_TEXT
         printf("-textdir\t\tText Direction. 0: L to R, 1: R to L\n");
         printf("                            2: U to D, 3: D to U, 4: angle\n");
         printf("-xfdtest\t\tXFD Font queue test.\n");
         printf
            ("-xfdcachetest <f> [<l>]\t\tXFD tFont cache test.\n\t\tThe file f is drawn l times\n");
+#endif
         printf("-blast\t\tDisplays the file.\n");
         printf("-loop\t\tScales down the image.\n");
         printf("-blendtest\tPerforms a blending test on the file.\n");
         printf("-rotatetest\tPerforms a rotate test on the file.\n");
+#if ENABLE_FILTERS
         printf
            ("-filter\t\tPerforms filtering. Possible filters are,\n\t\t\t1:Blur filter, 2:Sharpen filter, 3:Color blur filter, \n\t\t\t4:Emboss filter, 5:Grayscale filter, 6:Saturation filter,\n\t\t\t7:Edge detection filter.\n");
+#endif
+#if 0
         printf("-bmp2pt\t\tPerformas Bump Mapping to a point\n");
+#endif
         return 0;
      }
 
@@ -199,6 +211,7 @@ main(int argc, char **argv)
              i++;
              imlib_set_color_usage(atoi(argv[i]));
           }
+#if ENABLE_TEXT
         else if (!strcmp(argv[i], "-font"))
           {
              i++;
@@ -225,13 +238,16 @@ main(int argc, char **argv)
              i++;
              textdir = atoi(argv[i]);
           }
+#endif
         else if (!strcmp(argv[i], "-rotate"))
            rotate = 1;
+#if ENABLE_FILTERS
         else if (!strcmp(argv[i], "-filter"))
           {
              filter = atoi(argv[++i]);
              interactive = 0;
           }
+#endif
         else if (!strcmp(argv[i], "-rotatetest"))
           {
              rottest = 1;
@@ -251,16 +267,7 @@ main(int argc, char **argv)
     */
    if (!blendtest)
      {
-        const char         *display_name = getenv("DISPLAY");
-
-        if (!display_name)
-           display_name = ":0";
-        disp = XOpenDisplay(display_name);
-        if (!disp)
-          {
-             fprintf(stderr, "Can't open display %s\n", display_name);
-             return 1;
-          }
+        prog_x11_init();
 #if 0
         /* nasty - using imlib internal function.. but it makes benchmarks fair */
         if (!interactive)
@@ -269,14 +276,9 @@ main(int argc, char **argv)
         if (root)
            win = DefaultRootWindow(disp);
         else
-          {
-             win =
-                XCreateSimpleWindow(disp, DefaultRootWindow(disp), 0, 0, 10,
-                                    10, 0, 0, 0);
-             XSelectInput(disp, win, KeyPressMask |
-                          ButtonPressMask | ButtonReleaseMask | ButtonMotionMask
-                          | PointerMotionMask | ExposureMask);
-          }
+           win = prog_x11_create_window("imlib2_show", 100, 100);
+
+        imlib_context_set_drawable(win);
      }
 
    if (!interactive)
@@ -322,13 +324,6 @@ main(int argc, char **argv)
     */
    printf("rend\n");
 
-   if (!blendtest)
-     {
-        imlib_context_set_display(disp);
-        imlib_context_set_visual(DefaultVisual(disp, DefaultScreen(disp)));
-        imlib_context_set_colormap(DefaultColormap(disp, DefaultScreen(disp)));
-        imlib_context_set_drawable(win);
-     }
    imlib_context_set_anti_alias(aa);
    imlib_context_set_dither(dith);
    imlib_context_set_blend(blend);
@@ -682,6 +677,7 @@ main(int argc, char **argv)
           }
         imlib_free_image();
      }
+#if ENABLE_FILTERS
    else if (filter)
      {
         imlib_context_set_filter(imlib_create_filter(0));
@@ -766,6 +762,7 @@ main(int argc, char **argv)
           }
         imlib_free_filter();
      }
+#endif /* ENABLE_FILTERS */
    else if (interactive)
      {
         int                 px, py, first = 1;
@@ -776,6 +773,8 @@ main(int argc, char **argv)
         int                 x, y;
         XEvent              ev;
         KeySym              keysym;
+
+#if ENABLE_TEXT
         Imlib_Font          fn = NULL;
         struct font_hdr {
            int                 type;
@@ -908,6 +907,7 @@ main(int argc, char **argv)
              if (!fn)
                 fon = NULL;
           }
+#endif /* ENABLE_TEXT */
 
         imlib_context_set_progress_function(NULL);
         imlib_context_set_progress_granularity(0);
@@ -936,6 +936,10 @@ main(int argc, char **argv)
                   XNextEvent(disp, &ev);
                   switch (ev.type)
                     {
+                    default:
+                       if (prog_x11_event(&ev))
+                          goto quit;
+                       break;
                     case Expose:
                        up = imlib_update_append_rect(up,
                                                      ev.xexpose.x,
@@ -949,18 +953,17 @@ main(int argc, char **argv)
                           goto quit;
                        break;
                     case ButtonRelease:
+#if ENABLE_TEXT
                        if (fon)
                          {
                             imlib_context_set_font(fn);
                             imlib_free_font();
                          }
+#endif
                        goto quit;
                     case MotionNotify:
                        x = ev.xmotion.x;
                        y = ev.xmotion.y;
-                    default:
-                       break;
-
                     }
                }
              while (XPending(disp));
@@ -1156,6 +1159,7 @@ main(int argc, char **argv)
                 imlib_context_set_operation(IMLIB_OP_COPY);
              }
 
+#if ENABLE_TEXT
              if (xfdcachetest)
                {
                   int                 l;
@@ -1273,6 +1277,7 @@ main(int argc, char **argv)
                               cx2, cy2, cw2, ch2);
                     }
                }
+#endif /* ENABLE_TEXT */
              imlib_context_set_blend(1);
              if ((px != x) || (py != y))
                {

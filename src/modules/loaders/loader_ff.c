@@ -1,20 +1,22 @@
 /* Farbfeld (http://tools.suckless.org/farbfeld) */
-#include "loader_common.h"
+#include "config.h"
+#include "Imlib2_Loader.h"
 
 #include <arpa/inet.h>
 
-#define mm_check(p) ((const char *)(p) <= (const char *)fdata + im->fsize)
+static const char  *const _formats[] = { "ff" };
+
+#define mm_check(p) ((const char *)(p) <= (const char *)im->fi->fdata + im->fi->fsize)
 
 typedef struct {
    unsigned char       magic[8];
    uint32_t            w, h;
 } ff_hdr_t;
 
-int
-load2(ImlibImage * im, int load_data)
+static int
+_load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   void               *fdata;
    int                 rowlen, i, j;
    const ff_hdr_t     *hdr;
    const uint16_t     *row;
@@ -22,15 +24,11 @@ load2(ImlibImage * im, int load_data)
 
    rc = LOAD_FAIL;
 
-   if (im->fsize < (long)sizeof(ff_hdr_t))
+   if (im->fi->fsize < (long)sizeof(ff_hdr_t))
       return rc;
 
-   fdata = mmap(NULL, im->fsize, PROT_READ, MAP_SHARED, fileno(im->fp), 0);
-   if (fdata == MAP_FAILED)
-      return LOAD_BADFILE;
-
    /* read and check the header */
-   hdr = fdata;
+   hdr = im->fi->fdata;
    if (memcmp("farbfeld", hdr->magic, sizeof(hdr->magic)))
       goto quit;
 
@@ -41,7 +39,7 @@ load2(ImlibImage * im, int load_data)
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
       goto quit;
 
-   IM_FLAG_SET(im, F_HAS_ALPHA);
+   im->has_alpha = 1;
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -79,13 +77,11 @@ load2(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   munmap(fdata, im->fsize);
-
    return rc;
 }
 
-char
-save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
+static int
+_save(ImlibImage * im)
 {
    int                 rc;
    FILE               *f;
@@ -94,7 +90,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    uint16_t           *row;
    uint8_t            *dat;
 
-   f = fopen(im->real_file, "wb");
+   f = fopen(im->fi->name, "wb");
    if (!f)
       return LOAD_FAIL;
 
@@ -148,9 +144,4 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    return rc;
 }
 
-void
-formats(ImlibLoader * l)
-{
-   static const char  *const list_formats[] = { "ff" };
-   __imlib_LoaderSetFormats(l, list_formats, ARRAY_SIZE(list_formats));
-}
+IMLIB_LOADER(_formats, _load, _save);
