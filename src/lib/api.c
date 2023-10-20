@@ -5172,7 +5172,7 @@ imlib_filter_divisors(int a, int r, int g, int b)
 }
 
 EAPI void
-imlib_apply_filter(char *script, ...)
+imlib_apply_filter(const char *script, ...)
 {
    va_list             param_list;
    ImlibImage         *im;

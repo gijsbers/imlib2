@@ -13,10 +13,11 @@
 static char         _x_err = 0;
 static DATA8        rtab[256], gtab[256], btab[256];
 
-static void
+static int
 Tmp_HandleXError(Display * d, XErrorEvent * ev)
 {
    _x_err = 1;
+   return 0;
 }
 
 void
@@ -540,7 +541,7 @@ __imlib_GrabDrawableToRGBA(DATA32 * data, int ox, int oy, int ow, int oh,
    if (grab)
       XGrabServer(d);
    XSync(d, False);
-   prev_erh = XSetErrorHandler((XErrorHandler) Tmp_HandleXError);
+   prev_erh = XSetErrorHandler(Tmp_HandleXError);
    _x_err = 0;
    /* lets see if its a pixmap or not */
    XGetWindowAttributes(d, p, &xatt);

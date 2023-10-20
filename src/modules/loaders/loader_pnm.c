@@ -139,9 +139,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         DATA8              *data = NULL;        /* for the binary versions */
         DATA8              *ptr = NULL;
         int                *idata = NULL;       /* for the ASCII versions */
-        int                *iptr;
-        char                buf2[256];
-        DATA32             *ptr2;
+        DATA32             *ptr2, rval, gval, bval;
         int                 i, j, x, y, pl = 0;
         char                pper = 0;
 
@@ -154,33 +152,20 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         switch (p)
           {
           case '1':            /* ASCII monochrome */
-             buf[0] = 0;
-             i = 0;
              for (y = 0; y < h; y++)
                {
-                  x = 0;
-                  while (x < w)
+                  for (x = 0; x < w; x++)
                     {
-                       if (!buf[i])     /* fill buffer */
-                         {
-                            if (!fgets(buf, 255, f))
-                               goto quit_error;
-                            i = 0;
-                         }
-                       while (buf[i] && isspace(buf[i]))
-                          i++;
-                       if (buf[i])
-                         {
-                            if (buf[i] == '1')
-                               *ptr2 = 0xff000000;
-                            else if (buf[i] == '0')
-                               *ptr2 = 0xffffffff;
-                            else
-                               goto quit_error;
-                            ptr2++;
-                            i++;
-                            x++;
-                         }
+                       j = fscanf(f, "%u", &gval);
+                       if (j <= 0)
+                          goto quit_error;
+
+                       if (gval == 1)
+                          *ptr2++ = 0xff000000;
+                       else if (gval == 0)
+                          *ptr2++ = 0xffffffff;
+                       else
+                          goto quit_error;
                     }
                   if (progress &&
                       do_progress(im, progress, progress_granularity,
@@ -189,71 +174,27 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                }
              break;
           case '2':            /* ASCII greyscale */
-             idata = malloc(sizeof(int) * w);
-             if (!idata)
-                goto quit_error;
-
-             buf[0] = 0;
-             i = 0;
-             j = 0;
              for (y = 0; y < h; y++)
                {
-                  iptr = idata;
-                  x = 0;
-                  while (x < w)
+                  for (x = 0; x < w; x++)
                     {
-                       int                 k;
+                       j = fscanf(f, "%u", &gval);
+                       if (j <= 0)
+                          goto quit_error;
 
-                       /* check 4 chars ahead to see if we need to
-                        * fill the buffer */
-                       for (k = 0; k < 4; k++)
+                       if (v == 0 || v == 255)
                          {
-                            if (!buf[i + k])    /* fill buffer */
-                              {
-                                 if (fseek(f, -k, SEEK_CUR) == -1 ||
-                                     !fgets(buf, 255, f))
-                                    goto quit_error;
-                                 i = 0;
-                                 break;
-                              }
+                            *ptr2++ =
+                               0xff000000 | (gval << 16) | (gval << 8) | gval;
                          }
-                       while (buf[i] && isspace(buf[i]))
-                          i++;
-                       while (buf[i] && !isspace(buf[i]))
-                          buf2[j++] = buf[i++];
-                       if (j)
+                       else
                          {
-                            buf2[j] = 0;
-                            *(iptr++) = atoi(buf2);
-                            j = 0;
-                            x++;
+                            *ptr2++ =
+                               0xff000000 | (((gval * 255) / v) << 16) |
+                               (((gval * 255) / v) << 8) | ((gval * 255) / v);
                          }
                     }
-                  iptr = idata;
-                  if (v == 0 || v == 255)
-                    {
-                       for (x = 0; x < w; x++)
-                         {
-                            *ptr2 =
-                               0xff000000 | (iptr[0] << 16) | (iptr[0] << 8)
-                               | iptr[0];
-                            ptr2++;
-                            iptr++;
-                         }
-                    }
-                  else
-                    {
-                       for (x = 0; x < w; x++)
-                         {
-                            *ptr2 =
-                               0xff000000 |
-                               (((iptr[0] * 255) / v) << 16) |
-                               (((iptr[0] * 255) / v) << 8) |
-                               ((iptr[0] * 255) / v);
-                            ptr2++;
-                            iptr++;
-                         }
-                    }
+
                   if (progress &&
                       do_progress(im, progress, progress_granularity,
                                   &pper, &pl, y))
@@ -261,71 +202,25 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                }
              break;
           case '3':            /* ASCII RGB */
-             idata = malloc(3 * sizeof(int) * w);
-             if (!idata)
-                goto quit_error;
-
-             buf[0] = 0;
-             i = 0;
-             j = 0;
              for (y = 0; y < h; y++)
                {
-                  int                 w3 = 3 * w;
+                  for (x = 0; x < w; x++)
+                    {
+                       j = fscanf(f, "%u %u %u", &rval, &gval, &bval);
+                       if (j <= 2)
+                          goto quit_error;
 
-                  iptr = idata;
-                  x = 0;
-                  while (x < w3)
-                    {
-                       int                 k;
-
-                       /* check 4 chars ahead to see if we need to
-                        * fill the buffer */
-                       for (k = 0; k < 4; k++)
+                       if (v == 0 || v == 255)
                          {
-                            if (!buf[i + k])    /* fill buffer */
-                              {
-                                 if (fseek(f, -k, SEEK_CUR) == -1 ||
-                                     !fgets(buf, 255, f))
-                                    goto quit_error;
-                                 i = 0;
-                                 break;
-                              }
+                            *ptr2++ =
+                               0xff000000 | (rval << 16) | (gval << 8) | bval;
                          }
-                       while (buf[i] && isspace(buf[i]))
-                          i++;
-                       while (buf[i] && !isspace(buf[i]))
-                          buf2[j++] = buf[i++];
-                       if (j)
+                       else
                          {
-                            buf2[j] = 0;
-                            *(iptr++) = atoi(buf2);
-                            j = 0;
-                            x++;
-                         }
-                    }
-                  iptr = idata;
-                  if (v == 0 || v == 255)
-                    {
-                       for (x = 0; x < w; x++)
-                         {
-                            *ptr2 =
-                               0xff000000 | (iptr[0] << 16) | (iptr[1] << 8)
-                               | iptr[2];
-                            ptr2++;
-                            iptr += 3;
-                         }
-                    }
-                  else
-                    {
-                       for (x = 0; x < w; x++)
-                         {
-                            *ptr2 =
+                            *ptr2++ =
                                0xff000000 |
-                               (((iptr[0] * 255) / v) << 16) |
-                               (((iptr[1] * 255) / v) << 8) |
-                               ((iptr[2] * 255) / v);
-                            ptr2++;
-                            iptr += 3;
+                               (((rval * 255) / v) << 16) |
+                               (((gval * 255) / v) << 8) | ((bval * 255) / v);
                          }
                     }
                   if (progress &&

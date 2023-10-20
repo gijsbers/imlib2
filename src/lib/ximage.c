@@ -77,13 +77,18 @@ ShmCheck(Display * d)
    if (s)
      {
         val = atoi(s);
+#ifdef HAVE_X11_SHM_FD
         if (val == 0)
            x_does_shm = x_does_shm_fd = 0;      /* Disable SHM entirely */
         else if (val == 1)
            x_does_shm_fd = 0;   /* Disable SHM-FD */
-
         printf("%s: x_does_shm=%d x_does_shm_fd=%d\n", __func__,
                x_does_shm, x_does_shm_fd);
+#else
+        if (val == 0)
+           x_does_shm = 0;      /* Disable SHM entirely */
+        printf("%s: x_does_shm=%d\n", __func__, x_does_shm);
+#endif
      }
 
    /* Set ximage cache list_max_count */

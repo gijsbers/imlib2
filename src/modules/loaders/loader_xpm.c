@@ -145,6 +145,8 @@ load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
    cmap = NULL;
    w = 10;
    h = 10;
+   ncolors = 0;
+   cpp = 0;
    ptr = NULL;
    end = NULL;
    c = ' ';

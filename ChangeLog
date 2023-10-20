@@ -1,5 +1,25 @@
 
 ***
+*** Version 1.5.1 ***
+***
+
+Kim Woelders (13):
+      Fix build without HAVE_X11_SHM_FD (T6752)
+      XPM loader: Fix potential use of uninitialized value (T6746)
+      BMP loader: Fix infinite loop with invalid bmp images (T6749)
+      PNM loader: Simplify (fixing ASCII format parsing issues T6751)
+      BMP loader: Fix warnings found with -O3
+      Maximum image dimension should be 32767, not 32766
+      PNG loader: Correct various error handling cases
+      Add missing const to imlib_apply_filter() script argument
+      Warning fixes in imlib2_... programs
+      imlib2_view: Limit window dimensions to 32767
+      grab.c: Fix gcc8 warning
+      imlib2_conv.c: Fix gcc8 warning
+      1.5.1.
+
+
+***
 *** Version 1.5.0 ***
 ***
 

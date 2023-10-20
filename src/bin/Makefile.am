@@ -1,5 +1,6 @@
 MAINTAINERCLEANFILES = Makefile.in
 
+AM_CFLAGS   = $(CFLAGS_WARNINGS)
 AM_CPPFLAGS = \
 -DPACKAGE_DATA_DIR=\"$(datadir)/$(PACKAGE)\" \
 -I$(top_srcdir)/src/lib \

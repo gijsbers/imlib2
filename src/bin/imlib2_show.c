@@ -54,14 +54,14 @@ progress(Imlib_Image * im, char percent,
 int
 main(int argc, char **argv)
 {
-   int                 i;
+   int                 i, j;
    Imlib_Image        *im = NULL;
    int                 sec1, usec1, sec2, usec2;
    int                 pixels = 0;
    struct timeval      timev;
    double              sec;
-   char               *file = NULL;
-   char               *fon = NULL, *str = NULL;
+   const char         *file = NULL;
+   const char         *fon = NULL, *str = NULL;
 
    int                 root = 0;
    int                 scale = 0;
@@ -180,7 +180,6 @@ main(int argc, char **argv)
           {
              DATA8               rt[256], gt[256], bt[256], at[256];
              double              rm, gm, bm, am;
-             int                 j;
 
              /*\ Setup color mod tables \ */
              if (!colormod)
@@ -379,9 +378,8 @@ main(int argc, char **argv)
 #define A90 (3.141592654 / 2)
    if (pol)
      {
-        Imlib_Image         im_bg, im;
-        int                 w, h;
-        int                 i;
+        Imlib_Image         im_bg, im_tmp;
+        int                 ww, hh;
         double              a, points[8][2];
 
         if (file)
@@ -389,31 +387,31 @@ main(int argc, char **argv)
         else
            im_bg = imlib_load_image(PACKAGE_DATA_DIR "/data/images/bg.png");
         imlib_context_set_image(im_bg);
-        w = imlib_image_get_width();
-        h = imlib_image_get_height();
-        XResizeWindow(disp, win, w, h);
+        ww = imlib_image_get_width();
+        hh = imlib_image_get_height();
+        XResizeWindow(disp, win, ww, hh);
         XSync(disp, False);
-        im = imlib_create_image(w, h);
+        im_tmp = imlib_create_image(ww, hh);
         srand(time(NULL));
         for (i = 0; i < 8; i++)
           {
-             points[i][0] = (rand() % w) - (w / 2);
-             points[i][1] = (rand() % h) - (h / 2);
+             points[i][0] = (rand() % ww) - (ww / 2);
+             points[i][1] = (rand() % hh) - (hh / 2);
           }
         a = 0.0;
         for (;;)
           {
-             imlib_context_set_image(im);
-             imlib_blend_image_onto_image(im_bg, 0, 0, 0, w, h, 0, 0, w, h);
+             imlib_context_set_image(im_tmp);
+             imlib_blend_image_onto_image(im_bg, 0, 0, 0, ww, hh, 0, 0, ww, hh);
 
              poly = imlib_polygon_new();
              for (i = 0; i < 8; i++)
                {
                   double              xx, yy;
 
-                  xx = (w / 2) +
+                  xx = (ww / 2) +
                      (cos(a) * points[i][0]) + (cos(a + A90) * points[i][1]);
-                  yy = (h / 2) +
+                  yy = (hh / 2) +
                      (sin(a) * points[i][0]) + (sin(a + A90) * points[i][1]);
                   imlib_polygon_add_point(poly, xx, yy);
                }
@@ -641,8 +639,7 @@ main(int argc, char **argv)
      }
    else if (rottest)
      {
-        int                 w, h;
-        double              i;
+        double              id;
 
         imlib_context_set_image(im);
         imlib_render_image_on_drawable(0, 0);
@@ -653,51 +650,51 @@ main(int argc, char **argv)
 
         imlib_context_set_blend(1);
         imlib_context_set_image(imlib_create_image(w, h));
-        for (i = 0; i < 1; i += 0.01)
+        for (id = 0; id < 1; id += 0.01)
           {
              imlib_blend_image_onto_image(im, 0, 0, 0, w, h, 0, 0, w, h);
              imlib_context_set_color_modifier(colormod);
              imlib_blend_image_onto_image_at_angle(im, 0, 0, 0, w, h,
-                                                   0, h * i,
-                                                   w * (1 - i), -(h * i));
+                                                   0, h * id,
+                                                   w * (1 - id), -(h * id));
              imlib_context_set_color_modifier(NULL);
              imlib_render_image_on_drawable(0, 0);
              pixels += w * h;
           }
-        for (i = 0; i < 1; i += 0.01)
+        for (id = 0; id < 1; id += 0.01)
           {
              imlib_blend_image_onto_image(im, 0, 0, 0, w, h, 0, 0, w, h);
              imlib_context_set_color_modifier(colormod);
              imlib_context_set_operation(IMLIB_OP_ADD);
              imlib_blend_image_onto_image_at_angle(im, 0, 0, 0, w, h,
-                                                   w * i, h,
-                                                   -(w * i), h * (i - 1));
+                                                   w * id, h,
+                                                   -(w * id), h * (id - 1));
              imlib_context_set_operation(IMLIB_OP_COPY);
              imlib_context_set_color_modifier(NULL);
              imlib_render_image_on_drawable(0, 0);
              pixels += w * h;
           }
-        for (i = 0; i < 1; i += 0.01)
+        for (id = 0; id < 1; id += 0.01)
           {
              imlib_blend_image_onto_image(im, 0, 0, 0, w, h, 0, 0, w, h);
              imlib_context_set_color_modifier(colormod);
              imlib_context_set_operation(IMLIB_OP_SUBTRACT);
              imlib_blend_image_onto_image_at_angle(im, 0, 0, 0, w, h,
-                                                   w, h * (1 - i),
-                                                   w * (i - 1), h * i);
+                                                   w, h * (1 - id),
+                                                   w * (id - 1), h * id);
              imlib_context_set_operation(IMLIB_OP_COPY);
              imlib_context_set_color_modifier(NULL);
              imlib_render_image_on_drawable(0, 0);
              pixels += w * h;
           }
-        for (i = 0; i < 1; i += 0.01)
+        for (id = 0; id < 1; id += 0.01)
           {
              imlib_blend_image_onto_image(im, 0, 0, 0, w, h, 0, 0, w, h);
              imlib_context_set_color_modifier(colormod);
              imlib_context_set_operation(IMLIB_OP_RESHADE);
              imlib_blend_image_onto_image_at_angle(im, 0, 0, 0, w, h,
-                                                   w * (1 - i), 0,
-                                                   w * i, h * (1 - i));
+                                                   w * (1 - id), 0,
+                                                   w * id, h * (1 - id));
              imlib_context_set_operation(IMLIB_OP_COPY);
              imlib_context_set_color_modifier(NULL);
              imlib_render_image_on_drawable(0, 0);
@@ -796,7 +793,7 @@ main(int argc, char **argv)
 
         /* Imlib_Border border; */
         Imlib_Updates       up = NULL;
-        int                 x, y, i, j;
+        int                 x, y;
         XEvent              ev;
         Imlib_Font          fn = NULL;
         struct font_hdr {
@@ -920,8 +917,6 @@ main(int argc, char **argv)
 
              if (xfdtest)
                {
-                  int                 i;
-
                   f = fn;
                   if (fn && f->type & 2)
                      for (i = 0; i < f->font_count; i++)
@@ -1026,17 +1021,17 @@ main(int argc, char **argv)
              else if (rotate)
                {
                   double              s, c;
-                  int                 x1, y1, x2, y2, w, h;
+                  int                 x1, y1, x2, y2, ww, hh;
 
-                  w = imlib_image_get_width();
-                  h = imlib_image_get_height();
-                  s = sin(6.2831853 * (double)y / (double)h);
-                  c = cos(6.2831853 * (double)y / (double)h);
+                  ww = imlib_image_get_width();
+                  hh = imlib_image_get_height();
+                  s = sin(6.2831853 * (double)y / (double)hh);
+                  c = cos(6.2831853 * (double)y / (double)hh);
 
-                  x1 = (w - w * c + h * s) / 2;
-                  y1 = (h - h * c - w * s) / 2;
-                  x2 = (w + w * c - h * s) / 2;
-                  y2 = (h + h * c + w * s) / 2;
+                  x1 = (ww - ww * c + hh * s) / 2;
+                  y1 = (hh - hh * c - ww * s) / 2;
+                  x2 = (ww + ww * c - hh * s) / 2;
+                  y2 = (hh + hh * c + ww * s) / 2;
 
                   imlib_context_set_blend(1);
                   imlib_blend_image_onto_image_at_angle(im_bg, 0,
@@ -1182,11 +1177,11 @@ main(int argc, char **argv)
                   int                 l;
                   int                 retw, reth, tx, ty, nx, ny;
                   int                 secs, usecs, sece, usece;
-                  FILE               *f;
+                  FILE               *ff;
                   char                buf[129];
 
-                  f = fopen(xfdfname, "r");
-                  if (!f)
+                  ff = fopen(xfdfname, "r");
+                  if (!ff)
                     {
                        printf("file %s can not be opened!\n", file);
                        exit(-1);
@@ -1202,8 +1197,8 @@ main(int argc, char **argv)
                   l = xfdloop;
                   while (l)
                     {
-                       fseek(f, 0, SEEK_SET);
-                       while (fgets(buf, 128, f))
+                       fseek(ff, 0, SEEK_SET);
+                       while (fgets(buf, 128, ff))
                          {
                             if (buf[strlen(buf) - 1] == '\n')
                                buf[strlen(buf) - 1] = '\0';
@@ -1230,7 +1225,7 @@ main(int argc, char **argv)
                      sec = t2 - t1;
                   }
                   printf("%3.3f sec\n", sec);
-
+                  fclose(ff);
                }
              else if (fon)
                {

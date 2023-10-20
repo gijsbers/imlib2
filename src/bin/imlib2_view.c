@@ -22,13 +22,17 @@ Colormap            cm;
 int                 depth;
 int                 image_width = 0, image_height = 0;
 int                 window_width = 0, window_height = 0;
-double              scale = 1.;
+double              scale_x = 1.;
+double              scale_y = 1.;
 Imlib_Image         bg_im = NULL;
 
 static Atom         ATOM_WM_DELETE_WINDOW = None;
 static Atom         ATOM_WM_PROTOCOLS = None;
 
-#define SCALE(x) (int)(scale * (x) + .5)
+#define MAX_DIM	32767
+
+#define SCALE_X(x) (int)(scale_x * (x) + .5)
+#define SCALE_Y(x) (int)(scale_y * (x) + .5)
 
 static int
 progress(Imlib_Image im, char percent, int update_x, int update_y,
@@ -48,8 +52,18 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
         imlib_context_set_image(im);
         image_width = imlib_image_get_width();
         image_height = imlib_image_get_height();
-        window_width = SCALE(image_width);
-        window_height = SCALE(image_height);
+        window_width = SCALE_X(image_width);
+        window_height = SCALE_Y(image_height);
+        if (window_width > MAX_DIM)
+          {
+             window_width = MAX_DIM;
+             scale_x = (double)MAX_DIM / image_width;
+          }
+        if (window_height > MAX_DIM)
+          {
+             window_height = MAX_DIM;
+             scale_y = (double)MAX_DIM / image_height;
+          }
         if (pm)
            XFreePixmap(disp, pm);
         pm = XCreatePixmap(disp, win, window_width, window_height, depth);
@@ -93,10 +107,10 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
                                 update_x, update_y, update_w, update_h,
                                 update_x, update_y, update_w, update_h);
 
-   up_wx = SCALE(update_x);
-   up_wy = SCALE(update_y);
-   up_ww = SCALE(update_w);
-   up_wh = SCALE(update_h);
+   up_wx = SCALE_X(update_x);
+   up_wy = SCALE_Y(update_y);
+   up_ww = SCALE_X(update_w);
+   up_wh = SCALE_Y(update_h);
    imlib_context_set_blend(0);
    imlib_render_image_part_on_drawable_at_size(update_x, update_y,
                                                update_w, update_h,
@@ -125,7 +139,7 @@ main(int argc, char **argv)
              break;
           case 's':            /* Scale (window size wrt. image size) */
              if (++no < argc)
-                scale = atof(argv[no]);
+                scale_x = scale_y = atof(argv[no]);
              break;
           }
      }

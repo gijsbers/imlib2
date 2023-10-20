@@ -66,6 +66,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
           }
         if (setjmp(png_jmpbuf(png_ptr)))
           {
+             im->w = 0;
              png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
              fclose(f);
              return 0;
@@ -75,16 +76,15 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         png_get_IHDR(png_ptr, info_ptr, (png_uint_32 *) (&w32),
                      (png_uint_32 *) (&h32), &bit_depth, &color_type,
                      &interlace_type, NULL, NULL);
-        im->w = (int)w32;
-        im->h = (int)h32;
         if (!IMAGE_DIMENSIONS_OK(w32, h32))
           {
-             png_read_end(png_ptr, info_ptr);
+             im->w = 0;
              png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
              fclose(f);
-             im->w = 0;
              return 0;
           }
+        im->w = (int)w32;
+        im->h = (int)h32;
         if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
            hasa = 1;
         if (color_type == PNG_COLOR_TYPE_RGB_ALPHA)
@@ -153,7 +153,6 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         if (!im->data)
           {
              im->w = 0;
-             png_read_end(png_ptr, info_ptr);
              png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
              fclose(f);
              return 0;
@@ -165,7 +164,6 @@ load(ImlibImage * im, ImlibProgressFunction progress,
              free(im->data);
              im->data = NULL;
              im->w = 0;
-             png_read_end(png_ptr, info_ptr);
              png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
              fclose(f);
              return 0;

@@ -17,7 +17,7 @@
 Display            *disp;
 Visual             *vis;
 Colormap            cm;
-int                 depth;
+unsigned int        depth;
 int                 image_width = 0, image_height = 0;
 
 static void
@@ -38,7 +38,7 @@ main(int argc, char **argv)
    const char         *display_name = getenv("DISPLAY");
    Drawable            draw;
    int                 x, y;
-   unsigned int        w, h, bw, depth;
+   unsigned int        w, h, bw;
    unsigned int        wo, ho;
    Window              rr;
 

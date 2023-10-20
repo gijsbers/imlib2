@@ -59,11 +59,9 @@ main(int argc, char **argv)
              char               *p, *q;
 
              /* max length of 8 for format name. seems reasonable. */
-             q = p = malloc(9);
-             memset(p, 0, 8);
-             strncpy(p, dot, (strlen(dot) < 9) ? strlen(dot) : 8);
+             p = strndup(dot, 8);
              /* Imlib2 only recognizes lowercase formats. convert it. */
-             for (q[8] = 0; *q; q++)
+             for (q = p; *q; q++)
                 *q = tolower(*q);
              imlib_image_set_format(p);
              free(p);

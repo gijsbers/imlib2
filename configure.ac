@@ -1,7 +1,7 @@
 # get rid of that stupid cache mechanism
 rm -f config.cache
 
-AC_INIT([imlib2], [1.5.0], [enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2], [1.5.1], [enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -23,7 +23,7 @@ define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
 VERSION_CUR=6
-VERSION_REV=0
+VERSION_REV=1
 VERSION_AGE=5
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)

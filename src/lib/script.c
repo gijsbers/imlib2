@@ -63,7 +63,7 @@ __imlib_stripwhitespace(char *str)
 }
 
 static char        *
-__imlib_copystr(char *str, int start, int end)
+__imlib_copystr(const char *str, int start, int end)
 {
    int                 i = 0;
    char               *rstr = calloc(1024, sizeof(char));
@@ -125,7 +125,7 @@ __imlib_script_add_var(void *ptr)
 }
 
 IFunctionParam     *
-__imlib_script_parse_parameters(ImlibImage * im, char *parameters)
+__imlib_script_parse_parameters(ImlibImage * im, const char *parameters)
 {
    int                 i = 0, in_quote = 0, depth = 0, start = 0, value_start =
       0;
@@ -199,7 +199,7 @@ __imlib_script_parse_parameters(ImlibImage * im, char *parameters)
 }
 
 ImlibImage         *
-__imlib_script_parse_function(ImlibImage * im, char *function)
+__imlib_script_parse_function(ImlibImage * im, const char *function)
 {
    char               *funcname, *funcparams;
    IFunctionParam     *params;
@@ -244,7 +244,7 @@ __imlib_script_parse_function(ImlibImage * im, char *function)
 }
 
 ImlibImage         *
-__imlib_script_parse(ImlibImage * im, char *script, va_list param_list)
+__imlib_script_parse(ImlibImage * im, const char *script, va_list param_list)
 {
    int                 i = 0, in_quote = 0, start = 0, depth = 0;
    int                 script_len;

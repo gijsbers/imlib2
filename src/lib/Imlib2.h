@@ -589,7 +589,7 @@ EAPI void           imlib_filter_set_blue(int xoff, int yoff,
 EAPI void           imlib_filter_constants(int a, int r, int g, int b);
 EAPI void           imlib_filter_divisors(int a, int r, int g, int b);
 
-EAPI void           imlib_apply_filter(char *script, ...);
+EAPI void           imlib_apply_filter(const char *script, ...);
 
 EAPI void           imlib_image_clear(void);
 EAPI void           imlib_image_clear_color(int r, int g, int b, int a);
