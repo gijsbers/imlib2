@@ -71,7 +71,7 @@ __imlib_AddRangeColor(ImlibRange * rg, DATA8 r, DATA8 g, DATA8 b, DATA8 a,
       rg->color = rc;
 }
 
-DATA32             *
+static DATA32      *
 __imlib_MapRange(ImlibRange * rg, int len)
 {
    ImlibRangeColor    *p;
@@ -142,7 +142,7 @@ __imlib_MapRange(ImlibRange * rg, int len)
    return map;
 }
 
-DATA32             *
+static DATA32      *
 __imlib_MapHsvaRange(ImlibRange * rg, int len)
 {
    ImlibRangeColor    *p;

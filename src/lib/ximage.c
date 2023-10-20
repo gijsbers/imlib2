@@ -3,20 +3,32 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/XShm.h>
 #include <X11/Xutil.h>
+#ifdef HAVE_X11_SHM_FD
+#include <X11/Xlib-xcb.h>
+#include <xcb/shm.h>
+#include <sys/mman.h>
+#endif
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
 #include "ximage.h"
 
-/* global flags */
-signed char         x_does_shm = -1;
+static signed char  x_does_shm = -1;
 
-/* static private variables */
+#ifdef HAVE_X11_SHM_FD
+static signed char  x_does_shm_fd = 0;
+#endif
+
+typedef struct {
+   XImage             *xim;
+   XShmSegmentInfo    *si;
+   Display            *dpy;
+   char                used;
+} xim_cache_rec_t;
+
+static xim_cache_rec_t *xim_cache = NULL;
+
 static int          list_num = 0;
-static XImage     **list_xim = NULL;
-static XShmSegmentInfo **list_si = NULL;
-static Display    **list_d = NULL;
-static char        *list_used = NULL;
 static int          list_mem_use = 0;
 static int          list_max_mem = 1024 * 1024 * 1024;
 static int          list_max_count = 0;
@@ -32,15 +44,58 @@ TmpXError(Display * d, XErrorEvent * ev)
    return 0;
 }
 
-void
-__imlib_ShmCheck(Display * d)
+static void
+ShmCheck(Display * d)
 {
+   const char         *s;
+   int                 val;
+
    /* if its there set x_does_shm flag */
    if (XShmQueryExtension(d))
-      x_does_shm = 2;           /* 2: __imlib_ShmGetXImage tests first XShmAttach */
+     {
+#ifdef HAVE_X11_SHM_FD
+        int                 major, minor;
+        Bool                pixmaps;
+#endif
+        x_does_shm = 2;         /* 2: __imlib_ShmGetXImage tests first XShmAttach */
+#ifdef HAVE_X11_SHM_FD
+        if (XShmQueryVersion(d, &major, &minor, &pixmaps))
+          {
+             x_does_shm_fd = (major == 1 && minor >= 2) || major > 1;
+          }
+#endif
+     }
    /* clear the flag - no shm at all */
    else
-      x_does_shm = 0;
+     {
+        x_does_shm = 0;
+        return;
+     }
+
+   /* Modify SHM handling if requested */
+   s = getenv("IMLIB2_SHM_OPT");
+   if (s)
+     {
+        val = atoi(s);
+        if (val == 0)
+           x_does_shm = x_does_shm_fd = 0;      /* Disable SHM entirely */
+        else if (val == 1)
+           x_does_shm_fd = 0;   /* Disable SHM-FD */
+
+        printf("%s: x_does_shm=%d x_does_shm_fd=%d\n", __func__,
+               x_does_shm, x_does_shm_fd);
+     }
+
+   /* Set ximage cache list_max_count */
+   s = getenv("IMLIB2_XIMAGE_CACHE_COUNT");
+   if (s)
+     {
+        val = atoi(s);
+        if (val > 0)
+           list_max_count = val;
+
+        printf("%s: list_max_count=%d\n", __func__, list_max_count);
+     }
 }
 
 XImage             *
@@ -49,60 +104,121 @@ __imlib_ShmGetXImage(Display * d, Visual * v, Drawable draw, int depth,
 {
    XImage             *xim;
 
+   if (x_does_shm < 0)
+      ShmCheck(d);
+
+   if (!x_does_shm)
+      return NULL;
+
    /* try create an shm image */
    xim = XShmCreateImage(d, v, depth, ZPixmap, NULL, si, w, h);
    if (!xim)
       return NULL;
 
-   /* get an shm id of this image */
-   si->shmid = shmget(IPC_PRIVATE, xim->bytes_per_line * xim->height,
-                      IPC_CREAT | 0666);
-   /* if the get succeeds */
-   if (si->shmid != -1)
+#ifdef HAVE_X11_SHM_FD
+   if (x_does_shm_fd)
      {
-        /* set the params for the shm segment */
-        si->readOnly = False;
-        si->shmaddr = xim->data = shmat(si->shmid, 0, 0);
-        /* get the shm addr for this data chunk */
-        if (xim->data != (char *)-1)
-          {
-             XErrorHandler       ph = NULL;
+        xcb_generic_error_t *error = NULL;
+        xcb_shm_create_segment_cookie_t cookie;
+        xcb_shm_create_segment_reply_t *reply;
+        xcb_connection_t   *c = XGetXCBConnection(d);
+        size_t              segment_size = xim->bytes_per_line * xim->height;
 
-             if (x_does_shm == 2)
+        si->shmaddr = NULL;
+        si->shmseg = xcb_generate_id(c);
+        si->readOnly = False;
+
+        cookie =
+           xcb_shm_create_segment(c, si->shmseg, segment_size, si->readOnly);
+        reply = xcb_shm_create_segment_reply(c, cookie, &error);
+        if (reply)
+          {
+             int                *fds;
+
+             fds = reply->nfd == 1 ?
+                xcb_shm_create_segment_reply_fds(c, reply) : NULL;
+             if (fds)
                {
-                  /* setup a temporary error handler */
-                  _x_err = 0;
-                  XSync(d, False);
-                  ph = XSetErrorHandler(TmpXError);
+                  si->shmaddr = mmap(0, segment_size, PROT_READ | PROT_WRITE,
+                                     MAP_SHARED, fds[0], 0);
+                  close(fds[0]);
+                  if (si->shmaddr == MAP_FAILED)
+                     si->shmaddr = NULL;
                }
-             /* ask X to attach to the shared mem segment */
-             XShmAttach(d, si);
+             if (si->shmaddr == NULL)
+               {
+                  xcb_shm_detach(c, si->shmseg);
+               }
+             free(reply);
+          }
+        free(error);
+
+        if (si->shmaddr)
+          {
+             xim->data = si->shmaddr;
              if (draw != None)
                 XShmGetImage(d, draw, xim, x, y, 0xffffffff);
-             if (x_does_shm == 2)
+
+             return xim;
+          }
+        else
+          {
+             x_does_shm = 0;
+          }
+     }
+   else
+#endif
+     {
+        /* get an shm id of this image */
+        si->shmid = shmget(IPC_PRIVATE, xim->bytes_per_line * xim->height,
+                           IPC_CREAT | 0666);
+        /* if the get succeeds */
+        if (si->shmid != -1)
+          {
+             /* set the params for the shm segment */
+             si->readOnly = False;
+             si->shmaddr = xim->data = shmat(si->shmid, 0, 0);
+             /* get the shm addr for this data chunk */
+             if (xim->data != (char *)-1)
                {
-                  /* wait for X to reply and do this */
-                  XSync(d, False);
-                  /* reset the error handler */
-                  XSetErrorHandler(ph);
-                  x_does_shm = 1;
+                  XErrorHandler       ph = NULL;
+
+                  if (x_does_shm == 2)
+                    {
+                       /* setup a temporary error handler */
+                       _x_err = 0;
+                       XSync(d, False);
+                       ph = XSetErrorHandler(TmpXError);
+                    }
+                  /* ask X to attach to the shared mem segment */
+                  XShmAttach(d, si);
+                  if (draw != None)
+                     XShmGetImage(d, draw, xim, x, y, 0xffffffff);
+                  if (x_does_shm == 2)
+                    {
+                       /* wait for X to reply and do this */
+                       XSync(d, False);
+                       /* reset the error handler */
+                       XSetErrorHandler(ph);
+                       x_does_shm = 1;
+                    }
+
+                  /* if we attached without an error we're set */
+                  if (_x_err == 0)
+                     return xim;
+
+                  /* attach by X failed... must be remote client */
+                  /* flag shm forever to not work - remote */
+                  x_does_shm = 0;
+
+                  /* detach */
+                  shmdt(si->shmaddr);
                }
 
-             /* if we attached without an error we're set */
-             if (_x_err == 0)
-                return xim;
-
-             /* attach by X failed... must be remote client */
-             /* flag shm forever to not work - remote */
-             x_does_shm = 0;
-
-             /* detach */
-             shmdt(si->shmaddr);
+             /* get failed - out of shm id's or shm segment too big ? */
+             /* remove the shm id we created */
+             shmctl(si->shmid, IPC_RMID, 0);
           }
-
-        /* get failed - out of shm id's or shm segment too big ? */
-        /* remove the shm id we created */
-        shmctl(si->shmid, IPC_RMID, 0);
      }
 
    /* couldnt create SHM image ? */
@@ -113,60 +229,66 @@ __imlib_ShmGetXImage(Display * d, Visual * v, Drawable draw, int depth,
 }
 
 void
-__imlib_ShmDetach(Display * d, XShmSegmentInfo * si)
+__imlib_ShmDestroyXImage(Display * d, XImage * xim, XShmSegmentInfo * si)
 {
    XSync(d, False);
    XShmDetach(d, si);
-   shmdt(si->shmaddr);
-   shmctl(si->shmid, IPC_RMID, 0);
-}
-
-/* "safe" realloc allowing handling of out-of-memory situations */
-static void        *
-_safe_realloc(void *ptr, size_t size, int *err)
-{
-   void               *ptr_new;
-
-   ptr_new = realloc(ptr, size);
-   if (!ptr_new)
+#ifdef HAVE_X11_SHM_FD
+   if (x_does_shm_fd)
      {
-        *err = 1;
-        return ptr;
+        munmap(si->shmaddr, xim->bytes_per_line * xim->height);
      }
-
-   return ptr_new;
+   else
+#endif
+     {
+        shmdt(si->shmaddr);
+        shmctl(si->shmid, IPC_RMID, 0);
+     }
+   XDestroyImage(xim);
 }
 
 void
-__imlib_SetMaxXImageCount(Display * d, int num)
+__imlib_SetXImageCacheCountMax(Display * d, int num)
 {
    list_max_count = num;
    __imlib_FlushXImage(d);
 }
 
 int
-__imlib_GetMaxXImageCount(Display * d)
+__imlib_GetXImageCacheCountMax(Display * d)
 {
    return list_max_count;
 }
 
+int
+__imlib_GetXImageCacheCountUsed(Display * d)
+{
+   return list_num;
+}
+
 void
-__imlib_SetMaxXImageTotalSize(Display * d, int num)
+__imlib_SetXImageCacheSizeMax(Display * d, int num)
 {
    list_max_mem = num;
    __imlib_FlushXImage(d);
 }
 
 int
-__imlib_GetMaxXImageTotalSize(Display * d)
+__imlib_GetXImageCacheSizeMax(Display * d)
 {
    return list_max_mem;
+}
+
+int
+__imlib_GetXImageCacheSizeUsed(Display * d)
+{
+   return list_mem_use;
 }
 
 void
 __imlib_FlushXImage(Display * d)
 {
-   int                 i;
+   int                 i, j;
    XImage             *xim;
    char                did_free = 1;
 
@@ -174,55 +296,46 @@ __imlib_FlushXImage(Display * d)
           (did_free))
      {
         did_free = 0;
-        for (i = 0; i < list_num; i++)
+        for (i = 0; i < list_num;)
           {
-             if (list_used[i] == 0)
+             if (xim_cache[i].used)
                {
-                  int                 j;
-
-                  xim = list_xim[i];
-                  list_mem_use -= xim->bytes_per_line * xim->height;
-                  if (list_si[i])
-                    {
-                       __imlib_ShmDetach(d, list_si[i]);
-                       free(list_si[i]);
-                    }
-                  XDestroyImage(xim);
-                  list_num--;
-                  for (j = i; j < list_num; j++)
-                    {
-                       list_xim[j] = list_xim[j + 1];
-                       list_si[j] = list_si[j + 1];
-                       list_used[j] = list_used[j + 1];
-                       list_d[j] = list_d[j + 1];
-                    }
-                  if (list_num == 0)
-                    {
-                       if (list_xim)
-                          free(list_xim);
-                       if (list_si)
-                          free(list_si);
-                       if (list_used)
-                          free(list_used);
-                       if (list_d)
-                          free(list_d);
-                       list_xim = NULL;
-                       list_si = NULL;
-                       list_used = NULL;
-                       list_d = NULL;
-                    }
-                  else
-                    {
-                       list_xim =
-                          realloc(list_xim, sizeof(XImage *) * list_num);
-                       list_si =
-                          realloc(list_si,
-                                  sizeof(XShmSegmentInfo *) * list_num);
-                       list_used = realloc(list_used, sizeof(char) * list_num);
-                       list_d = realloc(list_d, sizeof(Display *) * list_num);
-                    }
-                  did_free = 1;
+                  i++;
+                  continue;
                }
+
+             xim = xim_cache[i].xim;
+             list_mem_use -= xim->bytes_per_line * xim->height;
+
+             if (xim_cache[i].si)
+               {
+                  __imlib_ShmDestroyXImage(d, xim, xim_cache[i].si);
+                  free(xim_cache[i].si);
+               }
+             else
+               {
+                  XDestroyImage(xim);
+               }
+
+             list_num--;
+             for (j = i; j < list_num; j++)
+               {
+                  xim_cache[j] = xim_cache[j + 1];
+               }
+
+             if (list_num == 0)
+               {
+                  if (xim_cache)
+                     free(xim_cache);
+                  xim_cache = NULL;
+               }
+             else
+               {
+                  xim_cache =
+                     realloc(xim_cache, sizeof(xim_cache_rec_t) * list_num);
+               }
+
+             did_free = 1;
           }
      }
 }
@@ -237,10 +350,10 @@ __imlib_ConsumeXImage(Display * d, XImage * xim)
    for (i = 0; i < list_num; i++)
      {
         /* find a match */
-        if (list_xim[i] == xim)
+        if (xim_cache[i].xim == xim)
           {
              /* we have a match = mark as unused */
-             list_used[i] = 0;
+             xim_cache[i].used = 0;
              /* flush the XImage list to get rud of stuff we dont want */
              __imlib_FlushXImage(d);
              /* return */
@@ -256,11 +369,8 @@ __imlib_ProduceXImage(Display * d, Visual * v, int depth, int w, int h,
                       char *shared)
 {
    XImage             *xim;
-   int                 i, err;
-
-   /* if we havent check the shm extension before - see if its there */
-   if (x_does_shm < 0)
-      __imlib_ShmCheck(d);
+   xim_cache_rec_t    *xim_cache_tmp;
+   int                 i;
 
    /* find a cached XImage (to avoid server to & fro) that is big enough */
    /* for our needs and the right depth */
@@ -268,43 +378,37 @@ __imlib_ProduceXImage(Display * d, Visual * v, int depth, int w, int h,
    /* go thru the current image list */
    for (i = 0; i < list_num; i++)
      {
-        int                 depth_ok = 0;
+        if (xim_cache[i].used)
+           continue;
+
+        xim = xim_cache[i].xim;
 
         /* if the image has the same depth, width and height - recycle it */
-        /* as long as its not used */
-        if (list_xim[i]->depth == depth)
-           depth_ok = 1;
-        if (depth_ok &&
-            (list_xim[i]->width >= w) && (list_xim[i]->height >= h) &&
-            /*   (list_d[i] == d) && */
-            (!list_used[i]))
+        if ((xim->depth == depth) && (xim->width >= w) && (xim->height >= h))
+           /*  && (xim_cache[i].dpy == d) */
           {
-             /* mark it as used */
-             list_used[i] = 1;
+             xim_cache[i].used = 1;
              /* if its shared set shared flag */
-             if (list_si[i])
+             if (xim_cache[i].si)
                 *shared = 1;
              /* return it */
-             return list_xim[i];
+             return xim;
           }
      }
 
    /* can't find a usable XImage on the cache - create one */
    /* add the new XImage to the XImage cache */
    list_num++;
-   err = 0;
-   list_xim = _safe_realloc(list_xim, sizeof(XImage *) * list_num, &err);
-   list_si = _safe_realloc(list_si, sizeof(XShmSegmentInfo *) * list_num, &err);
-   list_used = _safe_realloc(list_used, sizeof(char) * list_num, &err);
-   list_d = _safe_realloc(list_d, sizeof(Display *) * list_num, &err);
-   if (err)
+   xim_cache_tmp = realloc(xim_cache, sizeof(xim_cache_rec_t) * list_num);
+   if (!xim_cache_tmp)
      {
         /* failed to allocate memory */
         list_num--;
         return NULL;
      }
-   list_si[list_num - 1] = malloc(sizeof(XShmSegmentInfo));
-   if (!list_si[list_num - 1])
+   xim_cache = xim_cache_tmp;
+   xim_cache[list_num - 1].si = malloc(sizeof(XShmSegmentInfo));
+   if (!xim_cache[list_num - 1].si)
      {
         /* failed to allocate memory */
         list_num--;
@@ -312,13 +416,8 @@ __imlib_ProduceXImage(Display * d, Visual * v, int depth, int w, int h,
      }
 
    /* work on making a shared image */
-   xim = NULL;
-   /* if the server does shm */
-   if (x_does_shm)
-     {
-        xim = __imlib_ShmGetXImage(d, v, None, depth, 0, 0, w, h,
-                                   list_si[list_num - 1]);
-     }
+   xim = __imlib_ShmGetXImage(d, v, None, depth, 0, 0, w, h,
+                              xim_cache[list_num - 1].si);
    /* ok if xim == NULL it all failed - fall back to XImages */
    if (xim)
      {
@@ -327,9 +426,9 @@ __imlib_ProduceXImage(Display * d, Visual * v, int depth, int w, int h,
    else
      {
         /* get rid of out shm info struct */
-        free(list_si[list_num - 1]);
+        free(xim_cache[list_num - 1].si);
         /* flag it as NULL ot indicate a normal XImage */
-        list_si[list_num - 1] = NULL;
+        xim_cache[list_num - 1].si = NULL;
         /* create a normal ximage */
         xim = XCreateImage(d, v, depth, ZPixmap, 0, NULL, w, h, 32, 0);
         /* allocate data for it */
@@ -345,13 +444,13 @@ __imlib_ProduceXImage(Display * d, Visual * v, int depth, int w, int h,
           }
      }
    /* add xim to our list */
-   list_xim[list_num - 1] = xim;
+   xim_cache[list_num - 1].xim = xim;
    /* incriment our memory count */
    list_mem_use += xim->bytes_per_line * xim->height;
    /* mark image as used */
-   list_used[list_num - 1] = 1;
+   xim_cache[list_num - 1].used = 1;
    /* remember what display that XImage was for */
-   list_d[list_num - 1] = d;
+   xim_cache[list_num - 1].dpy = d;
 
    /* flush unused images from the image list */
    __imlib_FlushXImage(d);

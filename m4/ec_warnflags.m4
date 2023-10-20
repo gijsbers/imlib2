@@ -16,7 +16,7 @@ AC_DEFUN([EC_C_WARNINGS], [
     enable_werror=no)
 
   if test "x$GCC" = "xyes"; then
-    CFLAGS_WARNINGS="-W -Wall -Waggregate-return -Wcast-align -Wpointer-arith -Wshadow -Wwrite-strings"
+    CFLAGS_WARNINGS="-W -Wall -Wcast-align -Wpointer-arith -Wshadow -Wwrite-strings"
 dnl # ignore some warnings for now...
     CFLAGS_WARNINGS="$CFLAGS_WARNINGS -Wno-unused-parameter"
     ifelse(ec_c_compile_cpp, no, [

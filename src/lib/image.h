@@ -148,6 +148,8 @@ ImlibImage         *__imlib_LoadImage(const char *file,
                                       char progress_granularity,
                                       char immediate_load, char dont_cache,
                                       ImlibLoadError * er);
+int                 __imlib_LoadImageData(ImlibImage * im);
+
 #ifdef BUILD_X11
 ImlibImagePixmap   *__imlib_FindImlibImagePixmapByID(Display * d, Pixmap p);
 #endif

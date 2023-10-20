@@ -1009,6 +1009,15 @@ __imlib_LoadImage(const char *file, ImlibProgressFunction progress,
    return im;
 }
 
+int
+__imlib_LoadImageData(ImlibImage * im)
+{
+   if ((!(im->data)) && (im->loader) && (im->loader->load))
+      if (im->loader->load(im, NULL, 0, 1) == 0)
+         return 1;              /* Load failed */
+   return im->data == NULL;
+}
+
 #ifdef BUILD_X11
 /* find an imagepixmap cache entry by the display and pixmap id */
 ImlibImagePixmap   *

@@ -34,17 +34,17 @@ __imlib_CalcYPoints(DATA32 * src, int sw, int sh, int dh, int b1, int b2)
         dh = -dh;
         rv = 1;
      }
+
    p = malloc((dh + 1) * sizeof(DATA32 *));
-   if (dh < (b1 + b2))
+
+   val = MIN(sh, dh);
+   inc = b1 + b2;
+   if (val < inc)
      {
-        if (dh < b1)
-          {
-             b1 = dh;
-             b2 = 0;
-          }
-        else
-           b2 = dh - b1;
+        b1 = (val * b1 + inc / 2) / inc;
+        b2 = val - b1;
      }
+
    val = 0;
    inc = 1 << 16;
    for (i = 0; i < b1; i++)
@@ -69,6 +69,7 @@ __imlib_CalcYPoints(DATA32 * src, int sw, int sh, int dh, int b1, int b2)
         p[j++] = src + ((val >> 16) * sw);
         val += inc;
      }
+
    if (rv)
       for (i = dh / 2; --i >= 0;)
         {
@@ -91,17 +92,17 @@ __imlib_CalcXPoints(int sw, int dw, int b1, int b2)
         dw = -dw;
         rv = 1;
      }
+
    p = malloc((dw + 1) * sizeof(int));
-   if (dw < (b1 + b2))
+
+   val = MIN(sw, dw);
+   inc = b1 + b2;
+   if (val < inc)
      {
-        if (dw < b1)
-          {
-             b1 = dw;
-             b2 = 0;
-          }
-        else
-           b2 = dw - b1;
+        b1 = (val * b1 + inc / 2) / inc;
+        b2 = val - b1;
      }
+
    val = 0;
    inc = 1 << 16;
    for (i = 0; i < b1; i++)
@@ -126,6 +127,7 @@ __imlib_CalcXPoints(int sw, int dw, int b1, int b2)
         p[j++] = (val >> 16);
         val += inc;
      }
+
    if (rv)
       for (i = dw / 2; --i >= 0;)
         {
@@ -141,28 +143,27 @@ static int         *
 __imlib_CalcApoints(int s, int d, int b1, int b2, int up)
 {
    int                *p, i, j = 0, rv = 0;
+   int                 val, inc;
 
    if (d < 0)
      {
         rv = 1;
         d = -d;
      }
+
    p = malloc(d * sizeof(int));
-   if (d < (b1 + b2))
+
+   val = MIN(s, d);
+   inc = b1 + b2;
+   if (val < inc)
      {
-        if (d < b1)
-          {
-             b1 = d;
-             b2 = 0;
-          }
-        else
-           b2 = d - b1;
+        b1 = (val * b1 + inc / 2) / inc;
+        b2 = val - b1;
      }
+
    /* scaling up */
    if (up)
      {
-        int                 val, inc;
-
         for (i = 0; i < b1; i++)
            p[j++] = 0;
         if (d > (b1 + b2))
@@ -187,8 +188,6 @@ __imlib_CalcApoints(int s, int d, int b1, int b2, int up)
    /* scaling down */
    else
      {
-        int                 val, inc;
-
         for (i = 0; i < b1; i++)
            p[j++] = (1 << (16 + 14)) + (1 << 14);
         if (d > (b1 + b2))
@@ -211,6 +210,7 @@ __imlib_CalcApoints(int s, int d, int b1, int b2, int up)
         for (i = 0; i < b2; i++)
            p[j++] = (1 << (16 + 14)) + (1 << 14);
      }
+
    if (rv)
      {
         for (i = d / 2; --i >= 0;)

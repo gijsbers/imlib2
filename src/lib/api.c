@@ -220,7 +220,7 @@ _imlib_context_get(void)
    if (!_ctx) _ctx = _imlib_context_get()
 
 /* frees the given context if it doesn't have any reference anymore. The
-   last (default) context can never be freed. 
+   last (default) context can never be freed.
    If context is the current context, the context below will be made the
    current context.
 */
@@ -286,7 +286,7 @@ imlib_context_get(void)
  * @param y The top left y coordinate of the rectangle.
  * @param w The width of the rectangle.
  * @param h The height of the rectangle.
- * 
+ *
  * Sets the rectangle of the current context.
  **/
 EAPI void
@@ -329,7 +329,7 @@ imlib_context_set_display(Display * display)
    ctx->display = display;
 }
 
-/** 
+/**
  * @return The current display.
  *
  * Returns the current display used for Imlib2's display context.
@@ -363,7 +363,7 @@ imlib_context_disconnect_display(void)
  * Sets the current visual to use when rendering images to
  * drawables or producing pixmaps. You need to set this for anything to
  * render to a drawable or produce any pixmaps (this can be the default
- * visual). 
+ * visual).
  */
 EAPI void
 imlib_context_set_visual(Visual * visual)
@@ -373,7 +373,7 @@ imlib_context_set_visual(Visual * visual)
    ctx->depth = imlib_get_visual_depth(ctx->display, ctx->visual);
 }
 
-/** 
+/**
  * @return The current visual.
  *
  * Returns the current visual used for Imlib2's context.
@@ -387,10 +387,10 @@ imlib_context_get_visual(void)
 
 /**
  * @param colormap Colormap to use.
- * 
+ *
  * Sets the colormap to use when rendering to drawables and allocating
  * colors. You must set this to the colormap you are using to render any
- * images or produce any pixmaps (this can be the default colormap). 
+ * images or produce any pixmaps (this can be the default colormap).
  */
 EAPI void
 imlib_context_set_colormap(Colormap colormap)
@@ -399,7 +399,7 @@ imlib_context_set_colormap(Colormap colormap)
    ctx->colormap = colormap;
 }
 
-/** 
+/**
  * @return The current colormap.
  *
  * Returns the current Colormap used for Imlib2's context.
@@ -413,10 +413,10 @@ imlib_context_get_colormap(void)
 
 /**
  * @param drawable An X drawable.
- * 
+ *
  * Sets the X drawable to which images will be rendered when you call
  * a render call in Imlib2. This may be either a pixmap or a
- * window. You must set this to render anything. 
+ * window. You must set this to render anything.
  */
 EAPI void
 imlib_context_set_drawable(Drawable drawable)
@@ -425,7 +425,7 @@ imlib_context_set_drawable(Drawable drawable)
    ctx->drawable = drawable;
 }
 
-/** 
+/**
  * @return The current drawable.
  *
  * Returns the current Drawable used for Imlib2's context.
@@ -439,10 +439,10 @@ imlib_context_get_drawable(void)
 
 /**
  * @param mask An 1-bit deep pixmap.
- * 
+ *
  * Sets the 1-bit deep pixmap to be drawn to when rendering to generate
  * a mask pixmap. This is only useful if the image you are rendering
- * has alpha. Set this to 0 to not render a pixmap mask. 
+ * has alpha. Set this to 0 to not render a pixmap mask.
  */
 EAPI void
 imlib_context_set_mask(Pixmap mask)
@@ -451,7 +451,7 @@ imlib_context_set_mask(Pixmap mask)
    ctx->mask = mask;
 }
 
-/** 
+/**
  * @return The current pixmap.
  *
  * Returns the current pixmap destination to be used to render a mask into.
@@ -462,15 +462,89 @@ imlib_context_get_mask(void)
    CHECK_CONTEXT(ctx);
    return ctx->mask;
 }
+
+/**
+ * @return The current number of cached XImages.
+ */
+EAPI int
+imlib_get_ximage_cache_count_used(void)
+{
+   CHECK_CONTEXT(ctx);
+   return __imlib_GetXImageCacheCountUsed(ctx->display);
+}
+
+/**
+ * @return The current XImage cache max count.
+ */
+EAPI int
+imlib_get_ximage_cache_count_max(void)
+{
+   CHECK_CONTEXT(ctx);
+   return __imlib_GetXImageCacheCountMax(ctx->display);
+}
+
+/**
+ * @param count XImage cache max count.
+ *
+ * Sets the maximum number of XImages to cache.
+ * Setting the cache size to 0 effectively flushes the cache and keeps
+ * the cached XImage count at 0 until set to another value.
+ * Whenever you set the max count Imlib2 will flush as many old XImages
+ * from the cache as possible until the current cached XImage count is
+ * less than or equal to the cache max count.
+ */
+EAPI void
+imlib_set_ximage_cache_count_max(int count)
+{
+   CHECK_CONTEXT(ctx);
+   __imlib_SetXImageCacheCountMax(ctx->display, count);
+}
+
+/**
+ * @return The current XImage cache memory usage.
+ */
+EAPI int
+imlib_get_ximage_cache_size_used(void)
+{
+   CHECK_CONTEXT(ctx);
+   return __imlib_GetXImageCacheSizeUsed(ctx->display);
+}
+
+/**
+ * @return The current XImage cache max size.
+ */
+EAPI int
+imlib_get_ximage_cache_size_max(void)
+{
+   CHECK_CONTEXT(ctx);
+   return __imlib_GetXImageCacheSizeMax(ctx->display);
+}
+
+/**
+ * @param bytes XImage cache max size.
+ *
+ * Sets the XImage cache maximum size. The size is in bytes.
+ * Setting the cache size to 0 effectively flushes the cache and keeps
+ * the cache size at 0 until set to another value.
+ * Whenever you set the max size Imlib2 will flush as many old XImages
+ * from the cache as possible until the current XImage cache usage is
+ * less than or equal to the cache max size.
+ */
+EAPI void
+imlib_set_ximage_cache_size_max(int bytes)
+{
+   CHECK_CONTEXT(ctx);
+   __imlib_SetXImageCacheSizeMax(ctx->display, bytes);
+}
 #endif
 
 /**
  * @param dither_mask The dither mask flag.
- * 
+ *
  * Selects if, you are rendering to a mask, or producing pixmap masks
  * from images, if the mask is to be dithered or not. passing in 1 for
  * dither_mask means the mask pixmap will be dithered, 0 means it will
- * not be dithered. 
+ * not be dithered.
  */
 EAPI void
 imlib_context_set_dither_mask(char dither_mask)
@@ -479,11 +553,11 @@ imlib_context_set_dither_mask(char dither_mask)
    ctx->dither_mask = dither_mask;
 }
 
-/** 
+/**
  * @return The current dither mask flag.
  *
  * Returns the current mode for dithering pixmap masks. 1 means
- * dithering is enabled and 0 means it is not. 
+ * dithering is enabled and 0 means it is not.
  */
 EAPI char
 imlib_context_get_dither_mask(void)
@@ -494,7 +568,7 @@ imlib_context_get_dither_mask(void)
 
 /**
  * @param mask_alpha_threshold The mask alpha threshold.
- * 
+ *
  * Selects, if you are rendering to a mask, the alpha threshold above which
  * mask bits are set. The default mask alpha threshold is 128, meaning that
  * a mask bit will be set if the pixel alpha is >= 128.
@@ -506,7 +580,7 @@ imlib_context_set_mask_alpha_threshold(int mask_alpha_threshold)
    ctx->mask_alpha_threshold = mask_alpha_threshold;
 }
 
-/** 
+/**
  * @return The current mask mask alpha threshold.
  *
  * Returns the current mask alpha threshold.
@@ -520,13 +594,13 @@ imlib_context_get_mask_alpha_threshold(void)
 
 /**
  * @param anti_alias The anti alias flag.
- * 
+ *
  * Toggles "anti-aliased" scaling of images. This
  * isn't quite correct since it's actually super and sub pixel
  * sampling that it turns on and off, but anti-aliasing is used for
  * having "smooth" edges to lines and shapes and this means when
  * images are scaled they will keep their smooth appearance. Passing
- * in 1 turns this on and 0 turns it off. 
+ * in 1 turns this on and 0 turns it off.
  */
 EAPI void
 imlib_context_set_anti_alias(char anti_alias)
@@ -535,7 +609,7 @@ imlib_context_set_anti_alias(char anti_alias)
    ctx->anti_alias = anti_alias;
 }
 
-/** 
+/**
  * @return The current anti alias flag.
  *
  * Returns if Imlib2 currently will smoothly scale images. 1 means it
@@ -550,14 +624,14 @@ imlib_context_get_anti_alias(void)
 
 /**
  * @param dither The dithering flag.
- * 
+ *
  * Sets the dithering flag for rendering to a drawable or when pixmaps
  * are produced. This affects the color image appearance by enabling
  * dithering. Dithering slows down rendering but produces considerably
  * better results. this option has no effect foe rendering in 24 bit
  * and up, but in 16 bit and lower it will dither, producing smooth
  * gradients and much better quality images. setting dither to 1
- * enables it and 0 disables it. 
+ * enables it and 0 disables it.
  */
 EAPI void
 imlib_context_set_dither(char dither)
@@ -566,11 +640,11 @@ imlib_context_set_dither(char dither)
    ctx->dither = dither;
 }
 
-/** 
+/**
  * @return The current dithering flag.
  *
  * Returns if image data is rendered with dithering currently. 1 means
- * yes and 0 means no. 
+ * yes and 0 means no.
  */
 EAPI char
 imlib_context_get_dither(void)
@@ -581,11 +655,11 @@ imlib_context_get_dither(void)
 
 /**
  * @param blend The blending flag.
- * 
+ *
  * When rendering an image to a drawable, Imlib2 is able to blend the
  * image directly onto the drawable during rendering. Setting this to 1
  * will enable this. If the image has no alpha channel this has no
- * effect. Setting it to 0 will disable this. 
+ * effect. Setting it to 0 will disable this.
  */
 EAPI void
 imlib_context_set_blend(char blend)
@@ -594,11 +668,11 @@ imlib_context_set_blend(char blend)
    ctx->blend = blend;
 }
 
-/** 
+/**
  * @return The current blending flag.
  *
  * Returns if Imlib2 will blend images onto a drawable whilst
- * rendering to that drawable. 1 means yes and 0 means no. 
+ * rendering to that drawable. 1 means yes and 0 means no.
  */
 EAPI char
 imlib_context_get_blend(void)
@@ -609,14 +683,14 @@ imlib_context_get_blend(void)
 
 /**
  * @param color_modifier Current color modifier.
- * 
+ *
  * Sets the current color modifier used for rendering pixmaps or
  * images to a drawable or images onto other images. Color modifiers
  * are lookup tables that map the values in the red, green, blue and
  * alpha channels to other values in the same channel when rendering,
  * allowing for fades, color correction etc. to be done whilst
  * rendering. pass in NULL as the color_modifier to disable the color
- * modifier for rendering. 
+ * modifier for rendering.
  */
 EAPI void
 imlib_context_set_color_modifier(Imlib_Color_Modifier color_modifier)
@@ -625,7 +699,7 @@ imlib_context_set_color_modifier(Imlib_Color_Modifier color_modifier)
    ctx->color_modifier = color_modifier;
 }
 
-/** 
+/**
  * @return The current color modifier.
  *
  * Returns the current color modifier being used.
@@ -638,8 +712,8 @@ imlib_context_get_color_modifier(void)
 }
 
 /**
- * @param operation 
- * 
+ * @param operation
+ *
  * When Imlib2 draws an image onto another or an image onto a drawable
  * it is able to do more than just blend the result on using the given
  * alpha channel of the image. It is also able to do saturating
@@ -650,7 +724,7 @@ imlib_context_get_color_modifier(void)
  * basic alpha blending: DST = (SRC * A) + (DST * (1 -
  * A)). IMLIB_OP_ADD does DST = DST + (SRC * A). IMLIB_OP_SUBTRACT does
  * DST = DST - (SRC * A) and IMLIB_OP_RESHADE does DST = DST + (((SRC -
- * 0.5) / 2) * A). 
+ * 0.5) / 2) * A).
  */
 EAPI void
 imlib_context_set_operation(Imlib_Operation operation)
@@ -659,7 +733,7 @@ imlib_context_set_operation(Imlib_Operation operation)
    ctx->operation = operation;
 }
 
-/** 
+/**
  * @return The current operation mode.
  *
  * Returns the current operation mode.
@@ -673,9 +747,9 @@ imlib_context_get_operation(void)
 
 /**
  * @param font Current font.
- * 
+ *
  * Sets the current font to use when rendering text. you should load
- * the font first with imlib_load_font(). 
+ * the font first with imlib_load_font().
  */
 EAPI void
 imlib_context_set_font(Imlib_Font font)
@@ -684,7 +758,7 @@ imlib_context_set_font(Imlib_Font font)
    ctx->font = font;
 }
 
-/** 
+/**
  * @return The current font.
  *
  * Returns the current font.
@@ -698,13 +772,13 @@ imlib_context_get_font(void)
 
 /**
  * @param direction Text direction.
- * 
+ *
  * Sets the direction in which to draw text in terms of simple 90
  * degree orientations or an arbitrary angle. The direction can be one
  * of IMLIB_TEXT_TO_RIGHT, IMLIB_TEXT_TO_LEFT, IMLIB_TEXT_TO_DOWN,
  * IMLIB_TEXT_TO_UP or IMLIB_TEXT_TO_ANGLE. The default is
  * IMLIB_TEXT_TO_RIGHT. If you use IMLIB_TEXT_TO_ANGLE, you will also
- * have to set the angle with imlib_context_set_angle(). 
+ * have to set the angle with imlib_context_set_angle().
  */
 EAPI void
 imlib_context_set_direction(Imlib_Text_Direction direction)
@@ -715,7 +789,7 @@ imlib_context_set_direction(Imlib_Text_Direction direction)
 
 /**
  * @param angle Angle of the text strings.
- * 
+ *
  * Sets the angle at which text strings will be drawn if the text
  * direction has been set to IMLIB_TEXT_TO_ANGLE with
  * imlib_context_set_direction().
@@ -727,11 +801,11 @@ imlib_context_set_angle(double angle)
    ctx->angle = angle;
 }
 
-/** 
+/**
  * @return The current angle of the text strings.
  *
  * Returns the current angle used to render text at if the direction
- * is IMLIB_TEXT_TO_ANGLE. 
+ * is IMLIB_TEXT_TO_ANGLE.
  */
 EAPI double
 imlib_context_get_angle(void)
@@ -740,7 +814,7 @@ imlib_context_get_angle(void)
    return ctx->angle;
 }
 
-/** 
+/**
  * @return The current direction of the text.
  *
  * Returns the current direction to render text in.
@@ -757,7 +831,7 @@ imlib_context_get_direction(void)
  * @param green Green channel of the current color.
  * @param blue Blue channel of the current color.
  * @param alpha Alpha channel of the current color.
- * 
+ *
  * Sets the color with which text, lines and rectangles are drawn when
  * being rendered onto an image. Values for @p red, @p green, @p blue
  * and @p alpha are between 0 and 255 - any other values have
@@ -778,7 +852,7 @@ imlib_context_set_color(int red, int green, int blue, int alpha)
  * @param green Green channel of the current color.
  * @param blue Blue channel of the current color.
  * @param alpha Alpha channel of the current color.
- * 
+ *
  * Returns the current color for rendering text, rectangles and lines.
  */
 EAPI void
@@ -791,11 +865,11 @@ imlib_context_get_color(int *red, int *green, int *blue, int *alpha)
    *alpha = ctx->color.alpha;
 }
 
-/** 
+/**
  * @return The current color.
  *
  * Returns the current color as a color struct. Do NOT free this
- * pointer. 
+ * pointer.
  */
 EAPI Imlib_Color   *
 imlib_context_get_imlib_color(void)
@@ -809,7 +883,7 @@ imlib_context_get_imlib_color(void)
  * @param saturation Saturation channel of the current color.
  * @param value Value channel of the current color.
  * @param alpha Alpha channel of the current color.
- * 
+ *
  * Sets the color in HSVA space. Values for @p hue are between 0 and 360,
  * values for @p saturation and @p value between 0 and 1, and values for
  * @p alpha are between 0 and 255 - any other values have undefined
@@ -830,9 +904,9 @@ imlib_context_set_color_hsva(float hue, float saturation, float value,
  * @param saturation Saturation channel of the current color.
  * @param value Value channel of the current color.
  * @param alpha Alpha channel of the current color.
- * 
+ *
  * Returns the current color for rendering text, rectangles and lines
- * in HSVA space. 
+ * in HSVA space.
  */
 EAPI void
 imlib_context_get_color_hsva(float *hue, float *saturation, float *value,
@@ -849,11 +923,11 @@ imlib_context_get_color_hsva(float *hue, float *saturation, float *value,
  * @param lightness Lightness channel of the current color.
  * @param saturation Saturation channel of the current color.
  * @param alpha Alpha channel of the current color.
- * 
+ *
  * Sets the color in HLSA space. Values for @p hue are between 0 and 360,
  * values for @p lightness and @p saturation between 0 and 1, and values for
  * @p alpha are between 0 and 255 - any other values have undefined
- * results. 
+ * results.
  */
 EAPI void
 imlib_context_set_color_hlsa(float hue, float lightness, float saturation,
@@ -870,9 +944,9 @@ imlib_context_set_color_hlsa(float hue, float lightness, float saturation,
  * @param lightness Lightness channel of the current color.
  * @param saturation Saturation channel of the current color.
  * @param alpha Alpha channel of the current color.
- * 
+ *
  * Returns the current color for rendering text, rectangles and lines
- * in HLSA space. 
+ * in HLSA space.
  */
 EAPI void
 imlib_context_get_color_hlsa(float *hue, float *lightness, float *saturation,
@@ -889,10 +963,10 @@ imlib_context_get_color_hlsa(float *hue, float *lightness, float *saturation,
  * @param magenta Magenta channel of the current color.
  * @param yellow Yellow channel of the current color.
  * @param alpha Alpha channel of the current color.
- * 
+ *
  * Sets the color in CMYA space. Values for @p cyan, @p magenta, @p yellow and
  * @p alpha are between 0 and 255 - any other values have undefined
- * results. 
+ * results.
  */
 EAPI void
 imlib_context_set_color_cmya(int cyan, int magenta, int yellow, int alpha)
@@ -909,9 +983,9 @@ imlib_context_set_color_cmya(int cyan, int magenta, int yellow, int alpha)
  * @param magenta Magenta channel of the current color.
  * @param yellow Yellow channel of the current color.
  * @param alpha Alpha channel of the current color.
- * 
+ *
  * Returns the current color for rendering text, rectangles and lines
- * in CMYA space. 
+ * in CMYA space.
  */
 EAPI void
 imlib_context_get_color_cmya(int *cyan, int *magenta, int *yellow, int *alpha)
@@ -925,7 +999,7 @@ imlib_context_get_color_cmya(int *cyan, int *magenta, int *yellow, int *alpha)
 
 /**
  * @param color_range Color range.
- * 
+ *
  * Sets the current color range to use for rendering gradients.
  */
 EAPI void
@@ -937,7 +1011,7 @@ imlib_context_set_color_range(Imlib_Color_Range color_range)
 
 /**
  * @return The current color range.
- * 
+ *
  * Returns the current color range being used for gradients.
  */
 EAPI                Imlib_Color_Range
@@ -949,10 +1023,10 @@ imlib_context_get_color_range(void)
 
 /**
  * @param progress_function A progress function.
- * 
+ *
  * Sets the progress function to be called back whilst loading
  * images. Set this to the function to be called, or set it to NULL to
- * disable progress callbacks whilst loading. 
+ * disable progress callbacks whilst loading.
  */
 EAPI void
 imlib_context_set_progress_function(Imlib_Progress_Function progress_function)
@@ -963,7 +1037,7 @@ imlib_context_set_progress_function(Imlib_Progress_Function progress_function)
 
 /**
  * @return The current progress function.
- * 
+ *
  * Returns the current progress function being used.
  */
 EAPI                Imlib_Progress_Function
@@ -975,12 +1049,12 @@ imlib_context_get_progress_function(void)
 
 /**
  * @param progress_granularity A char.
- * 
+ *
  * This hints as to how often to call the progress callback. 0 means
  * as often as possible. 1 means whenever 15 more of the image has been
  * decoded, 10 means every 10% of the image decoding, 50 means every
  * 50% and 100 means only call at the end. Values outside of the range
- * 0-100 are undefined. 
+ * 0-100 are undefined.
  */
 EAPI void
 imlib_context_set_progress_granularity(char progress_granularity)
@@ -991,7 +1065,7 @@ imlib_context_set_progress_granularity(char progress_granularity)
 
 /**
  * @return The current progress granularity
- * 
+ *
  * Returns the current progress granularity being used.
  */
 EAPI char
@@ -1003,7 +1077,7 @@ imlib_context_get_progress_granularity(void)
 
 /**
  * @param image Current image.
- * 
+ *
  * Sets the current image Imlib2 will be using with its function calls.
  */
 EAPI void
@@ -1015,7 +1089,7 @@ imlib_context_set_image(Imlib_Image image)
 
 /**
  * @return The current image.
- * 
+ *
  * Returns the current context image.
  */
 EAPI                Imlib_Image
@@ -1042,10 +1116,23 @@ imlib_context_get_TTF_encoding(void)
 /* imlib api */
 
 /**
- * @return The current image size.
- * 
- * Returns the current size of the image cache in bytes. The cache is
- * a unified cache used for image data AND pixmaps. 
+ * @return The current image cache memory usage.
+ *
+ * Returns the current size of the image cache in bytes.
+ * The cache is a unified cache used for image data AND pixmaps.
+ */
+EAPI int
+imlib_get_cache_used(void)
+{
+   CHECK_CONTEXT(ctx);
+   return __imlib_CurrentCacheSize();
+}
+
+/**
+ * @return The current image cache max size.
+ *
+ * Returns the current maximum size of the image cache in bytes.
+ * The cache is a unified cache used for image data AND pixmaps.
  */
 EAPI int
 imlib_get_cache_size(void)
@@ -1055,13 +1142,13 @@ imlib_get_cache_size(void)
 }
 
 /**
- * @param bytes Cache size.
- * 
+ * @param bytes Image cache max size.
+ *
  * Sets the cache size. The size is in bytes. Setting the cache size to
  * 0 effectively flushes the cache and keeps the cache size at 0 until
  * set to another value. Whenever you set the cache size Imlib2 will
  * flush as many old images and pixmap from the cache as needed until
- * the current cache usage is less than or equal to the cache size. 
+ * the current cache usage is less than or equal to the cache size.
  */
 EAPI void
 imlib_set_cache_size(int bytes)
@@ -1072,7 +1159,7 @@ imlib_set_cache_size(int bytes)
 
 /**
  * @return The current number of colors.
- * 
+ *
  * Gets the number of colors Imlib2 currently at a maximum is allowed
  * to allocate for rendering. The default is 256.
  */
@@ -1089,7 +1176,7 @@ imlib_get_color_usage(void)
 
 /**
  * @param max Maximum number of colors.
- * 
+ *
  * Sets the maximum number of colors you would like Imlib2 to allocate
  * for you when rendering. The default is 256. This has no effect in
  * depths greater than 8 bit.
@@ -1111,7 +1198,7 @@ imlib_set_color_usage(int max)
  * If you want Imlib2 to forcibly flush any cached loaders it has and
  * re-load them from disk (this is useful if the program just
  * installed a new loader and does not want to wait till Imlib2 deems
- * it an optimal time to rescan the loaders) 
+ * it an optimal time to rescan the loaders)
  */
 EAPI void
 imlib_flush_loaders(void)
@@ -1124,10 +1211,10 @@ imlib_flush_loaders(void)
 /**
  * @param display The current display
  * @param visual The current visual
- * @return 
- * 
+ * @return
+ *
  * Convenience function that returns the depth of a visual for that
- * display. 
+ * display.
  */
 EAPI int
 imlib_get_visual_depth(Display * display, Visual * visual)
@@ -1143,11 +1230,11 @@ imlib_get_visual_depth(Display * display, Visual * visual)
  * @param screen The screen
  * @param depth_return The depth of the returned visual.
  * @return The best visual.
- * 
+ *
  * Returns the visual for the display @p display and the screen @p
  * screen that Imlib2 thinks
  * will give you the best quality output. @p depth_return should point to
- * an int that will be filled with the depth of that visual too. 
+ * an int that will be filled with the depth of that visual too.
  */
 EAPI Visual        *
 imlib_get_best_visual(Display * display, int screen, int *depth_return)
@@ -1164,10 +1251,10 @@ imlib_get_best_visual(Display * display, int screen, int *depth_return)
 /**
  * @param file Image file.
  * @return An image handle.
- * 
+ *
  * Loads an image from disk located at the path specified by
  * @p file. Please see the section \ref loading for more
- * detail. Returns an image handle on success or NULL on failure. 
+ * detail. Returns an image handle on success or NULL on failure.
  */
 EAPI                Imlib_Image
 imlib_load_image(const char *file)
@@ -1187,11 +1274,11 @@ imlib_load_image(const char *file)
 /**
  * @param file Image file.
  * @return An image handle.
- * 
+ *
  * Loads an image from disk located at the path specified by
  * @p file. This forces the image data to be decoded at load time too,
  * instead of decoding being deferred until it is needed. Returns an
- * image handle on success or NULL on failure. 
+ * image handle on success or NULL on failure.
  */
 EAPI                Imlib_Image
 imlib_load_image_immediately(const char *file)
@@ -1212,7 +1299,7 @@ imlib_load_image_immediately(const char *file)
 /**
  * @param file Image file.
  * @return An image handle.
- * 
+ *
  * Loads the image without looking in the cache first. Returns an
  * image handle on success or NULL on failure.
  */
@@ -1235,10 +1322,10 @@ imlib_load_image_without_cache(const char *file)
 /**
  * @param file Image file.
  * @return An image handle.
- * 
+ *
  * Loads the image without deferred image data decoding (i.e. it is
  * decoded straight away) and without looking in the cache. Returns an
- * image handle on success or NULL on failure. 
+ * image handle on success or NULL on failure.
  */
 EAPI                Imlib_Image
 imlib_load_image_immediately_without_cache(const char *file)
@@ -1260,10 +1347,10 @@ imlib_load_image_immediately_without_cache(const char *file)
  * @param file Image file.
  * @param error_return The returned error.
  * @return An image handle.
- * 
+ *
  * Loads an image at the path @p file on disk. If it succeeds it returns
  * a valid image handle, if not NULL is returned and @p error_return
- * is set to the detail of the error. 
+ * is set to the detail of the error.
  */
 EAPI                Imlib_Image
 imlib_load_image_with_error_return(const char *file,
@@ -1368,14 +1455,14 @@ imlib_image_get_height(void)
 
 /**
  * @return The current filename.
- * 
+ *
  * Returns the filename for the file that is set as the current
  * context. The pointer returned is only valid as long as no operations
  * cause the filename of the image to change. Saving the file with a
  * different name would cause this. It is suggested you duplicate the
  * string if you wish to continue to use the string for later
  * processing. Do not free the string pointer returned by this
- * function. 
+ * function.
  */
 EAPI const char    *
 imlib_image_get_filename(void)
@@ -1392,7 +1479,7 @@ imlib_image_get_filename(void)
 
 /**
  * @return A pointer to the image data.
- * 
+ *
  * Returns a pointer to the image data in the image set as the image
  * for the current context. When you get this pointer it is assumed you
  * are planning on writing to the data, thus once you do this the image
@@ -1405,7 +1492,7 @@ imlib_image_get_filename(void)
  * line. Each pixel has the upper 8 bits as the alpha channel and the
  * lower 8 bits are the blue channel - so a pixel's bits are ARGB (from
  * most to least significant, 8 bits per channel). You must put the
- * data back at some point. 
+ * data back at some point.
  */
 EAPI DATA32        *
 imlib_image_get_data(void)
@@ -1416,9 +1503,7 @@ imlib_image_get_data(void)
    CHECK_PARAM_POINTER_RETURN("imlib_image_get_data", "image", ctx->image,
                               NULL);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!im->data)
+   if (__imlib_LoadImageData(im))
       return NULL;
    __imlib_DirtyImage(im);
    return im->data;
@@ -1426,11 +1511,11 @@ imlib_image_get_data(void)
 
 /**
  * @return A pointer to the image data.
- * 
+ *
  * Functions the same way as imlib_image_get_data(), but returns a
  * pointer expecting the program to NOT write to the data returned (it
  * is for inspection purposes only). Writing to this data has undefined
- * results. The data does not need to be put back. 
+ * results. The data does not need to be put back.
  */
 EAPI DATA32        *
 imlib_image_get_data_for_reading_only(void)
@@ -1441,20 +1526,18 @@ imlib_image_get_data_for_reading_only(void)
    CHECK_PARAM_POINTER_RETURN("imlib_image_get_data_for_reading_only",
                               "image", ctx->image, NULL);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!im->data)
+   if (__imlib_LoadImageData(im))
       return NULL;
    return im->data;
 }
 
 /**
  * @param data The pointer to the image data.
- * 
+ *
  * Puts back @p data when it was obtained by
  * imlib_image_get_data(). @p data must be the same pointer returned
  * by imlib_image_get_data(). This operated on the current context
- * image.  
+ * image.
  */
 EAPI void
 imlib_image_put_back_data(DATA32 * data)
@@ -1471,10 +1554,10 @@ imlib_image_put_back_data(DATA32 * data)
 
 /**
  * @return Current alpha channel flag.
- * 
+ *
  * Returns 1 if the current context image has an alpha channel, or 0
  * if it does not (the alpha data space is still there and available -
- * just "unused"). 
+ * just "unused").
  */
 EAPI char
 imlib_image_has_alpha(void)
@@ -1512,7 +1595,7 @@ imlib_image_set_changes_on_disk(void)
 
 /**
  * @param border The border of the image.
- * 
+ *
  * Fills the Imlib_Border structure to which @p border points to with the
  * values of the border of the current context image. The border is the
  * area at the edge of the image that does not scale with the rest of
@@ -1537,9 +1620,9 @@ imlib_image_get_border(Imlib_Border * border)
 
 /**
  * @param border The border of the image.
- * 
+ *
  * Sets the border of the current context image to the values contained
- * in the Imlib_Border structure @p border points to. 
+ * in the Imlib_Border structure @p border points to.
  */
 EAPI void
 imlib_image_set_border(Imlib_Border * border)
@@ -1555,19 +1638,19 @@ imlib_image_set_border(Imlib_Border * border)
        && (im->border.top == border->top)
        && (im->border.bottom == border->bottom))
       return;
-   im->border.left = border->left;
-   im->border.right = border->right;
-   im->border.top = border->top;
-   im->border.bottom = border->bottom;
+   im->border.left = MAX(0, border->left);
+   im->border.right = MAX(0, border->right);
+   im->border.top = MAX(0, border->top);
+   im->border.bottom = MAX(0, border->bottom);
    __imlib_DirtyPixmapsForImage(im);
 }
 
 /**
  * @param format Format of the image.
- * 
+ *
  * Sets the format of the current image. This is used for when you
  * wish to save an image in a different format that it was loaded in,
- * or if the image currently has no file format associated with it. 
+ * or if the image currently has no file format associated with it.
  */
 EAPI void
 imlib_image_set_format(const char *format)
@@ -1592,10 +1675,10 @@ imlib_image_set_format(const char *format)
 
 /**
  * @param irrelevant Irrelevant format flag.
- * 
+ *
  * Sets if the format value of the current image is irrelevant for
  * caching purposes - by default it is. pass irrelevant as 1 to make it
- * irrelevant and 0 to make it relevant for caching. 
+ * irrelevant and 0 to make it relevant for caching.
  */
 EAPI void
 imlib_image_set_irrelevant_format(char irrelevant)
@@ -1618,10 +1701,10 @@ imlib_image_set_irrelevant_format(char irrelevant)
 
 /**
  * @param irrelevant Irrelevant border flag.
- * 
+ *
  * Sets if the border of the current image is irrelevant for caching
  * purposes. By default it is. Set irrelevant to 1 to make it
- * irrelevant, and 0 to make it relevant. 
+ * irrelevant, and 0 to make it relevant.
  */
 EAPI void
 imlib_image_set_irrelevant_border(char irrelevant)
@@ -1644,11 +1727,11 @@ imlib_image_set_irrelevant_border(char irrelevant)
 
 /**
  * @param irrelevant Irrelevant alpha flag.
- * 
+ *
  * Sets if the alpha channel status of the current image (i.e. if
  * there is or is not one) is important for caching purposes. By
  * default it is not. Set irrelevant to 1 to make it irrelevant and 0
- * to make it relevant. 
+ * to make it relevant.
  */
 EAPI void
 imlib_image_set_irrelevant_alpha(char irrelevant)
@@ -1670,9 +1753,9 @@ imlib_image_set_irrelevant_alpha(char irrelevant)
 
 /**
  * @return Current image format.
- * 
+ *
  * Returns the current image's format. Do not free this
- * string. Duplicate it if you need it for later use. 
+ * string. Duplicate it if you need it for later use.
  */
 EAPI char          *
 imlib_image_format(void)
@@ -1687,9 +1770,9 @@ imlib_image_format(void)
 
 /**
  * @param has_alpha Alpha flag.
- * 
+ *
  * Sets the alpha flag for the current image. Set @p has_alpha to 1 to
- * enable the alpha channel in the current image, or 0 to disable it. 
+ * enable the alpha channel in the current image, or 0 to disable it.
  */
 EAPI void
 imlib_image_set_has_alpha(char has_alpha)
@@ -1709,11 +1792,11 @@ imlib_image_set_has_alpha(char has_alpha)
 /**
  * @param pixmap_return The returned pixmap.
  * @param mask_return The returned mask.
- * 
+ *
  * Creates a pixmap of the current image (and a mask if the image has
- * an alpha value) and return the id's of the pixmap and mask to 
+ * an alpha value) and return the id's of the pixmap and mask to
  * @p pixmap_return and @p mask_return pixmap id's. You must free these
- * pixmaps using Imlib2's free function imlib_free_pixmap_and_mask(). 
+ * pixmaps using Imlib2's free function imlib_free_pixmap_and_mask().
  */
 EAPI void
 imlib_render_pixmaps_for_whole_image(Pixmap * pixmap_return,
@@ -1727,9 +1810,7 @@ imlib_render_pixmaps_for_whole_image(Pixmap * pixmap_return,
    CHECK_PARAM_POINTER("imlib_render_pixmaps_for_whole_image",
                        "pixmap_return", pixmap_return);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_CreatePixmapsForImage(ctx->display, ctx->drawable, ctx->visual,
                                  ctx->depth, ctx->colormap, im, pixmap_return,
@@ -1744,12 +1825,12 @@ imlib_render_pixmaps_for_whole_image(Pixmap * pixmap_return,
  * @param mask_return The returned mask.
  * @param width Width of the pixmap.
  * @param height Height of the pixmap.
- * 
+ *
  * Works just like imlib_render_pixmaps_for_whole_image(), but will
  * scale the output result to the width @p width and height @p height
  * specified. Scaling
  * is done before depth conversion so pixels used for dithering don't
- * grow large. 
+ * grow large.
  */
 EAPI void
 imlib_render_pixmaps_for_whole_image_at_size(Pixmap * pixmap_return,
@@ -1764,10 +1845,7 @@ imlib_render_pixmaps_for_whole_image_at_size(Pixmap * pixmap_return,
    CHECK_PARAM_POINTER("imlib_render_pixmaps_for_whole_image_at_size",
                        "pixmap_return", pixmap_return);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_CreatePixmapsForImage(ctx->display, ctx->drawable, ctx->visual,
                                  ctx->depth, ctx->colormap, im, pixmap_return,
@@ -1779,10 +1857,10 @@ imlib_render_pixmaps_for_whole_image_at_size(Pixmap * pixmap_return,
 
 /**
  * @param pixmap The pixmap.
- * 
+ *
  * Frees @p pixmap (and any mask generated in association with that
  * pixmap). The pixmap will remain cached until the image the pixmap
- * was generated from is dirtied or decached, or the cache is flushed. 
+ * was generated from is dirtied or decached, or the cache is flushed.
  */
 EAPI void
 imlib_free_pixmap_and_mask(Pixmap pixmap)
@@ -1794,9 +1872,9 @@ imlib_free_pixmap_and_mask(Pixmap pixmap)
 /**
  * @param x X coordinate of the pixel.
  * @param y Y coordinate of the pixel.
- * 
+ *
  * Renders the current image onto the current drawable at the (@p x, @p y)
- * pixel location specified without scaling. 
+ * pixel location specified without scaling.
  */
 EAPI void
 imlib_render_image_on_drawable(int x, int y)
@@ -1806,9 +1884,7 @@ imlib_render_image_on_drawable(int x, int y)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_render_image_on_drawable", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_RenderImage(ctx->display, im, ctx->drawable, ctx->mask,
                        ctx->visual, ctx->colormap, ctx->depth, 0, 0, im->w,
@@ -1822,7 +1898,7 @@ imlib_render_image_on_drawable(int x, int y)
  * @param y Y coordinate of the pixel.
  * @param width Width of the rendered image.
  * @param height Height of the rendered image.
- * 
+ *
  * Renders the current image onto the current drawable at the (@p x, @p y)
  * location specified AND scale the image to the width @p width and height
  * @p height.
@@ -1836,9 +1912,7 @@ imlib_render_image_on_drawable_at_size(int x, int y, int width, int height)
    CHECK_PARAM_POINTER("imlib_render_image_on_drawable_at_size", "image",
                        ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_RenderImage(ctx->display, im, ctx->drawable, ctx->mask,
                        ctx->visual, ctx->colormap, ctx->depth, 0, 0, im->w,
@@ -1857,9 +1931,9 @@ imlib_render_image_on_drawable_at_size(int x, int y, int width, int height)
  * @param y Y coordinate of the destination image.
  * @param width Width of the destination image.
  * @param height Height of the destination image.
- * 
+ *
  * Renders the source (@p source_x, @p source_y, @p source_width, @p source_height) pixel
- * rectangle from the 
+ * rectangle from the
  * current image onto the current drawable at the (@p x, @p y) location scaled
  * to the width @p width and height @p height.
  */
@@ -1875,9 +1949,7 @@ imlib_render_image_part_on_drawable_at_size(int source_x, int source_y,
    CHECK_PARAM_POINTER("imlib_render_image_part_on_drawable_at_size", "image",
                        ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_RenderImage(ctx->display, im, ctx->drawable, 0, ctx->visual,
                        ctx->colormap, ctx->depth, source_x, source_y,
@@ -1910,15 +1982,15 @@ imlib_render_get_pixel_color(void)
  * @param destination_y Y coordinate of the destination image.
  * @param destination_width Width of the destination image.
  * @param destination_height Height of the destination image.
- * 
+ *
  * Blends the source rectangle (@p source_x, @p source_y, @p
- * source_width, @p source_height) from 
+ * source_width, @p source_height) from
  * @p source_image onto the current image at the destination (@p
  * destination_x, @p destination_y) location
  * scaled to the width @p destination_width and height @p
  * destination_height. If @p merge_alpha is set to 1
  * it will also modify the destination image alpha channel, otherwise
- * the destination alpha channel is left untouched. 
+ * the destination alpha channel is left untouched.
  */
 EAPI void
 imlib_blend_image_onto_image(Imlib_Image source_image, char merge_alpha,
@@ -1936,13 +2008,9 @@ imlib_blend_image_onto_image(Imlib_Image source_image, char merge_alpha,
    CHECK_PARAM_POINTER("imlib_blend_image_onto_image", "image", ctx->image);
    CAST_IMAGE(im_src, source_image);
    CAST_IMAGE(im_dst, ctx->image);
-   if ((!(im_src->data)) && (im_src->loader) && (im_src->loader->load))
-      im_src->loader->load(im_src, NULL, 0, 1);
-   if (!(im_src->data))
+   if (__imlib_LoadImageData(im_src))
       return;
-   if ((!(im_dst->data)) && (im_dst->loader) && (im_dst->loader->load))
-      im_dst->loader->load(im_dst, NULL, 0, 1);
-   if (!(im_dst->data))
+   if (__imlib_LoadImageData(im_dst))
       return;
    __imlib_DirtyImage(im_dst);
    /* FIXME: hack to get around infinite loops for scaling down too far */
@@ -1963,7 +2031,7 @@ imlib_blend_image_onto_image(Imlib_Image source_image, char merge_alpha,
  * @param width The width of the image.
  * @param height The height of the image.
  * @return A new blank image.
- * 
+ *
  * Creates a new blank image of size @p width and @p height. The contents of
  * this image at creation time are undefined (they could be garbage
  * memory). You are free to do whatever you like with this image. It
@@ -1989,7 +2057,7 @@ imlib_create_image(int width, int height)
  * @param height The height of the image.
  * @param data The data.
  * @return A valid image, otherwise NULL.
- * 
+ *
  * Creates an image from the image data specified with the width @p width and
  * the height @p height specified. The image data @p data must be in the same format as
  * imlib_image_get_data() would return. You are responsible for
@@ -1999,8 +2067,8 @@ imlib_create_image(int width, int height)
  * use such a format) and wish to use Imlib2 to render the results
  * onto another image, or X drawable. You should free the image when
  * you are done with it. Imlib2 returns a valid image handle on
- * success or NULL on failure 
- * 
+ * success or NULL on failure
+ *
  **/
 EAPI                Imlib_Image
 imlib_create_image_using_data(int width, int height, DATA32 * data)
@@ -2023,13 +2091,13 @@ imlib_create_image_using_data(int width, int height, DATA32 * data)
  * @param height The height of the image.
  * @param data The data.
  * @return A valid image, otherwise NULL.
- * 
+ *
  * Works the same way as imlib_create_image_using_data() but Imlib2
  * copies the image data to the image structure. You may now do
  * whatever you wish with the original data as it will not be needed
  * anymore. Imlib2 returns a valid image handle on success or NULL on
- * failure. 
- * 
+ * failure.
+ *
  **/
 EAPI                Imlib_Image
 imlib_create_image_using_copied_data(int width, int height, DATA32 * data)
@@ -2064,7 +2132,7 @@ imlib_create_image_using_copied_data(int width, int height, DATA32 * data)
  * @param height The height of the rectangle.
  * @param need_to_grab_x Grab flag.
  * @return a valid image, otherwise NULL.
- * 
+ *
  * Return an image (using the mask @p mask to determine the alpha channel)
  * from the current drawable.
  * If @p mask is 0 it will not create a useful alpha channel in the image.
@@ -2074,8 +2142,8 @@ imlib_create_image_using_copied_data(int width, int height, DATA32 * data)
  * need_to_grab_x is 1 it will also grab the X Server to avoid possible race
  * conditions in grabbing. If you have not already grabbed the server
  * you MUST set this to 1. Imlib2 returns a valid image handle on
- * success or NULL on failure. 
- * 
+ * success or NULL on failure.
+ *
  **/
 EAPI                Imlib_Image
 imlib_create_image_from_drawable(Pixmap mask, int x, int y, int width,
@@ -2123,8 +2191,8 @@ imlib_create_image_from_drawable(Pixmap mask, int x, int y, int width,
  * @param height The height of the rectangle.
  * @param need_to_grab_x Grab flag.
  * @return a valid image, otherwise NULL.
- * 
- * 
+ *
+ *
  **/
 EAPI                Imlib_Image
 imlib_create_image_from_ximage(XImage * image, XImage * mask, int x, int y,
@@ -2154,7 +2222,7 @@ imlib_create_image_from_ximage(XImage * image, XImage * mask, int x, int y,
  * @param need_to_grab_x Grab flag.
  * @param get_mask_from_shape A char.
  * @return A valid image, otherwise NULL.
- * 
+ *
  * Creates an image from the current drawable (optionally using the
  * @p mask pixmap specified to determine alpha transparency) and scale
  * the grabbed data first before converting to an actual image (to
@@ -2165,8 +2233,8 @@ imlib_create_image_from_ximage(XImage * image, XImage * mask, int x, int y,
  * have already grabbed the server) and if @p get_mask_from_shape and the
  * current drawable is a window its shape is used for determining the
  * alpha channel. If successful this function will return a valid
- * image handle, otherwise NULL is returned. 
- * 
+ * image handle, otherwise NULL is returned.
+ *
  **/
 EAPI                Imlib_Image
 imlib_create_scaled_image_from_drawable(Pixmap mask, int source_x,
@@ -2191,62 +2259,93 @@ imlib_create_scaled_image_from_drawable(Pixmap mask, int source_x,
       return NULL;
    if ((mask) || (get_mask_from_shape))
       domask = 1;
+
    p = XCreatePixmap(ctx->display, ctx->drawable, destination_width,
                      source_height, ctx->depth);
+
    gcv.foreground = 0;
    gcv.subwindow_mode = IncludeInferiors;
    gcv.graphics_exposures = False;
-   if (domask)
-     {
-        m = XCreatePixmap(ctx->display, ctx->drawable, destination_width,
-                          source_height, 1);
-        mgc = XCreateGC(ctx->display, m,
-                        GCForeground | GCGraphicsExposures, &gcv);
-     }
-   else
-      m = None;
    gc = XCreateGC(ctx->display, ctx->drawable,
                   GCSubwindowMode | GCGraphicsExposures, &gcv);
+
    if ((domask) && (!mask))
      {
         XRectangle         *rect;
         int                 rect_num, rect_ord;
 
-        tmpmask = 1;
-        mask =
-           XCreatePixmap(ctx->display, ctx->drawable, source_width,
-                         source_height, 1);
-        rect =
-           XShapeGetRectangles(ctx->display, ctx->drawable, ShapeBounding,
-                               &rect_num, &rect_ord);
-        XFillRectangle(ctx->display, mask, mgc, 0, 0, source_width,
-                       source_height);
-        if (rect)
+        rect = XShapeGetRectangles(ctx->display, ctx->drawable, ShapeBounding,
+                                   &rect_num, &rect_ord);
+
+        if (rect && (rect_num == 1 &&
+                     rect[0].x == 0 && rect[0].y == 0 &&
+                     rect[0].width == source_width &&
+                     rect[0].height == source_height))
           {
-             XSetForeground(ctx->display, mgc, 1);
-             for (x = 0; x < rect_num; x++)
-                XFillRectangle(ctx->display, mask, mgc, rect[x].x, rect[x].y,
-                               rect[x].width, rect[x].height);
+             domask = 0;
              XFree(rect);
           }
-        /* build mask from window shape rects */
+        else
+          {
+             tmpmask = 1;
+             mask =
+                XCreatePixmap(ctx->display, ctx->drawable, source_width,
+                              source_height, 1);
+             mgc = XCreateGC(ctx->display, mask,
+                             GCForeground | GCGraphicsExposures, &gcv);
+             XFillRectangle(ctx->display, mask, mgc, 0, 0, source_width,
+                            source_height);
+             if (rect)
+               {
+                  XSetForeground(ctx->display, mgc, 1);
+                  for (x = 0; x < rect_num; x++)
+                     XFillRectangle(ctx->display, mask, mgc, rect[x].x,
+                                    rect[x].y, rect[x].width, rect[x].height);
+                  XFree(rect);
+               }
+          }
      }
-   for (x = 0; x < destination_width; x++)
+
+   if ((destination_width == source_width) &&
+       (destination_height == source_height))
      {
-        xx = (source_width * x) / destination_width;
-        XCopyArea(ctx->display, ctx->drawable, p, gc, source_x + xx, source_y,
-                  1, source_height, x, 0);
-        if (m != None)
-           XCopyArea(ctx->display, mask, m, mgc, xx, 0, 1, source_height, x, 0);
+        XCopyArea(ctx->display, ctx->drawable, p, gc, source_x, source_y,
+                  source_width, source_height, 0, 0);
+        m = mask;
      }
-   for (x = 0; x < destination_height; x++)
+   else
      {
-        xx = (source_height * x) / destination_height;
-        XCopyArea(ctx->display, p, p, gc, 0, xx, destination_width, 1, 0, x);
-        if (m != None)
-           XCopyArea(ctx->display, m, m, mgc, 0, xx, destination_width, 1, 0,
-                     x);
+        if (domask)
+          {
+             m = XCreatePixmap(ctx->display, ctx->drawable, destination_width,
+                               source_height, 1);
+             if (!mgc)
+                mgc = XCreateGC(ctx->display, m,
+                                GCForeground | GCGraphicsExposures, &gcv);
+          }
+        else
+           m = None;
+
+        for (x = 0; x < destination_width; x++)
+          {
+             xx = (source_width * x) / destination_width;
+             XCopyArea(ctx->display, ctx->drawable, p, gc,
+                       source_x + xx, source_y, 1, source_height, x, 0);
+             if (m != None)
+                XCopyArea(ctx->display, mask, m, mgc,
+                          xx, 0, 1, source_height, x, 0);
+          }
+        for (x = 0; x < destination_height; x++)
+          {
+             xx = (source_height * x) / destination_height;
+             XCopyArea(ctx->display, p, p, gc,
+                       0, xx, destination_width, 1, 0, x);
+             if (m != None)
+                XCopyArea(ctx->display, m, m, mgc,
+                          0, xx, destination_width, 1, 0, x);
+          }
      }
+
    im = __imlib_CreateImage(destination_width, destination_height, NULL);
    im->data = malloc(destination_width * destination_height * sizeof(DATA32));
    __imlib_GrabDrawableToRGBA(im->data, 0, 0, destination_width,
@@ -2258,15 +2357,16 @@ imlib_create_scaled_image_from_drawable(Pixmap mask, int source_x,
       SET_FLAG(im->flags, F_HAS_ALPHA);
    else
       UNSET_FLAG(im->flags, F_HAS_ALPHA);
-   XFreePixmap(ctx->display, p);
-   if (m != None)
-     {
-        XFreeGC(ctx->display, mgc);
-        XFreePixmap(ctx->display, m);
-        if (tmpmask)
-           XFreePixmap(ctx->display, mask);
-     }
+
+   if (mgc)
+      XFreeGC(ctx->display, mgc);
+   if (m != None && m != mask)
+      XFreePixmap(ctx->display, m);
+   if (tmpmask)
+      XFreePixmap(ctx->display, mask);
    XFreeGC(ctx->display, gc);
+   XFreePixmap(ctx->display, p);
+
    return (Imlib_Image) im;
 }
 
@@ -2280,7 +2380,7 @@ imlib_create_scaled_image_from_drawable(Pixmap mask, int source_x,
  * @param destination_y The x coordinate of the new location.
  * @param need_to_grab_x Grab flag.
  * @return A char.
- * 
+ *
  * Grabs a section of the current drawable (optionally using the pixmap @p mask
  * provided as a corresponding mask for that drawable - if @p mask is 0
  * this is not used).
@@ -2289,8 +2389,8 @@ imlib_create_scaled_image_from_drawable(Pixmap mask, int source_x,
  * places it at the destination (@p destination_x, @p destination_y) location in the current image. If
  * @p need_to_grab_x is 1 it will grab and ungrab the server whilst doing
  * this - you need to do this if you have not already grabbed the
- * server. 
- * 
+ * server.
+ *
  **/
 EAPI char
 imlib_copy_drawable_to_image(Pixmap mask, int x, int y, int width, int height,
@@ -2312,9 +2412,7 @@ imlib_copy_drawable_to_image(Pixmap mask, int x, int y, int width, int height,
      }
    CAST_IMAGE(im, ctx->image);
 
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return 0;
 
    pre_adj = 0;
@@ -2366,10 +2464,10 @@ imlib_copy_drawable_to_image(Pixmap mask, int x, int y, int width, int height,
 
 /**
  * @return A valid image, otherwise NULL.
- * 
+ *
  * Creates an exact duplicate of the current image and returns a valid
- * image handle on success, or NULL on failure. 
- * 
+ * image handle on success, or NULL on failure.
+ *
  **/
 EAPI                Imlib_Image
 imlib_clone_image(void)
@@ -2379,9 +2477,7 @@ imlib_clone_image(void)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_clone_image", "image", ctx->image, NULL);
    CAST_IMAGE(im_old, ctx->image);
-   if ((!(im_old->data)) && (im_old->loader) && (im_old->loader->load))
-      im_old->loader->load(im_old, NULL, 0, 1);
-   if (!(im_old->data))
+   if (__imlib_LoadImageData(im_old))
       return NULL;
    /* Note: below check should've ensured by original image allocation,
     * but better safe than sorry. */
@@ -2421,11 +2517,11 @@ imlib_clone_image(void)
  * @param width The width of the rectangle.
  * @param height The height of the rectangle.
  * @return A valid image, otherwise NULL.
- * 
+ *
  * Creates a duplicate of a (@p x, @p y, @p width, @p height) rectangle in the
  * current image and returns a valid image handle on success, or NULL
- * on failure. 
- * 
+ * on failure.
+ *
  **/
 EAPI                Imlib_Image
 imlib_create_cropped_image(int x, int y, int width, int height)
@@ -2438,9 +2534,7 @@ imlib_create_cropped_image(int x, int y, int width, int height)
    if (!IMAGE_DIMENSIONS_OK(abs(width), abs(height)))
       return NULL;
    CAST_IMAGE(im_old, ctx->image);
-   if ((!(im_old->data)) && (im_old->loader) && (im_old->loader->load))
-      im_old->loader->load(im_old, NULL, 0, 1);
-   if (!(im_old->data))
+   if (__imlib_LoadImageData(im_old))
       return NULL;
    im = __imlib_CreateImage(abs(width), abs(height), NULL);
    im->data = malloc(abs(width * height) * sizeof(DATA32));
@@ -2477,11 +2571,11 @@ imlib_create_cropped_image(int x, int y, int width, int height)
  * @param destination_width The width of the destination image.
  * @param destination_height The height of the destination image.
  * @return A valid image, otherwise NULL.
- * 
+ *
  * Works the same as imlib_create_cropped_image() but will scale the
  * new image to the new destination @p destination_width and
- * @p destination_height whilst cropping.  
- * 
+ * @p destination_height whilst cropping.
+ *
  **/
 EAPI                Imlib_Image
 imlib_create_cropped_scaled_image(int source_x, int source_y,
@@ -2496,9 +2590,7 @@ imlib_create_cropped_scaled_image(int source_x, int source_y,
    if (!IMAGE_DIMENSIONS_OK(abs(destination_width), abs(destination_height)))
       return NULL;
    CAST_IMAGE(im_old, ctx->image);
-   if ((!(im_old->data)) && (im_old->loader) && (im_old->loader->load))
-      im_old->loader->load(im_old, NULL, 0, 1);
-   if (!(im_old->data))
+   if (__imlib_LoadImageData(im_old))
       return NULL;
    im = __imlib_CreateImage(abs(destination_width), abs(destination_height),
                             NULL);
@@ -2534,7 +2626,7 @@ imlib_create_cropped_scaled_image(int source_x, int source_y,
 /**
  * @param updates An updates list.
  * @return Duplicate of @p updates.
- * 
+ *
  * Creates a duplicate of the updates list passed into the function.
  **/
 EAPI                Imlib_Updates
@@ -2554,11 +2646,11 @@ imlib_updates_clone(Imlib_Updates updates)
  * @param w The width of the rectangle.
  * @param h The height of the rectangle.
  * @return The updates handle.
- * 
+ *
  * Appends an update rectangle to the updates list passed in (if the
  * updates is NULL it will create a new updates list) and returns a
  * handle to the modified updates list (the handle may be modified so
- * only use the new updates handle returned). 
+ * only use the new updates handle returned).
  **/
 EAPI                Imlib_Updates
 imlib_update_append_rect(Imlib_Updates updates, int x, int y, int w, int h)
@@ -2575,12 +2667,12 @@ imlib_update_append_rect(Imlib_Updates updates, int x, int y, int w, int h)
  * @param w The width of the rectangle.
  * @param h The height of the rectangle.
  * @return The updates handle.
- * 
+ *
  * Takes an updates list, and modifies it by merging overlapped
  * rectangles and lots of tiny rectangles into larger rectangles to
  * minimize the number of rectangles in the list for optimized
  * redrawing. The new updates handle is now valid and the old one
- * passed in is not. 
+ * passed in is not.
  **/
 EAPI                Imlib_Updates
 imlib_updates_merge(Imlib_Updates updates, int w, int h)
@@ -2597,10 +2689,10 @@ imlib_updates_merge(Imlib_Updates updates, int w, int h)
  * @param w The width of the rectangle.
  * @param h The height of the rectangle.
  * @return The updates handle.
- * 
+ *
  * Works almost exactly as imlib_updates_merge() but is more lenient
  * on the spacing between update rectangles - if they are very close it
- * amalgamates 2 smaller rectangles into 1 larger one. 
+ * amalgamates 2 smaller rectangles into 1 larger one.
  **/
 EAPI                Imlib_Updates
 imlib_updates_merge_for_rendering(Imlib_Updates updates, int w, int h)
@@ -2614,7 +2706,7 @@ imlib_updates_merge_for_rendering(Imlib_Updates updates, int w, int h)
 
 /**
  * @param updates An updates list.
- * 
+ *
  * Frees an updates list.
  **/
 EAPI void
@@ -2630,9 +2722,9 @@ imlib_updates_free(Imlib_Updates updates)
 /**
  * @param updates An updates list.
  * @return The next updates.
- * 
+ *
  * Gets the next update in the updates list relative to the one passed
- * in. 
+ * in.
  **/
 EAPI                Imlib_Updates
 imlib_updates_get_next(Imlib_Updates updates)
@@ -2650,7 +2742,7 @@ imlib_updates_get_next(Imlib_Updates updates)
  * @param y_return The top left y coordinate of the update.
  * @param width_return The width of the update.
  * @param height_return The height of the update.
- * 
+ *
  * Returns the coordinates of an update.
  **/
 EAPI void
@@ -2679,7 +2771,7 @@ imlib_updates_get_coordinates(Imlib_Updates updates, int *x_return,
  * @param y The top left y coordinate of the update.
  * @param width The width of the update.
  * @param height The height of the update.
- * 
+ *
  * Modifies the coordinates of an update in @p update.
  **/
 EAPI void
@@ -2702,16 +2794,17 @@ imlib_updates_set_coordinates(Imlib_Updates updates, int x, int y, int width,
  * @param updates An updates list.
  * @param x The top left x coordinate of the update.
  * @param y The top left y coordinate of the update.
- * 
+ *
  * Given an updates list (preferable already merged for rendering)
  * this will render the corresponding parts of the image to the current
- * drawable at an offset of @p x, @p y in the drawable. 
+ * drawable at an offset of @p x, @p y in the drawable.
  **/
 EAPI void
 imlib_render_image_updates_on_drawable(Imlib_Updates updates, int x, int y)
 {
    ImlibUpdate        *u;
    ImlibImage         *im;
+   int                 ximcs;
 
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_render_image_updates_on_drawable", "image",
@@ -2720,11 +2813,11 @@ imlib_render_image_updates_on_drawable(Imlib_Updates updates, int x, int y)
    u = (ImlibUpdate *) updates;
    if (!updates)
       return;
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
-   __imlib_SetMaxXImageCount(ctx->display, 10);
+   ximcs = __imlib_GetXImageCacheCountMax(ctx->display);        /* Save */
+   if (ximcs == 0)              /* Only if we don't set this up elsewhere */
+      __imlib_SetXImageCacheCountMax(ctx->display, 10);
    for (; u; u = u->next)
      {
         __imlib_RenderImage(ctx->display, im, ctx->drawable, 0, ctx->visual,
@@ -2732,15 +2825,16 @@ imlib_render_image_updates_on_drawable(Imlib_Updates updates, int x, int y)
                             x + u->x, y + u->y, u->w, u->h, 0, ctx->dither, 0,
                             0, 0, ctx->color_modifier, OP_COPY);
      }
-   __imlib_SetMaxXImageCount(ctx->display, 0);
+   if (ximcs == 0)
+      __imlib_SetXImageCacheCountMax(ctx->display, ximcs);
 }
 #endif
 
 /**
  * @return The initialized updates list.
- * 
+ *
  * Initializes an updates list before you add any updates to it or
- * merge it for rendering etc. 
+ * merge it for rendering etc.
  **/
 EAPI                Imlib_Updates
 imlib_updates_init(void)
@@ -2753,9 +2847,9 @@ imlib_updates_init(void)
  * @param updates An updates list.
  * @param appended_updates The updates list to append.
  * @return The new updates list.
- * 
+ *
  * Appends @p appended_updates to the updates list @p updates and
- * returns the new list.  
+ * returns the new list.
  **/
 EAPI                Imlib_Updates
 imlib_updates_append_updates(Imlib_Updates updates,
@@ -2793,9 +2887,7 @@ imlib_image_flip_horizontal(void)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_flip_horizontal", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_FlipImageHoriz(im);
@@ -2812,9 +2904,7 @@ imlib_image_flip_vertical(void)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_flip_vertical", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_FlipImageVert(im);
@@ -2823,7 +2913,7 @@ imlib_image_flip_vertical(void)
 /**
  * Flips/mirrors the current image diagonally (good for quick and dirty
  * 90 degree rotations if used before to after a horizontal or vertical
- * flip). 
+ * flip).
  **/
 EAPI void
 imlib_image_flip_diagonal(void)
@@ -2833,9 +2923,7 @@ imlib_image_flip_diagonal(void)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_flip_diagonal", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_FlipImageDiagonal(im, 0);
@@ -2843,11 +2931,11 @@ imlib_image_flip_diagonal(void)
 
 /**
  * @param orientation The orientation.
- * 
+ *
  * Performs 90 degree rotations on the current image. Passing in
  * @p orientation does not rotate, 1 rotates clockwise by 90 degree, 2,
  * rotates clockwise by 180 degrees, 3 rotates clockwise by 270
- * degrees. 
+ * degrees.
  **/
 EAPI void
 imlib_image_orientate(int orientation)
@@ -2857,9 +2945,7 @@ imlib_image_orientate(int orientation)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_orientate", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    switch (orientation)
@@ -2893,10 +2979,10 @@ imlib_image_orientate(int orientation)
 
 /**
  * @param radius The radius.
- * 
+ *
  * Blurs the current image. A @p radius value of 0 has no effect, 1 and above
  * determine the blur matrix radius that determine how much to blur the
- * image. 
+ * image.
  **/
 EAPI void
 imlib_image_blur(int radius)
@@ -2906,9 +2992,7 @@ imlib_image_blur(int radius)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_blur", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_BlurImage(im, radius);
@@ -2916,9 +3000,9 @@ imlib_image_blur(int radius)
 
 /**
  * @param radius The radius.
- * 
+ *
  * Sharpens the current image. The @p radius value affects how much to sharpen
- * by. 
+ * by.
  **/
 EAPI void
 imlib_image_sharpen(int radius)
@@ -2928,9 +3012,7 @@ imlib_image_sharpen(int radius)
    CHECK_CONTEXT(ctx);
    CAST_IMAGE(im, ctx->image);
    CHECK_PARAM_POINTER("imlib_image_sharpen", "image", ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_SharpenImage(im, radius);
@@ -2948,9 +3030,7 @@ imlib_image_tile_horizontal(void)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_tile_horizontal", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_TileImageHoriz(im);
@@ -2968,9 +3048,7 @@ imlib_image_tile_vertical(void)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_tile_vertical", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_TileImageVert(im);
@@ -2989,9 +3067,7 @@ imlib_image_tile(void)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_tile", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_TileImageHoriz(im);
@@ -3001,13 +3077,13 @@ imlib_image_tile(void)
 /**
  * @param font_name The font name with the size.
  * @return NULL if no font found.
- * 
+ *
  * Loads a truetype font from the first directory in the font path that
  * contains that font. The font name @p font_name format is "font_name/size". For
  * example. If there is a font file called blum.ttf somewhere in the
  * font path you might use "blum/20" to load a 20 pixel sized font of
- * blum. If the font cannot be found NULL is returned. 
- * 
+ * blum. If the font cannot be found NULL is returned.
+ *
  **/
 EAPI                Imlib_Font
 imlib_load_font(const char *font_name)
@@ -3098,10 +3174,10 @@ imlib_get_next_font_in_fallback_chain(Imlib_Font fn)
  * @param x The x coordinate of the top left  corner.
  * @param y The y coordinate of the top left  corner.
  * @param text A null-byte terminated string.
- * 
+ *
  * Draws the null-byte terminated string @p text using the current font on
  * the current image at the (@p x, @p y) location (@p x, @p y denoting the top left
- * corner of the font string) 
+ * corner of the font string)
  **/
 EAPI void
 imlib_text_draw(int x, int y, const char *text)
@@ -3118,13 +3194,13 @@ imlib_text_draw(int x, int y, const char *text)
  * @param height_return The height of the string.
  * @param horizontal_advance_return Horizontal offset.
  * @param vertical_advance_return Vertical offset.
- * 
+ *
  * Works just like imlib_text_draw() but also returns the width and
  * height of the string drawn, and @p horizontal_advance_return returns
  * the number of pixels you should advance horizontally to draw another
  * string (useful if you are drawing a line of text word by word) and
  * @p vertical_advance_return does the same for the vertical direction
- * (i.e. drawing text line by line). 
+ * (i.e. drawing text line by line).
  **/
 EAPI void
 imlib_text_draw_with_return_metrics(int x, int y, const char *text,
@@ -3143,9 +3219,7 @@ imlib_text_draw_with_return_metrics(int x, int y, const char *text,
                        ctx->image);
    CHECK_PARAM_POINTER("imlib_text_draw_with_return_metrics", "text", text);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    fn = (ImlibFont *) ctx->font;
    __imlib_DirtyImage(im);
@@ -3168,9 +3242,9 @@ imlib_text_draw_with_return_metrics(int x, int y, const char *text,
  * @param text A string.
  * @param width_return The width of the text.
  * @param height_return The height of the text.
- * 
+ *
  * Gets the width and height in pixels the @p text string would use up
- * if drawn with the current font. 
+ * if drawn with the current font.
  **/
 EAPI void
 imlib_get_text_size(const char *text, int *width_return, int *height_return)
@@ -3269,12 +3343,12 @@ imlib_get_text_size(const char *text, int *width_return, int *height_return)
  * @param text A string.
  * @param horizontal_advance_return Horizontal offset.
  * @param vertical_advance_return Vertical offset.
- * 
+ *
  * Gets the advance horizontally and vertically in pixels the next
  * text string would need to be placed at for the current font. The
  * advances are not adjusted for rotation so you will have to translate
  * the advances (which are calculated as if the text was drawn
- * horizontally from left to right) depending on the text orientation. 
+ * horizontally from left to right) depending on the text orientation.
  **/
 EAPI void
 imlib_get_text_advance(const char *text, int *horizontal_advance_return,
@@ -3297,10 +3371,10 @@ imlib_get_text_advance(const char *text, int *horizontal_advance_return,
 /**
  * @param text A string.
  * @return The inset value of @text.
- * 
+ *
  * Returns the inset of the first character of @p text
- * in using the current font and returns that value in pixels. 
- * 
+ * in using the current font and returns that value in pixels.
+ *
  **/
 EAPI int
 imlib_get_text_inset(const char *text)
@@ -3316,9 +3390,9 @@ imlib_get_text_inset(const char *text)
 
 /**
  * @param path A directory path.
- * 
+ *
  * Adds the directory @p path to the end of the current list of
- * directories to scan for fonts. 
+ * directories to scan for fonts.
  **/
 EAPI void
 imlib_add_path_to_font_path(const char *path)
@@ -3331,7 +3405,7 @@ imlib_add_path_to_font_path(const char *path)
 
 /**
  * @param path A directory path.
- * 
+ *
  * Removes all directories in the font path that match @p path.
  **/
 EAPI void
@@ -3345,14 +3419,14 @@ imlib_remove_path_from_font_path(const char *path)
 /**
  * @param number_return Number of paths in the list.
  * @return A list of strings.
- * 
+ *
  * Returns a list of strings that are the directories in the font
  * path. Do not free this list or change it in any way. If you add or
  * delete members of the font path this list will be invalid. If you
  * intend to use this list later duplicate it for your own use. The
  * number of elements in the array of strings is put into
- * @p number_return. 
- * 
+ * @p number_return.
+ *
  **/
 EAPI char         **
 imlib_list_font_path(int *number_return)
@@ -3372,14 +3446,14 @@ imlib_list_font_path(int *number_return)
  * @param char_width_return The width of the character.
  * @param char_height_return The height of the character.
  * @return -1 if no character found.
- * 
+ *
  * Returns the character number in the string @p text using the current
  * font at the (@p x, @p y) pixel location which is an offset relative to the
  * top left of that string. -1 is returned if there is no character
  * there. If there is a character, @p char_x_return, @p char_y_return,
  * @p char_width_return and @p char_height_return (respectively the
- * character x, y, width and height)  are also filled in. 
- * 
+ * character x, y, width and height)  are also filled in.
+ *
  **/
 EAPI int
 imlib_text_get_index_and_location(const char *text, int x, int y,
@@ -3490,9 +3564,9 @@ imlib_text_get_index_and_location(const char *text, int x, int y,
  * @param char_y_return The y coordinate of the character.
  * @param char_width_return The width of the character.
  * @param char_height_return The height of the character.
- * 
+ *
  * Gets the geometry of the character at index @p index in the @p text
- * string using the current font. 
+ * string using the current font.
  **/
 EAPI void
 imlib_text_get_location_at_index(const char *text, int index,
@@ -3569,9 +3643,9 @@ imlib_text_get_location_at_index(const char *text, int index,
 /**
  * @param number_return Number of fonts in the list.
  * @return A list of fonts.
- * 
+ *
  * Returns a list of fonts imlib2 can find in its font path.
- * 
+ *
  **/
 EAPI char         **
 imlib_list_fonts(int *number_return)
@@ -3585,9 +3659,9 @@ imlib_list_fonts(int *number_return)
 /**
  * @param font_list The font list.
  * @param number Number of fonts in the list.
- * 
+ *
  * Frees the font list returned by imlib_list_fonts().
- * 
+ *
  **/
 EAPI void
 imlib_free_font_list(char **font_list, int number)
@@ -3599,7 +3673,7 @@ imlib_free_font_list(char **font_list, int number)
  * @return The font cache size.
  *
  * Returns the font cache size in bytes.
- * 
+ *
  **/
 EAPI int
 imlib_get_font_cache_size(void)
@@ -3610,11 +3684,11 @@ imlib_get_font_cache_size(void)
 
 /**
  * @param bytes The font cache size.
- * 
+ *
  * Sets the font cache in bytes. Whenever you set the font cache size
  * Imlib2 will flush fonts from the cache until the memory used by
  * fonts is less than or equal to the font cache size. Setting the size
- * to 0 effectively frees all speculatively cached fonts. 
+ * to 0 effectively frees all speculatively cached fonts.
  **/
 EAPI void
 imlib_set_font_cache_size(int bytes)
@@ -3625,7 +3699,7 @@ imlib_set_font_cache_size(int bytes)
 
 /**
  * Causes a flush of all speculatively cached fonts from the font
- * cache. 
+ * cache.
  **/
 EAPI void
 imlib_flush_font_cache(void)
@@ -3638,7 +3712,7 @@ imlib_flush_font_cache(void)
  * @return The font's ascent.
  *
  * Returns the current font's ascent value in pixels.
- * 
+ *
  **/
 EAPI int
 imlib_get_font_ascent(void)
@@ -3650,9 +3724,9 @@ imlib_get_font_ascent(void)
 
 /**
  * @return The font's descent.
- * 
+ *
  * Returns the current font's descent value in pixels.
- * 
+ *
  **/
 EAPI int
 imlib_get_font_descent(void)
@@ -3664,9 +3738,9 @@ imlib_get_font_descent(void)
 
 /**
  * @return The font's maximum ascent.
- * 
+ *
  * Returns the current font's maximum ascent extent.
- * 
+ *
  **/
 EAPI int
 imlib_get_maximum_font_ascent(void)
@@ -3678,9 +3752,9 @@ imlib_get_maximum_font_ascent(void)
 
 /**
  * @return The font's maximum descent.
- * 
+ *
  * Returns the current font's maximum descent extent.
- * 
+ *
  **/
 EAPI int
 imlib_get_maximum_font_descent(void)
@@ -3692,10 +3766,10 @@ imlib_get_maximum_font_descent(void)
 
 /**
  * @return Valid handle.
- * 
+ *
  * Creates a new empty color modifier and returns a
- * valid handle on success. NULL is returned on failure. 
- * 
+ * valid handle on success. NULL is returned on failure.
+ *
  **/
 EAPI                Imlib_Color_Modifier
 imlib_create_color_modifier(void)
@@ -3719,12 +3793,12 @@ imlib_free_color_modifier(void)
 
 /**
  * @param gamma_value Value of gamma.
- * 
+ *
  * Modifies the current color modifier by adjusting the gamma by the
  * value specified @p gamma_value. The color modifier is modified not set, so calling
  * this repeatedly has cumulative effects. A gamma of 1.0 is normal
  * linear, 2.0 brightens and 0.5 darkens etc. Negative values are not
- * allowed. 
+ * allowed.
  **/
 EAPI void
 imlib_modify_color_modifier_gamma(double gamma_value)
@@ -3738,7 +3812,7 @@ imlib_modify_color_modifier_gamma(double gamma_value)
 
 /**
  * @param brightness_value Value of brightness.
- * 
+ *
  * Modifies the current color modifier by adjusting the brightness by
  * the value @p brightness_value. The color modifier is modified not set, so
  * calling this repeatedly has cumulative effects. brightness values
@@ -3758,11 +3832,11 @@ imlib_modify_color_modifier_brightness(double brightness_value)
 
 /**
  * @param contrast_value Value of contrast.
- * 
+ *
  * Modifies the current color modifier by adjusting the contrast by
  * the value @p contrast_value. The color modifier is modified not set, so
  * calling this repeatedly has cumulative effects. Contrast of 1.0 does
- * nothing. 0.0 will merge to gray, 2.0 will double contrast etc. 
+ * nothing. 0.0 will merge to gray, 2.0 will double contrast etc.
  **/
 EAPI void
 imlib_modify_color_modifier_contrast(double contrast_value)
@@ -3779,12 +3853,12 @@ imlib_modify_color_modifier_contrast(double contrast_value)
  * @param green_table An array of #DATA8.
  * @param blue_table An array of #DATA8.
  * @param alpha_table An array of #DATA8.
- * 
+ *
  * Explicitly copies the mapping tables from the table pointers passed
  * into this function into those of the current color modifier. Tables
  * are 256 entry arrays of DATA8 which are a mapping of that channel
  * value to a new channel value. A normal mapping would be linear (v[0]
- * = 0, v[10] = 10, v[50] = 50, v[200] = 200, v[255] = 255). 
+ * = 0, v[10] = 10, v[50] = 50, v[200] = 200, v[255] = 255).
  **/
 EAPI void
 imlib_set_color_modifier_tables(DATA8 * red_table, DATA8 * green_table,
@@ -3802,10 +3876,10 @@ imlib_set_color_modifier_tables(DATA8 * red_table, DATA8 * green_table,
  * @param green_table: an array of #DATA8.
  * @param blue_table: an array of #DATA8.
  * @param alpha_table: an array of #DATA8.
- * 
+ *
  * Copies the table values from the current color modifier into the
  * pointers to mapping tables specified. They must have 256 entries and
- * be DATA8 format. 
+ * be DATA8 format.
  **/
 EAPI void
 imlib_get_color_modifier_tables(DATA8 * red_table, DATA8 * green_table,
@@ -3832,7 +3906,7 @@ imlib_reset_color_modifier(void)
 
 /**
  * Uses the current color modifier and modifies the current image using
- * the mapping tables in the current color modifier. 
+ * the mapping tables in the current color modifier.
  **/
 EAPI void
 imlib_apply_color_modifier(void)
@@ -3844,9 +3918,7 @@ imlib_apply_color_modifier(void)
    CHECK_PARAM_POINTER("imlib_apply_color_modifier", "color_modifier",
                        ctx->color_modifier);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_DataCmodApply(im->data, im->w, im->h, 0, &(im->flags),
@@ -3858,9 +3930,9 @@ imlib_apply_color_modifier(void)
  * @param y  The y coordinate of the top edge of the rectangle.
  * @param width  The width of the rectangle.
  * @param height  The height of the rectangle.
- * 
+ *
  * Works the same way as imlib_apply_color_modifier() but only modifies
- * a selected rectangle in the current image. 
+ * a selected rectangle in the current image.
  **/
 EAPI void
 imlib_apply_color_modifier_to_rectangle(int x, int y, int width, int height)
@@ -3895,9 +3967,7 @@ imlib_apply_color_modifier_to_rectangle(int x, int y, int width, int height)
       height = (im->h - y);
    if (height <= 0)
       return;
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_DataCmodApply(im->data + (y * im->w) + x, width, height,
@@ -3915,9 +3985,7 @@ imlib_image_draw_pixel(int x, int y, char make_updates)
    CHECK_PARAM_POINTER_RETURN("imlib_image_draw_pixel", "image", ctx->image,
                               NULL);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return NULL;
    __imlib_DirtyImage(im);
    A_VAL(&color) = (DATA8) ctx->color.alpha;
@@ -3940,12 +4008,12 @@ imlib_image_draw_pixel(int x, int y, char make_updates)
  * @param y2 The y coordinate of the second point.
  * @param make_updates: a char.
  * @return An updates list.
- * 
+ *
  * Draws a line using the current color on the current image from
  * coordinates (@p x1, @p y1) to (@p x2, @p y2). If @p make_updates is 1 it will also
  * return an update you can use for an updates list, otherwise it
- * returns NULL. 
- * 
+ * returns NULL.
+ *
  **/
 EAPI                Imlib_Updates
 imlib_image_draw_line(int x1, int y1, int x2, int y2, char make_updates)
@@ -3957,9 +4025,7 @@ imlib_image_draw_line(int x1, int y1, int x2, int y2, char make_updates)
    CHECK_PARAM_POINTER_RETURN("imlib_image_draw_line", "image", ctx->image,
                               NULL);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return NULL;
    __imlib_DirtyImage(im);
    A_VAL(&color) = (DATA8) ctx->color.alpha;
@@ -3981,11 +4047,11 @@ imlib_image_draw_line(int x1, int y1, int x2, int y2, char make_updates)
  * @param y The top left y coordinate of the rectangle.
  * @param width The width of the rectangle.
  * @param height The height of the rectangle.
- * 
+ *
  * Draws the outline of a rectangle on the current image at the (@p x,
  * @p y)
  * coordinates with a size of @p width and @p height pixels, using the
- * current color. 
+ * current color.
  **/
 EAPI void
 imlib_image_draw_rectangle(int x, int y, int width, int height)
@@ -3996,9 +4062,7 @@ imlib_image_draw_rectangle(int x, int y, int width, int height)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_draw_rectangle", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    A_VAL(&color) = (DATA8) ctx->color.alpha;
@@ -4016,10 +4080,10 @@ imlib_image_draw_rectangle(int x, int y, int width, int height)
  * @param y The top left y coordinate of the rectangle.
  * @param width The width of the rectangle.
  * @param height The height of the rectangle.
- * 
+ *
  * Draws a filled rectangle on the current image at the (@p x, @p y)
  * coordinates with a size of @p width and @p height pixels, using the
- * current color. 
+ * current color.
  **/
 EAPI void
 imlib_image_fill_rectangle(int x, int y, int width, int height)
@@ -4030,9 +4094,7 @@ imlib_image_fill_rectangle(int x, int y, int width, int height)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_fill_rectangle", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    A_VAL(&color) = (DATA8) ctx->color.alpha;
@@ -4049,10 +4111,10 @@ imlib_image_fill_rectangle(int x, int y, int width, int height)
  * @param image_source An image.
  * @param x The x coordinate.
  * @param y The y coordinate.
- * 
+ *
  * Copies the alpha channel of the source image @p image_source to the
  * (@p x, @p y) coordinates
- * of the current image, replacing the alpha channel there. 
+ * of the current image, replacing the alpha channel there.
  **/
 EAPI void
 imlib_image_copy_alpha_to_image(Imlib_Image image_source, int x, int y)
@@ -4066,13 +4128,9 @@ imlib_image_copy_alpha_to_image(Imlib_Image image_source, int x, int y)
                        ctx->image);
    CAST_IMAGE(im, image_source);
    CAST_IMAGE(im2, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if ((!(im2->data)) && (im2->loader) && (im2->loader->load))
-      im2->loader->load(im2, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
-   if (!(im2->data))
+   if (__imlib_LoadImageData(im2))
       return;
    __imlib_DirtyImage(im);
    __imlib_copy_alpha_data(im, im2, 0, 0, im->w, im->h, x, y);
@@ -4086,10 +4144,10 @@ imlib_image_copy_alpha_to_image(Imlib_Image image_source, int x, int y)
  * @param height The height of the rectangle.
  * @param destination_x The top left x coordinate of the destination rectangle.
  * @param destination_y The top left x coordinate of the destination rectangle.
- * 
+ *
  * Copies the source (@p x, @p y, @p width, @p height) rectangle alpha channel from
  * the source image @p image_source and replaces the alpha channel on the destination
- * image at the (@p destination_x, @p destination_y) coordinates. 
+ * image at the (@p destination_x, @p destination_y) coordinates.
  **/
 EAPI void
 imlib_image_copy_alpha_rectangle_to_image(Imlib_Image image_source, int x,
@@ -4105,13 +4163,9 @@ imlib_image_copy_alpha_rectangle_to_image(Imlib_Image image_source, int x,
                        "image_destination", ctx->image);
    CAST_IMAGE(im, image_source);
    CAST_IMAGE(im2, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if ((!(im2->data)) && (im2->loader) && (im2->loader->load))
-      im2->loader->load(im2, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
-   if (!(im2->data))
+   if (__imlib_LoadImageData(im2))
       return;
    __imlib_DirtyImage(im);
    __imlib_copy_alpha_data(im, im2, x, y, width, height, destination_x,
@@ -4125,10 +4179,10 @@ imlib_image_copy_alpha_rectangle_to_image(Imlib_Image image_source, int x,
  * @param height The height of the rectangle.
  * @param delta_x Distance along the x coordinates.
  * @param delta_y Distance along the y coordinates.
- * 
+ *
  * Scrolls a rectangle of size @p width, @p height at the (@p x, @p y)
  * location within the current image
- * by the @p delta_x, @p delta_y distance (in pixels). 
+ * by the @p delta_x, @p delta_y distance (in pixels).
  **/
 EAPI void
 imlib_image_scroll_rect(int x, int y, int width, int height, int delta_x,
@@ -4140,9 +4194,7 @@ imlib_image_scroll_rect(int x, int y, int width, int height, int delta_x,
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_scroll_rect", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    if (delta_x > 0)
      {
@@ -4179,10 +4231,10 @@ imlib_image_scroll_rect(int x, int y, int width, int height, int delta_x,
  * @param height The height of the rectangle.
  * @param new_x The top left x coordinate of the new location.
  * @param new_y The top left y coordinate of the new location.
- * 
+ *
  * Copies a rectangle of size @p width, @p height at the (@p x, @p y) location
  * specified in the current image to a new location (@p new_x, @p new_y) in the same
- * image. 
+ * image.
  **/
 EAPI void
 imlib_image_copy_rect(int x, int y, int width, int height, int new_x, int new_y)
@@ -4192,9 +4244,7 @@ imlib_image_copy_rect(int x, int y, int width, int height, int new_x, int new_y)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_copy_rect", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_copy_image_data(im, x, y, width, height, new_x, new_y);
@@ -4228,10 +4278,10 @@ imlib_free_color_range(void)
 
 /**
  * @param distance_away Distance from the previous color.
- * 
+ *
  * Adds the current color to the current color range at a @p distance_away
  * distance from the previous color in the range (if it's the first
- * color in the range this is irrelevant). 
+ * color in the range this is irrelevant).
  **/
 EAPI void
 imlib_add_color_to_color_range(int distance_away)
@@ -4250,11 +4300,11 @@ imlib_add_color_to_color_range(int distance_away)
  * @param width The width of the rectangle.
  * @param height The height of the rectangle.
  * @param angle Angle of gradient.
- * 
+ *
  * Fills a rectangle of width @p width and height @p height at the (@p x, @p y) location
  * specified in the current image with a linear gradient of the
  * current color range at an angle of @p angle degrees with 0 degrees
- * being vertical from top to bottom going clockwise from there. 
+ * being vertical from top to bottom going clockwise from there.
  **/
 EAPI void
 imlib_image_fill_color_range_rectangle(int x, int y, int width, int height,
@@ -4268,9 +4318,7 @@ imlib_image_fill_color_range_rectangle(int x, int y, int width, int height,
    CHECK_PARAM_POINTER("imlib_image_fill_color_range_rectangle",
                        "color_range", ctx->color_range);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_DrawGradient(im, x, y, width, height,
@@ -4286,13 +4334,13 @@ imlib_image_fill_color_range_rectangle(int x, int y, int width, int height,
  * @param width The width of the rectangle.
  * @param height The height of the rectangle.
  * @param angle Angle of gradient.
- * 
+ *
  * Fills a rectangle of width @p width and height @p height at the (@p
  * x, @p y) location
  * specified in the current image with a linear gradient in HSVA color
  * space of the current color range at an angle of @p angle degrees with
  * 0 degrees being vertical from top to bottom going clockwise from
- * there. 
+ * there.
  **/
 EAPI void
 imlib_image_fill_hsva_color_range_rectangle(int x, int y, int width, int height,
@@ -4306,9 +4354,7 @@ imlib_image_fill_hsva_color_range_rectangle(int x, int y, int width, int height,
    CHECK_PARAM_POINTER("imlib_image_fill_color_range_rectangle",
                        "color_range", ctx->color_range);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_DrawHsvaGradient(im, x, y, width, height,
@@ -4322,9 +4368,9 @@ imlib_image_fill_hsva_color_range_rectangle(int x, int y, int width, int height,
  * @param x The x coordinate of the pixel.
  * @param y The y coordinate of the pixel.
  * @param color_return The returned color.
- * 
+ *
  * Fills the @p color_return color structure with the color of the pixel
- * in the current image that is at the (@p x, @p y) location specified. 
+ * in the current image that is at the (@p x, @p y) location specified.
  **/
 EAPI void
 imlib_image_query_pixel(int x, int y, Imlib_Color * color_return)
@@ -4336,9 +4382,7 @@ imlib_image_query_pixel(int x, int y, Imlib_Color * color_return)
    CHECK_PARAM_POINTER("imlib_image_query_pixel", "image", ctx->image);
    CHECK_PARAM_POINTER("imlib_image_query_pixel", "color_return", color_return);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    if ((x < 0) || (x >= im->w) || (y < 0) || (y >= im->h))
      {
@@ -4362,9 +4406,9 @@ imlib_image_query_pixel(int x, int y, Imlib_Color * color_return)
  * @param saturation The returned saturation channel.
  * @param value The returned value channel.
  * @param alpha The returned alpha channel.
- * 
+ *
  * Gets the HSVA color of the pixel from the current image that is at
- * the (@p x, @p y) location specified. 
+ * the (@p x, @p y) location specified.
  **/
 EAPI void
 imlib_image_query_pixel_hsva(int x, int y, float *hue, float *saturation,
@@ -4377,9 +4421,7 @@ imlib_image_query_pixel_hsva(int x, int y, float *hue, float *saturation,
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_query_pixel", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    if ((x < 0) || (x >= im->w) || (y < 0) || (y >= im->h))
      {
@@ -4405,9 +4447,9 @@ imlib_image_query_pixel_hsva(int x, int y, float *hue, float *saturation,
  * @param lightness The returned lightness channel.
  * @param saturation The returned saturation channel.
  * @param alpha The returned alpha channel.
- * 
+ *
  * Gets the HLSA color of the pixel from the current image that is at
- * the (@p x, @p y) location specified. 
+ * the (@p x, @p y) location specified.
  **/
 EAPI void
 imlib_image_query_pixel_hlsa(int x, int y, float *hue, float *lightness,
@@ -4420,9 +4462,7 @@ imlib_image_query_pixel_hlsa(int x, int y, float *hue, float *lightness,
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_query_pixel", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    if ((x < 0) || (x >= im->w) || (y < 0) || (y >= im->h))
      {
@@ -4448,9 +4488,9 @@ imlib_image_query_pixel_hlsa(int x, int y, float *hue, float *lightness,
  * @param magenta The returned magenta channel.
  * @param yellow The returned yellow channel.
  * @param alpha The returned alpha channel.
- * 
+ *
  * Gets the CMYA color of the pixel from the current image that is at
- * the (@p x, @p y) location specified. 
+ * the (@p x, @p y) location specified.
  *
  **/
 EAPI void
@@ -4463,9 +4503,7 @@ imlib_image_query_pixel_cmya(int x, int y, int *cyan, int *magenta, int *yellow,
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_query_pixel", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    if ((x < 0) || (x >= im->w) || (y < 0) || (y >= im->h))
      {
@@ -4487,11 +4525,11 @@ imlib_image_query_pixel_cmya(int x, int y, int *cyan, int *magenta, int *yellow,
  * @param data A pointer.
  * @param value A value.
  * @param destructor_function An Imlib internal function.
- * 
+ *
  * Attaches data to the current image with the string key of @p key, and
  * the data of @p data and an integer of @p value. The
  * @p destructor_function function, if not NULL is called when this
- * image is freed so the destructor can free @p data, if this is needed. 
+ * image is freed so the destructor can free @p data, if this is needed.
  **/
 EAPI void
 imlib_image_attach_data_value(const char *key, void *data, int value,
@@ -4511,11 +4549,11 @@ imlib_image_attach_data_value(const char *key, void *data, int value,
 /**
  * @param key A string.
  * @return The attached data as a pointer, or NULL if none.
- * 
+ *
  * Gets the data attached to the current image with the key @p key
  * specified. NULL is returned if no data could be found with that key
- * on the current image. 
- * 
+ * on the current image.
+ *
  **/
 EAPI void          *
 imlib_image_get_attached_data(const char *key)
@@ -4538,10 +4576,10 @@ imlib_image_get_attached_data(const char *key)
 /**
  * @param key A string.
  * @return The attached value as an integer, or 0 if none.
- * 
+ *
  * Returns the value attached to the current image with the specified
- * key @p key. If none could be found 0 is returned. 
- * 
+ * key @p key. If none could be found 0 is returned.
+ *
  **/
 EAPI int
 imlib_image_get_attached_value(const char *key)
@@ -4562,9 +4600,9 @@ imlib_image_get_attached_value(const char *key)
 
 /**
  * @param key A string.
- * 
+ *
  * Detaches the data & value attached with the specified key @p key from the
- * current image. 
+ * current image.
  **/
 EAPI void
 imlib_image_remove_attached_data_value(const char *key)
@@ -4581,7 +4619,7 @@ imlib_image_remove_attached_data_value(const char *key)
 
 /**
  * @param key A string.
- * 
+ *
  * Removes the data and value attached to the current image with the
  * specified key @p key and also calls the destructor function that was
  * supplied when attaching it (see imlib_image_attach_data_value()).
@@ -4604,9 +4642,9 @@ imlib_image_remove_and_free_attached_data_value(const char *key)
 
 /**
  * @param filename The file name.
- * 
+ *
  * Saves the current image in the format specified by the current
- * image's format settings to the filename @p filename. 
+ * image's format settings to the filename @p filename.
  **/
 EAPI void
 imlib_save_image(const char *filename)
@@ -4618,10 +4656,7 @@ imlib_save_image(const char *filename)
    CHECK_PARAM_POINTER("imlib_save_image", "image", ctx->image);
    CHECK_PARAM_POINTER("imlib_save_image", "filename", filename);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      if (!im->loader->load(im, NULL, 0, 1))
-         return;
-   if (!im->data)
+   if (__imlib_LoadImageData(im))
       return;
    prev_ctxt_image = ctx->image;
    __imlib_SaveImage(im, filename, (ImlibProgressFunction) ctx->progress_func,
@@ -4632,9 +4667,9 @@ imlib_save_image(const char *filename)
 /**
  * @param filename The file name.
  * @param error_return The returned error.
- * 
+ *
  * Works the same way imlib_save_image() works, but will set the
- * @p error_return to an error value if the save fails. 
+ * @p error_return to an error value if the save fails.
  **/
 EAPI void
 imlib_save_image_with_error_return(const char *filename,
@@ -4651,10 +4686,7 @@ imlib_save_image_with_error_return(const char *filename,
    CHECK_PARAM_POINTER("imlib_save_image_with_error_return", "error_return",
                        error_return);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      if (!im->loader->load(im, NULL, 0, 1))
-         return;
-   if (!im->data)
+   if (__imlib_LoadImageData(im))
       return;
    prev_ctxt_image = ctx->image;
    __imlib_SaveImage(im, filename, (ImlibProgressFunction) ctx->progress_func,
@@ -4665,10 +4697,10 @@ imlib_save_image_with_error_return(const char *filename,
 /**
  * @param angle An angle in radians.
  * @return A new image, or NULL.
- * 
+ *
  * Creates an new copy of the current image, but rotated by @p angle
  * radians. On success it returns a valid image handle, otherwise
- * NULL. 
+ * NULL.
  **/
 EAPI                Imlib_Image
 imlib_create_rotated_image(double angle)
@@ -4681,9 +4713,7 @@ imlib_create_rotated_image(double angle)
    CHECK_PARAM_POINTER_RETURN("imlib_create_rotated_image", "image",
                               ctx->image, NULL);
    CAST_IMAGE(im_old, ctx->image);
-   if ((!(im_old->data)) && (im_old->loader) && (im_old->loader->load))
-      im_old->loader->load(im_old, NULL, 0, 1);
-   if (!(im_old->data))
+   if (__imlib_LoadImageData(im_old))
       return NULL;
 
    d = hypot((double)(im_old->w + 4), (double)(im_old->h + 4)) / sqrt(2.0);
@@ -4747,10 +4777,7 @@ imlib_rotate_image_from_buffer(double angle, Imlib_Image source_image)
    CHECK_PARAM_POINTER("imlib_rotate_image_from_buffer", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
 
-   if ((!(im_old->data)) && (im_old->loader) && (im_old->loader->load))
-      im_old->loader->load(im_old, NULL, 0, 1);
-
-   if (!(im_old->data))
+   if (__imlib_LoadImageData(im_old))
       return;
 
    d = hypot((double)(im_old->w + 4), (double)(im_old->h + 4)) / sqrt(2.0);
@@ -4812,9 +4839,9 @@ imlib_rotate_image_from_buffer(double angle, Imlib_Image source_image)
  * @param destination_y The destination y coordinate.
  * @param angle_x An angle.
  * @param angle_y An angle.
- * 
+ *
  * Works just like imlib_blend_image_onto_image_skewed() except you
- * cannot skew an image (@p v_angle_x and @p v_angle_y are 0). 
+ * cannot skew an image (@p v_angle_x and @p v_angle_y are 0).
  **/
 EAPI void
 imlib_blend_image_onto_image_at_angle(Imlib_Image source_image,
@@ -4833,13 +4860,9 @@ imlib_blend_image_onto_image_at_angle(Imlib_Image source_image,
                        ctx->image);
    CAST_IMAGE(im_src, source_image);
    CAST_IMAGE(im_dst, ctx->image);
-   if ((!(im_src->data)) && (im_src->loader) && (im_src->loader->load))
-      im_src->loader->load(im_src, NULL, 0, 1);
-   if (!(im_src->data))
+   if (__imlib_LoadImageData(im_src))
       return;
-   if ((!(im_dst->data)) && (im_dst->loader) && (im_dst->loader->load))
-      im_dst->loader->load(im_dst, NULL, 0, 1);
-   if (!(im_dst->data))
+   if (__imlib_LoadImageData(im_dst))
       return;
    __imlib_DirtyImage(im_dst);
    __imlib_BlendImageToImageSkewed(im_src, im_dst, ctx->anti_alias,
@@ -4865,15 +4888,15 @@ imlib_blend_image_onto_image_at_angle(Imlib_Image source_image,
  * @param h_angle_y An angle.
  * @param v_angle_x An angle.
  * @param v_angle_y An angle.
- * 
+ *
  * Blends the source rectangle (@p source_x, @p source_y, @p source_width,
- * @p source_height) from the 
+ * @p source_height) from the
  * @p source_image onto the current image at the destination
- * (@p destination_x, @p destination_y) 
+ * (@p destination_x, @p destination_y)
  * location. It will be rotated and scaled so that the upper right
  * corner will be positioned @p h_angle_x pixels to the right (or left,
  * if negative) and @p h_angle_y pixels down (from (@p destination_x,
- * @p destination_y). If 
+ * @p destination_y). If
  * @p v_angle_x and @p v_angle_y are not 0, the image will also be skewed so
  * that the lower left corner will be positioned @p v_angle_x pixels to
  * the right and @p v_angle_y pixels down. The at_angle versions simply
@@ -4885,11 +4908,11 @@ imlib_blend_image_onto_image_at_angle(Imlib_Image source_image,
  * @code
  * imlib_blend_image_onto_image_skewed(..., 0, 0, 100, 0, 0, 100);
  * @endcode
- * will simply scale the image to be 100x100. 
+ * will simply scale the image to be 100x100.
  * @code
  * imlib_blend_image_onto_image_skewed(..., 0, 0, 0, 100, 100, 0);
  * @endcode
- * will scale the image to be 100x100, and flip it diagonally. 
+ * will scale the image to be 100x100, and flip it diagonally.
  * @code
  * imlib_blend_image_onto_image_skewed(..., 100, 0, 0, 100, -100, 0);
  * @endcode
@@ -4922,13 +4945,9 @@ imlib_blend_image_onto_image_skewed(Imlib_Image source_image,
                        ctx->image);
    CAST_IMAGE(im_src, source_image);
    CAST_IMAGE(im_dst, ctx->image);
-   if ((!(im_src->data)) && (im_src->loader) && (im_src->loader->load))
-      im_src->loader->load(im_src, NULL, 0, 1);
-   if (!(im_src->data))
+   if (__imlib_LoadImageData(im_src))
       return;
-   if ((!(im_dst->data)) && (im_dst->loader) && (im_dst->loader->load))
-      im_dst->loader->load(im_dst, NULL, 0, 1);
-   if (!(im_dst->data))
+   if (__imlib_LoadImageData(im_dst))
       return;
    __imlib_DirtyImage(im_dst);
    __imlib_BlendImageToImageSkewed(im_src, im_dst, ctx->anti_alias,
@@ -4953,11 +4972,11 @@ imlib_blend_image_onto_image_skewed(Imlib_Image source_image,
  * @param h_angle_y An angle.
  * @param v_angle_x An angle.
  * @param v_angle_y An angle.
- * 
- * 
+ *
+ *
  * Works just like imlib_blend_image_onto_image_skewed(), except it
  * blends the image onto the current drawable instead of the current
- * image. 
+ * image.
  **/
 EAPI void
 imlib_render_image_on_drawable_skewed(int source_x, int source_y,
@@ -4972,11 +4991,8 @@ imlib_render_image_on_drawable_skewed(int source_x, int source_y,
    CHECK_PARAM_POINTER("imlib_render_image_on_drawable_skewed", "image",
                        ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
-   CAST_IMAGE(im, ctx->image);
    __imlib_RenderImageSkewed(ctx->display, im, ctx->drawable, ctx->mask,
                              ctx->visual, ctx->colormap, ctx->depth, source_x,
                              source_y, source_width, source_height,
@@ -4996,10 +5012,10 @@ imlib_render_image_on_drawable_skewed(int source_x, int source_y,
  * @param destination_y The destination y coordinate.
  * @param angle_x An angle.
  * @param angle_y An angle.
- * 
- * 
+ *
+ *
  * Works just like imlib_render_image_on_drawable_skewed() except you
- * cannot skew an image (@p v_angle_x and @p v_angle_y are 0). 
+ * cannot skew an image (@p v_angle_x and @p v_angle_y are 0).
  **/
 EAPI void
 imlib_render_image_on_drawable_at_angle(int source_x, int source_y,
@@ -5013,11 +5029,8 @@ imlib_render_image_on_drawable_at_angle(int source_x, int source_y,
    CHECK_PARAM_POINTER("imlib_render_image_on_drawable_at_angle", "image",
                        ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
-   CAST_IMAGE(im, ctx->image);
    __imlib_RenderImageSkewed(ctx->display, im, ctx->drawable, ctx->mask,
                              ctx->visual, ctx->colormap, ctx->depth, source_x,
                              source_y, source_width, source_height,
@@ -5037,9 +5050,7 @@ imlib_image_filter(void)
    CHECK_PARAM_POINTER("imlib_image_filter", "image", ctx->image);
    CHECK_PARAM_POINTER("imlib_image_filter", "filter", ctx->filter);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    __imlib_FilterImage(im, (ImlibFilter *) ctx->filter);
@@ -5061,11 +5072,11 @@ imlib_free_filter(void)
    ctx->filter = NULL;
 }
 
-/** 
+/**
  * @param filter Current filter.
  *
  * Sets the current filter to be used when applying filters to
- * images. Set this to NULL to disable filters. 
+ * images. Set this to NULL to disable filters.
  */
 EAPI void
 imlib_context_set_filter(Imlib_Filter filter)
@@ -5074,7 +5085,7 @@ imlib_context_set_filter(Imlib_Filter filter)
    ctx->filter = filter;
 }
 
-/** 
+/**
  * @return
  *
  * Gets the current context image filter.
@@ -5169,9 +5180,7 @@ imlib_apply_filter(char *script, ...)
    CHECK_CONTEXT(ctx);
    __imlib_dynamic_filters_init();
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    va_start(param_list, script);
@@ -5193,10 +5202,10 @@ imlib_polygon_new(void)
  * @param poly A polygon
  * @param x The X coordinate.
  * @param y The Y coordinate.
- * 
+ *
  * Adds the point (@p x, @p y) to the polygon @p poly. The point will be added
  * to the end of the polygon's internal point list. The points are
- * drawn in order, from the first to the last. 
+ * drawn in order, from the first to the last.
  **/
 EAPI void
 imlib_polygon_add_point(ImlibPolygon poly, int x, int y)
@@ -5208,7 +5217,7 @@ imlib_polygon_add_point(ImlibPolygon poly, int x, int y)
 
 /**
  * @param poly A polygon.
- * 
+ *
  * Frees a polygon object.
  **/
 EAPI void
@@ -5222,11 +5231,11 @@ imlib_polygon_free(ImlibPolygon poly)
 /**
  * @param poly A polygon.
  * @param closed Closed polygon flag.
- * 
+ *
  * Draws the polygon @p poly onto the current context image. Points which have
  * been added to the polygon are drawn in sequence, first to last. The
  * final point will be joined with the first point if @p closed is
- * non-zero. 
+ * non-zero.
  **/
 EAPI void
 imlib_image_draw_polygon(ImlibPolygon poly, unsigned char closed)
@@ -5237,9 +5246,7 @@ imlib_image_draw_polygon(ImlibPolygon poly, unsigned char closed)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_draw_polygon", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    A_VAL(&color) = (DATA8) ctx->color.alpha;
@@ -5254,9 +5261,9 @@ imlib_image_draw_polygon(ImlibPolygon poly, unsigned char closed)
 
 /**
  * @param poly A polygon.
- * 
+ *
  * Fills the area defined by the polygon @p polyon the current context image
- * with the current context color. 
+ * with the current context color.
  **/
 EAPI void
 imlib_image_fill_polygon(ImlibPolygon poly)
@@ -5267,9 +5274,7 @@ imlib_image_fill_polygon(ImlibPolygon poly)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_fill_polygon", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    A_VAL(&color) = (DATA8) ctx->color.alpha;
@@ -5288,10 +5293,10 @@ imlib_image_fill_polygon(ImlibPolygon poly)
  * @param py1 Y coordinate of the upper left corner.
  * @param px2 X coordinate of the lower right corner.
  * @param py2 Y coordinate of the lower right corner.
- * 
+ *
  * Calculates the bounding area of the polygon @p poly. (@p px1, @p py1) defines the
  * upper left corner of the bounding box and (@p px2, @p py2) defines it's
- * lower right corner. 
+ * lower right corner.
  **/
 EAPI void
 imlib_polygon_get_bounds(ImlibPolygon poly, int *px1, int *py1, int *px2,
@@ -5307,12 +5312,12 @@ imlib_polygon_get_bounds(ImlibPolygon poly, int *px1, int *py1, int *px2,
  * @param yc Y coordinate of the center of the ellipse.
  * @param a The horizontal amplitude of the ellipse.
  * @param b The vertical amplitude of the ellipse.
- * 
+ *
  * Draws an ellipse on the current context image. The ellipse is
  * defined as (@p x-@p xc)^2/@p a^2 + (@p y-@p yc)^2/@p b^2 = 1. This means that the
  * point (@p xc, @p yc) marks the center of the ellipse, @p a defines the
  * horizontal amplitude of the ellipse, and @p b defines the vertical
- * amplitude. 
+ * amplitude.
  **/
 EAPI void
 imlib_image_draw_ellipse(int xc, int yc, int a, int b)
@@ -5323,9 +5328,7 @@ imlib_image_draw_ellipse(int xc, int yc, int a, int b)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_draw_ellipse", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    A_VAL(&color) = (DATA8) ctx->color.alpha;
@@ -5343,13 +5346,13 @@ imlib_image_draw_ellipse(int xc, int yc, int a, int b)
  * @param yc Y coordinate of the center of the ellipse.
  * @param a The horizontal amplitude of the ellipse.
  * @param b The vertical amplitude of the ellipse.
- * 
+ *
  * Fills an ellipse on the current context image using the current
- * context color. The ellipse is 
+ * context color. The ellipse is
  * defined as (@p x-@p xc)^2/@p a^2 + (@p y-@p yc)^2/@p b^2 = 1. This means that the
  * point (@p xc, @p yc) marks the center of the ellipse, @p a defines the
  * horizontal amplitude of the ellipse, and @p b defines the vertical
- * amplitude. 
+ * amplitude.
  **/
 EAPI void
 imlib_image_fill_ellipse(int xc, int yc, int a, int b)
@@ -5360,9 +5363,7 @@ imlib_image_fill_ellipse(int xc, int yc, int a, int b)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_fill_ellipse", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    A_VAL(&color) = (DATA8) ctx->color.alpha;
@@ -5379,7 +5380,7 @@ imlib_image_fill_ellipse(int xc, int yc, int a, int b)
  * @param poly A polygon
  * @param x The X coordinate.
  * @param y The Y coordinate.
- * 
+ *
  * Returns non-zero if the point (@p x, @p y) is within the area defined by
  * the polygon @p poly.
  **/
@@ -5400,9 +5401,7 @@ imlib_image_clear(void)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_clear", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    memset(im->data, 0, im->w * im->h * sizeof(DATA32));
@@ -5418,9 +5417,7 @@ imlib_image_clear_color(int r, int g, int b, int a)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER("imlib_image_clear_color", "image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if ((!(im->data)) && (im->loader) && (im->loader->load))
-      im->loader->load(im, NULL, 0, 1);
-   if (!(im->data))
+   if (__imlib_LoadImageData(im))
       return;
    __imlib_DirtyImage(im);
    max = im->w * im->h;

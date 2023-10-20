@@ -351,13 +351,9 @@ __imlib_BlendImageToImageSkewed(ImlibImage * im_src, ImlibImage * im_dst,
    if ((ssw < 0) || (ssh < 0))
       return;
 
-   if ((!(im_src->data)) && (im_src->loader) && (im_src->loader->load))
-      im_src->loader->load(im_src, NULL, 0, 1);
-   if (!im_src->data)
+   if (__imlib_LoadImageData(im_src))
       return;
-   if ((!(im_dst->data)) && (im_dst->loader) && (im_dst->loader->load))
-      im_dst->loader->load(im_dst, NULL, 0, 1);
-   if (!im_dst->data)
+   if (__imlib_LoadImageData(im_dst))
       return;
 
    /*\ Complicated gonio.  Works on paper..

@@ -22,8 +22,6 @@
 #endif
 #endif
 
-
-
 #ifndef X_DISPLAY_MISSING
 #include <X11/Xlib.h>
 #endif
@@ -198,6 +196,7 @@ EAPI Imlib_Image    imlib_context_get_image(void);
 EAPI void           imlib_context_get_cliprect(int *x, int *y, int *w, int *h);
 EAPI Imlib_TTF_Encoding imlib_context_get_TTF_encoding(void);
 
+EAPI int            imlib_get_cache_used(void);
 EAPI int            imlib_get_cache_size(void);
 EAPI void           imlib_set_cache_size(int bytes);
 EAPI int            imlib_get_color_usage(void);
@@ -317,6 +316,13 @@ EAPI char           imlib_copy_drawable_to_image(Pixmap mask, int x, int y,
                                                  int destination_x,
                                                  int destination_y,
                                                  char need_to_grab_x);
+
+EAPI int            imlib_get_ximage_cache_count_used(void);
+EAPI int            imlib_get_ximage_cache_count_max(void);
+EAPI void           imlib_set_ximage_cache_count_max(int count);
+EAPI int            imlib_get_ximage_cache_size_used(void);
+EAPI int            imlib_get_ximage_cache_size_max(void);
+EAPI void           imlib_set_ximage_cache_size_max(int bytes);
 #endif
 EAPI Imlib_Image    imlib_clone_image(void);
 EAPI Imlib_Image    imlib_create_cropped_image(int x, int y, int width,

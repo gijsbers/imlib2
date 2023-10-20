@@ -46,6 +46,9 @@
    declarations. */
 #undef HAVE_VISIBILITY
 
+/* enabling X11 MIT-SHM FD-passing support */
+#undef HAVE_X11_SHM_FD
+
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
 

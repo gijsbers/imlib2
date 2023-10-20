@@ -135,11 +135,8 @@ main(int argc, char **argv)
            printf("Output  : wxh=%ux%u\n", wo, ho);
      }
 
-   if ((wo != w) || (ho != h))
-      im = imlib_create_scaled_image_from_drawable(None, 0, 0, w, h, wo, ho, 1,
-                                                   (get_alpha) ? 1 : 0);
-   else
-      im = imlib_create_image_from_drawable((get_alpha) ? 1 : 0, 0, 0, w, h, 1);
+   im = imlib_create_scaled_image_from_drawable(None, 0, 0, w, h, wo, ho, 1,
+                                                (get_alpha) ? 1 : 0);
    if (!im)
      {
         fprintf(stderr, "Cannot grab image!\n");

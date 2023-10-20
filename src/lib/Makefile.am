@@ -87,7 +87,7 @@ EXTRA_DIST = $(MMX_SRCS) $(AMD64_SRCS) asm_loadimmq.S
 
 MY_LIBS = $(FREETYPE_LIBS) $(DLOPEN_LIBS) -lm
 if BUILD_X11
-MY_LIBS += -lXext -lX11
+MY_LIBS += -lXext -lX11 @X_SHM_FD_LIBS@
 endif
 
 if BUILD_MMX
