@@ -112,6 +112,7 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
                                                     window_height);
         XSetWindowBackgroundPixmap(disp, win, pm);
         XResizeWindow(disp, win, window_width, window_height);
+        XClearWindow(disp, win);
         XMapWindow(disp, win);
         XSync(disp, False);
      }
@@ -238,6 +239,8 @@ main(int argc, char **argv)
         fd_set              fdset;
         double              t1;
         KeySym              key;
+        Imlib_Image        *im2;
+        int                 no2;
 
         XFlush(disp);
         XNextEvent(disp, &ev);
@@ -252,6 +255,8 @@ main(int argc, char **argv)
                 goto quit;
              break;
           case KeyPress:
+             while (XCheckTypedWindowEvent(disp, win, KeyPress, &ev))
+                ;
              key = XLookupKeysym(&ev.xkey, 0);
              if (key == XK_q || key == XK_Escape)
                 goto quit;
@@ -292,7 +297,8 @@ main(int argc, char **argv)
                 goto show_prev;
              break;
           case MotionNotify:
-             while (XCheckTypedWindowEvent(disp, win, MotionNotify, &ev));
+             while (XCheckTypedWindowEvent(disp, win, MotionNotify, &ev))
+                ;
              x = ev.xmotion.x;
              y = ev.xmotion.y;
              if (zoom_mode)
@@ -349,30 +355,37 @@ main(int argc, char **argv)
              inc = -1;
              goto show_next_prev;
            show_next_prev:
-             zoom = 1.0;
-             zoom_mode = 0;
-             imlib_context_set_image(im);
-             imlib_free_image_and_decache();
-             for (im = NULL; !im;)
+             for (no2 = no;;)
                {
-                  no += inc;
-                  if (no >= argc)
+                  no2 += inc;
+                  if (no2 >= argc)
                     {
                        inc = -1;
                        continue;
                     }
-                  else if (no < 0)
+                  else if (no2 < 0)
                     {
                        inc = 1;
                        continue;
                     }
-                  file = argv[no];
+                  file = argv[no2];
                   if (verbose)
-                     printf("Show  %d: '%s'\n", no, file);
+                     printf("Show  %d: '%s'\n", no2, file);
+                  if (no2 == no)
+                     break;
                   image_width = 0;
-                  im = imlib_load_image(file);
+                  im2 = imlib_load_image(file);
+                  if (!im2)
+                     continue;
+                  zoom = 1.0;
+                  zoom_mode = 0;
+                  imlib_context_set_image(im);
+                  imlib_free_image_and_decache();
+                  no = no2;
+                  im = im2;
+                  imlib_context_set_image(im);
+                  break;
                }
-             imlib_context_set_image(im);
              break;
           }
 

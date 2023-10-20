@@ -7,6 +7,7 @@
  */
 #include "loader_common.h"
 
+#include <limits.h>
 #include <string.h>
 
 #define DEBUG 0
@@ -72,9 +73,6 @@ static void
 ico_delete(ico_t * ico)
 {
    int                 i;
-
-   if (ico->fp)
-      fclose(ico->fp);
 
    if (ico->ie)
      {
@@ -168,8 +166,12 @@ ico_read_icon(ico_t * ico, int ino)
      case 4:
      case 8:
         D("Allocating a %d slot colormap\n", ie->bih.colors);
+        if (UINT_MAX / sizeof(DATA32) < ie->bih.colors)
+           goto bail;
         size = ie->bih.colors * sizeof(DATA32);
         ie->cmap = malloc(size);
+        if (ie->cmap == NULL)
+           goto bail;
         nr = fread(ie->cmap, 1, size, ico->fp);
         if (nr != size)
            goto bail;
@@ -182,8 +184,14 @@ ico_read_icon(ico_t * ico, int ino)
         break;
      }
 
+   if (!IMAGE_DIMENSIONS_OK(ie->w, ie->h) || ie->bih.bpp == 0 ||
+       UINT_MAX / ie->bih.bpp < ie->w * ie->h)
+      goto bail;
+
    size = ((ie->bih.bpp * ie->w + 31) / 32 * 4) * ie->h;
    ie->pxls = malloc(size);
+   if (ie->pxls == NULL)
+      goto bail;
    nr = fread(ie->pxls, 1, size, ico->fp);
    if (nr != size)
       goto bail;
@@ -191,6 +199,8 @@ ico_read_icon(ico_t * ico, int ino)
 
    size = ((ie->w + 31) / 32 * 4) * ie->h;
    ie->mask = malloc(size);
+   if (ie->mask == NULL)
+      goto bail;
    nr = fread(ie->mask, 1, size, ico->fp);
    if (nr != size)
       goto bail;
@@ -203,7 +213,7 @@ ico_read_icon(ico_t * ico, int ino)
 }
 
 static ico_t       *
-ico_read(char *filename)
+ico_read(FILE * fp)
 {
    ico_t              *ico;
    unsigned int        nr, i;
@@ -212,9 +222,7 @@ ico_read(char *filename)
    if (!ico)
       return NULL;
 
-   ico->fp = fopen(filename, "rb");
-   if (!ico->fp)
-      goto bail;
+   ico->fp = fp;
 
    nr = fread(&ico->idir, 1, sizeof(ico->idir), ico->fp);
    if (nr != sizeof(ico->idir))
@@ -405,23 +413,21 @@ ico_load(ico_t * ico, ImlibImage * im, int load_data)
    return 1;
 }
 
-char
-load(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity,
-     char immediate_load)
+int
+load2(ImlibImage * im, int load_data)
 {
    ico_t              *ico;
-   int                 ok, load_data;
+   int                 ok;
 
-   ico = ico_read(im->real_file);
+   ico = ico_read(im->fp);
    if (!ico)
       return 0;
 
-   load_data = im->loader || immediate_load || progress;
    ok = ico_load(ico, im, load_data);
    if (ok)
      {
-        if (progress)
-           progress(im, 100, 0, 0, im->w, im->h);
+        if (im->lc)
+           __imlib_LoadProgressRows(im, 0, im->h);
      }
 
    ico_delete(ico);
@@ -433,11 +439,6 @@ void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "ico" };
-   int                 i;
-
-   l->num_formats = sizeof(list_formats) / sizeof(char *);
-   l->formats = malloc(sizeof(char *) * l->num_formats);
-
-   for (i = 0; i < l->num_formats; i++)
-      l->formats[i] = strdup(list_formats[i]);
+   __imlib_LoaderSetFormats(l, list_formats,
+                            sizeof(list_formats) / sizeof(char *));
 }

@@ -34,11 +34,9 @@
 #include "updates.h"
 #ifdef BUILD_X11
 #include "color.h"
-#include "context.h"
 #include "draw.h"
 #include "grab.h"
 #include "rend.h"
-#include "rgba.h"
 #include "ximage.h"
 #endif
 
@@ -89,7 +87,7 @@ struct _imlibcontext {
    char                dither;
    char                blend;
    Imlib_Color_Modifier color_modifier;
-   Imlib_Operation     operation;
+   ImlibOp             operation;
    Imlib_Font          font;
    Imlib_Text_Direction direction;
    double              angle;
@@ -180,7 +178,7 @@ imlib_context_new(void)
    context->dither = 0;
    context->blend = 1;
    context->color_modifier = NULL;
-   context->operation = IMLIB_OP_COPY;
+   context->operation = (ImlibOp) IMLIB_OP_COPY;
    context->font = NULL;
    context->direction = IMLIB_TEXT_TO_RIGHT;
    context->angle = 0.0;
@@ -734,7 +732,7 @@ EAPI void
 imlib_context_set_operation(Imlib_Operation operation)
 {
    CHECK_CONTEXT(ctx);
-   ctx->operation = operation;
+   ctx->operation = (ImlibOp) operation;
 }
 
 /**
@@ -746,7 +744,7 @@ EAPI                Imlib_Operation
 imlib_context_get_operation(void)
 {
    CHECK_CONTEXT(ctx);
-   return ctx->operation;
+   return (Imlib_Operation) ctx->operation;
 }
 
 /**
@@ -1314,7 +1312,8 @@ imlib_load_image(const char *file)
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_load_image", "file", file, NULL);
    prev_ctxt_image = ctx->image;
-   im = __imlib_LoadImage(file, (ImlibProgressFunction) ctx->progress_func,
+   im = __imlib_LoadImage(file, NULL,
+                          (ImlibProgressFunction) ctx->progress_func,
                           ctx->progress_granularity, 0, 0, NULL);
    ctx->image = prev_ctxt_image;
    return (Imlib_Image) im;
@@ -1339,7 +1338,8 @@ imlib_load_image_immediately(const char *file)
    CHECK_PARAM_POINTER_RETURN("imlib_load_image_immediately", "file", file,
                               NULL);
    prev_ctxt_image = ctx->image;
-   im = __imlib_LoadImage(file, (ImlibProgressFunction) ctx->progress_func,
+   im = __imlib_LoadImage(file, NULL,
+                          (ImlibProgressFunction) ctx->progress_func,
                           ctx->progress_granularity, 1, 0, NULL);
    ctx->image = prev_ctxt_image;
    return (Imlib_Image) im;
@@ -1362,7 +1362,8 @@ imlib_load_image_without_cache(const char *file)
    CHECK_PARAM_POINTER_RETURN("imlib_load_image_without_cache", "file",
                               file, NULL);
    prev_ctxt_image = ctx->image;
-   im = __imlib_LoadImage(file, (ImlibProgressFunction) ctx->progress_func,
+   im = __imlib_LoadImage(file, NULL,
+                          (ImlibProgressFunction) ctx->progress_func,
                           ctx->progress_granularity, 0, 1, NULL);
    ctx->image = prev_ctxt_image;
    return (Imlib_Image) im;
@@ -1386,9 +1387,46 @@ imlib_load_image_immediately_without_cache(const char *file)
    CHECK_PARAM_POINTER_RETURN("imlib_load_image_immediately_without_cache",
                               "file", file, NULL);
    prev_ctxt_image = ctx->image;
-   im = __imlib_LoadImage(file, (ImlibProgressFunction) ctx->progress_func,
+   im = __imlib_LoadImage(file, NULL,
+                          (ImlibProgressFunction) ctx->progress_func,
                           ctx->progress_granularity, 1, 1, NULL);
    ctx->image = prev_ctxt_image;
+   return (Imlib_Image) im;
+}
+
+/**
+ * @param fd Image file descriptor.
+ * @param file Image file.
+ * @return An image handle.
+ *
+ * Loads the image without deferred image data decoding (i.e. it is
+ * decoded straight away) and without looking in the cache. Returns an
+ * image handle on success or NULL on failure.
+ * fd will be closed after calling this function.
+ */
+EAPI                Imlib_Image
+imlib_load_image_fd(int fd, const char *file)
+{
+   Imlib_Image         im = NULL;
+   Imlib_Image         prev_ctxt_image;
+   FILE               *fp;
+
+   CHECK_CONTEXT(ctx);
+   CHECK_PARAM_POINTER_RETURN("imlib_load_image_fd", "file", file, NULL);
+   fp = fdopen(fd, "rb");
+   if (fp)
+     {
+        prev_ctxt_image = ctx->image;
+        im = __imlib_LoadImage(file, fp,
+                               (ImlibProgressFunction) ctx->progress_func,
+                               ctx->progress_granularity, 1, 1, NULL);
+        fclose(fp);
+        ctx->image = prev_ctxt_image;
+     }
+   else
+     {
+        close(fd);
+     }
    return (Imlib_Image) im;
 }
 
@@ -1412,26 +1450,10 @@ imlib_load_image_with_error_return(const char *file,
    CHECK_CONTEXT(ctx);
    CHECK_PARAM_POINTER_RETURN("imlib_load_image_with_error_return", "file",
                               file, NULL);
-   if (!__imlib_FileExists(file))
-     {
-        *error_return = IMLIB_LOAD_ERROR_FILE_DOES_NOT_EXIST;
-        return NULL;
-     }
-   if (__imlib_FileIsDir(file))
-     {
-        *error_return = IMLIB_LOAD_ERROR_FILE_IS_DIRECTORY;
-        return NULL;
-     }
-   if (!__imlib_FileCanRead(file))
-     {
-        *error_return = IMLIB_LOAD_ERROR_PERMISSION_DENIED_TO_READ;
-        return NULL;
-     }
    prev_ctxt_image = ctx->image;
-   im = (Imlib_Image) __imlib_LoadImage(file,
-                                        (ImlibProgressFunction)
-                                        ctx->progress_func,
-                                        ctx->progress_granularity, 1, 0, &er);
+   im = __imlib_LoadImage(file, NULL,
+                          (ImlibProgressFunction) ctx->progress_func,
+                          ctx->progress_granularity, 1, 0, &er);
    ctx->image = prev_ctxt_image;
    if (im)
       *error_return = IMLIB_LOAD_ERROR_NONE;
@@ -1691,7 +1713,9 @@ imlib_image_set_border(Imlib_Border * border)
    im->border.right = MAX(0, border->right);
    im->border.top = MAX(0, border->top);
    im->border.bottom = MAX(0, border->bottom);
+#ifdef BUILD_X11
    __imlib_DirtyPixmapsForImage(im);
+#endif
 }
 
 /**
@@ -2619,7 +2643,7 @@ imlib_create_cropped_image(int x, int y, int width, int height)
         SET_FLAG(im->flags, F_HAS_ALPHA);
         __imlib_BlendImageToImage(im_old, im, 0, 0, 1, x, y, abs(width),
                                   abs(height), 0, 0, width, height, NULL,
-                                  IMLIB_OP_COPY,
+                                  (ImlibOp) IMLIB_OP_COPY,
                                   ctx->cliprect.x, ctx->cliprect.y,
                                   ctx->cliprect.w, ctx->cliprect.h);
      }
@@ -2627,7 +2651,7 @@ imlib_create_cropped_image(int x, int y, int width, int height)
      {
         __imlib_BlendImageToImage(im_old, im, 0, 0, 0, x, y, abs(width),
                                   abs(height), 0, 0, width, height, NULL,
-                                  IMLIB_OP_COPY,
+                                  (ImlibOp) IMLIB_OP_COPY,
                                   ctx->cliprect.x, ctx->cliprect.y,
                                   ctx->cliprect.w, ctx->cliprect.h);
      }
@@ -2678,7 +2702,7 @@ imlib_create_cropped_scaled_image(int source_x, int source_y,
         __imlib_BlendImageToImage(im_old, im, ctx->anti_alias, 0, 1, source_x,
                                   source_y, source_width, source_height, 0, 0,
                                   destination_width, destination_height, NULL,
-                                  IMLIB_OP_COPY,
+                                  (ImlibOp) IMLIB_OP_COPY,
                                   ctx->cliprect.x, ctx->cliprect.y,
                                   ctx->cliprect.w, ctx->cliprect.h);
      }
@@ -2687,7 +2711,7 @@ imlib_create_cropped_scaled_image(int source_x, int source_y,
         __imlib_BlendImageToImage(im_old, im, ctx->anti_alias, 0, 0, source_x,
                                   source_y, source_width, source_height, 0, 0,
                                   destination_width, destination_height, NULL,
-                                  IMLIB_OP_COPY,
+                                  (ImlibOp) IMLIB_OP_COPY,
                                   ctx->cliprect.x, ctx->cliprect.y,
                                   ctx->cliprect.w, ctx->cliprect.h);
      }

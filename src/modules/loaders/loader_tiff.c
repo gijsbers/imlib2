@@ -14,11 +14,6 @@ struct TIFFRGBAImage_Extra {
    tileContigRoutine   put_contig;
    tileSeparateRoutine put_separate;
    ImlibImage         *image;
-   ImlibProgressFunction progress;
-   char                pper;
-   char                progress_granularity;
-   uint32              num_pixels;
-   uint32              py;
 };
 
 typedef struct TIFFRGBAImage_Extra TIFFRGBAImage_Extra;
@@ -190,9 +185,10 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
         break;
      }
 
-   if (img->progress)
+   if (img->image->lc)
      {
-        char                per;
+        /* for tile based images, we just progress each tile because */
+        /* of laziness. Couldn't think of a good way to do this */
 
         switch (img->rgba.orientation)
           {
@@ -200,18 +196,7 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
           case ORIENTATION_TOPLEFT:
              if (w >= image_width)
                {
-                  uint32              real_y = (image_height - 1) - y;
-
-                  per = (char)(((real_y + h - 1) * 100) / image_height);
-
-                  if (((per - img->pper) >= img->progress_granularity) ||
-                      (real_y + h) >= image_height)
-                    {
-                       img->progress(img->image, per, 0, img->py, w,
-                                     (real_y + h) - img->py);
-                       img->py = real_y + h;
-                       img->pper = per;
-                    }
+                  __imlib_LoadProgressRows(img->image, image_height - y - 1, h);
                }
              else
                {
@@ -231,9 +216,7 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
              y = image_height - y - h;
              goto progress_a;
            progress_a:
-             per = (char)((w * h * 100) / img->num_pixels);
-             img->pper += per;
-             img->progress(img->image, img->pper, x, y, w, h);
+             __imlib_LoadProgress(img->image, x, y, w, h);
              break;
 
           case ORIENTATION_LEFTTOP:
@@ -248,71 +231,60 @@ raster(TIFFRGBAImage_Extra * img, uint32 * rast,
           case ORIENTATION_LEFTBOT:
              goto progress_b;
            progress_b:
-             per = (char)((w * h * 100) / img->num_pixels);
-             img->pper += per;
-             img->progress(img->image, img->pper, y, x, h, w);
+             __imlib_LoadProgress(img->image, y, x, h, w);
              break;
           }
      }
 }
 
-char
-load(ImlibImage * im, ImlibProgressFunction progress,
-     char progress_granularity, char immediate_load)
+int
+load2(ImlibImage * im, int load_data)
 {
+   int                 rc;
    TIFF               *tif = NULL;
-   FILE               *file;
-   int                 fd, ok;
+   int                 fd;
    uint16              magic_number;
    TIFFRGBAImage_Extra rgba_image;
    uint32             *rast = NULL;
-   uint32              num_pixels;
    char                txt[1024];
 
-   ok = 0;
+   rc = LOAD_FAIL;
+   rgba_image.image = NULL;
 
-   file = fopen(im->real_file, "rb");
-   if (!file)
-      return 0;
-
-   if (fread(&magic_number, sizeof(uint16), 1, file) != 1)
-     {
-        fclose(file);
-        return 0;
-     }
-   /* Apparently rewind(f) isn't sufficient */
-   fseek(file, (long)0, SEEK_SET);
+   fd = fileno(im->fp);
+   if (read(fd, &magic_number, sizeof(uint16)) != sizeof(uint16))
+      goto quit;
 
    if ((magic_number != TIFF_BIGENDIAN) /* Checks if actually tiff file */
        && (magic_number != TIFF_LITTLEENDIAN))
-     {
-        fclose(file);
-        return 0;
-     }
+      goto quit;
 
-   fd = fileno(file);
+   lseek(fd, 0, SEEK_SET);
+
    fd = dup(fd);
-   lseek(fd, (long)0, SEEK_SET);
-   fclose(file);
-
    tif = TIFFFdOpen(fd, im->real_file, "r");
    if (!tif)
-      return 0;
+     {
+        close(fd);
+        goto quit;
+     }
 
    strcpy(txt, "Cannot be processed by libtiff");
    if (!TIFFRGBAImageOK(tif, txt))
-      goto quit1;
+      goto quit;
+
    strcpy(txt, "Cannot begin reading tiff");
    if (!TIFFRGBAImageBegin((TIFFRGBAImage *) & rgba_image, tif, 1, txt))
-      goto quit1;
+      goto quit;
+
+   rgba_image.image = im;
 
    if (!rgba_image.rgba.put.any)
      {
         fprintf(stderr, "imlib2-tiffloader: No put function");
-        goto quit2;
+        goto quit;
      }
 
-   rgba_image.image = im;
    switch (rgba_image.rgba.orientation)
      {
      default:
@@ -332,62 +304,59 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         break;
      }
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
-     {
-        im->w = 0;
-        goto quit2;
-     }
-   rgba_image.num_pixels = num_pixels = im->w * im->h;
+      goto quit;
+
    if (rgba_image.rgba.alpha != EXTRASAMPLE_UNSPECIFIED)
       SET_FLAG(im->flags, F_HAS_ALPHA);
    else
       UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
-   if (im->loader || immediate_load || progress)
+   if (!load_data)
      {
-        rgba_image.progress = progress;
-        rgba_image.pper = rgba_image.py = 0;
-        rgba_image.progress_granularity = progress_granularity;
-
-        if (!__imlib_AllocateData(im))
-           goto quit2;
-
-        rast = (uint32 *) _TIFFmalloc(sizeof(uint32) * num_pixels);
-        if (!rast)
-          {
-             fprintf(stderr, "imlib2-tiffloader: Out of memory\n");
-             __imlib_FreeData(im);
-             goto quit2;
-          }
-
-        if (rgba_image.rgba.isContig)
-          {
-             rgba_image.put_contig = rgba_image.rgba.put.contig;
-             rgba_image.rgba.put.contig = put_contig_and_raster;
-          }
-        else
-          {
-             rgba_image.put_separate = rgba_image.rgba.put.separate;
-             rgba_image.rgba.put.separate = put_separate_and_raster;
-          }
-
-        if (!TIFFRGBAImageGet((TIFFRGBAImage *) & rgba_image, rast,
-                              rgba_image.rgba.width, rgba_image.rgba.height))
-          {
-             _TIFFfree(rast);
-             __imlib_FreeData(im);
-             goto quit2;
-          }
-
-        _TIFFfree(rast);
+        rc = LOAD_SUCCESS;
+        goto quit;
      }
 
-   ok = 1;
- quit2:
-   TIFFRGBAImageEnd((TIFFRGBAImage *) & rgba_image);
- quit1:
-   TIFFClose(tif);
+   /* Load data */
 
-   return ok;
+   if (!__imlib_AllocateData(im))
+      goto quit;
+
+   rast = (uint32 *) _TIFFmalloc(sizeof(uint32) * im->w * im->h);
+   if (!rast)
+     {
+        fprintf(stderr, "imlib2-tiffloader: Out of memory\n");
+        goto quit;
+     }
+
+   if (rgba_image.rgba.isContig)
+     {
+        rgba_image.put_contig = rgba_image.rgba.put.contig;
+        rgba_image.rgba.put.contig = put_contig_and_raster;
+     }
+   else
+     {
+        rgba_image.put_separate = rgba_image.rgba.put.separate;
+        rgba_image.rgba.put.separate = put_separate_and_raster;
+     }
+
+   if (!TIFFRGBAImageGet((TIFFRGBAImage *) & rgba_image, rast,
+                         rgba_image.rgba.width, rgba_image.rgba.height))
+      goto quit;
+
+   rc = LOAD_SUCCESS;
+
+ quit:
+   if (rast)
+      _TIFFfree(rast);
+   if (rc <= 0)
+      __imlib_FreeData(im);
+   if (rgba_image.image)
+      TIFFRGBAImageEnd((TIFFRGBAImage *) & rgba_image);
+   if (tif)
+      TIFFClose(tif);
+
+   return rc;
 }
 
 /* this seems to work, except the magic number isn't written. I'm guessing */
@@ -396,6 +365,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
 char
 save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
+   int                 rc;
    TIFF               *tif = NULL;
    uint8              *buf = NULL;
    DATA32              pixel, *data = im->data;
@@ -403,21 +373,18 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    int                 x, y;
    uint8               r, g, b, a = 0;
    int                 has_alpha = IMAGE_HAS_ALPHA(im);
-   int                 i = 0, pl = 0;
-   char                pper = 0;
+   int                 i;
 
    /* By default uses patent-free use COMPRESSION_DEFLATE,
     * another lossless compression technique */
    ImlibImageTag      *tag;
    int                 compression_type = COMPRESSION_DEFLATE;
 
-   if (!im->data)
-      return 0;
-
    tif = TIFFOpen(im->real_file, "w");
-
    if (!tif)
-      return 0;
+      return LOAD_FAIL;
+
+   rc = LOAD_FAIL;
 
    /* None of the TIFFSetFields are checked for errors, but since they */
    /* shouldn't fail, this shouldn't be a problem */
@@ -441,49 +408,27 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
         switch (compression_type)
           {
           case COMPRESSION_NONE:
-             break;
           case COMPRESSION_CCITTRLE:
-             break;
           case COMPRESSION_CCITTFAX3:
-             break;
           case COMPRESSION_CCITTFAX4:
-             break;
           case COMPRESSION_LZW:
-             break;
           case COMPRESSION_OJPEG:
-             break;
           case COMPRESSION_JPEG:
-             break;
           case COMPRESSION_NEXT:
-             break;
           case COMPRESSION_CCITTRLEW:
-             break;
           case COMPRESSION_PACKBITS:
-             break;
           case COMPRESSION_THUNDERSCAN:
-             break;
           case COMPRESSION_IT8CTPAD:
-             break;
           case COMPRESSION_IT8LW:
-             break;
           case COMPRESSION_IT8MP:
-             break;
           case COMPRESSION_IT8BL:
-             break;
           case COMPRESSION_PIXARFILM:
-             break;
           case COMPRESSION_PIXARLOG:
-             break;
           case COMPRESSION_DEFLATE:
-             break;
           case COMPRESSION_ADOBE_DEFLATE:
-             break;
           case COMPRESSION_DCS:
-             break;
           case COMPRESSION_JBIG:
-             break;
           case COMPRESSION_SGILOG:
-             break;
           case COMPRESSION_SGILOG24:
              break;
           default:
@@ -507,12 +452,8 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(tif, 0));
 
    buf = (uint8 *) _TIFFmalloc(TIFFScanlineSize(tif));
-
    if (!buf)
-     {
-        TIFFClose(tif);
-        return 0;
-     }
+      goto quit;
 
    for (y = 0; y < im->h; y++)
      {
@@ -543,43 +484,30 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
           }
 
         if (!TIFFWriteScanline(tif, buf, y, 0))
-          {
-             _TIFFfree(buf);
-             TIFFClose(tif);
-             return 0;
-          }
+           goto quit;
 
-        if (progress)
+        if (im->lc && __imlib_LoadProgressRows(im, y, 1))
           {
-             char                per;
-             int                 l;
-
-             per = (char)((100 * y) / im->h);
-             if ((per - pper) >= progress_granularity)
-               {
-                  l = y - pl;
-                  (*progress) (im, per, 0, (y - l), im->w, l);
-                  pper = per;
-                  pl = y;
-               }
+             rc = LOAD_BREAK;
+             goto quit;
           }
      }
 
-   _TIFFfree(buf);
-   TIFFClose(tif);
+   rc = LOAD_SUCCESS;
 
-   return 1;
+ quit:
+   if (buf)
+      _TIFFfree(buf);
+   if (tif)
+      TIFFClose(tif);
+
+   return rc;
 }
 
 void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "tiff", "tif" };
-   int                 i;
-
-   l->num_formats = sizeof(list_formats) / sizeof(char *);
-   l->formats = malloc(sizeof(char *) * l->num_formats);
-
-   for (i = 0; i < l->num_formats; i++)
-      l->formats[i] = strdup(list_formats[i]);
+   __imlib_LoaderSetFormats(l, list_formats,
+                            sizeof(list_formats) / sizeof(char *));
 }

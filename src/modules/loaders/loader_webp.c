@@ -31,62 +31,44 @@ webp_strerror(VP8StatusCode code)
      }
 }
 
-char
-load(ImlibImage * im, ImlibProgressFunction progress,
-     char progress_granularity, char immediate_load)
+int
+load2(ImlibImage * im, int load_data)
 {
+   int                 rc;
    uint8_t            *encoded_data;
    struct stat         stats;
    int                 encoded_fd;
    WebPBitstreamFeatures features;
    VP8StatusCode       vp8return;
 
-   if (stat(im->real_file, &stats) < 0)
-     {
-        return 0;
-     }
-
-   encoded_fd = open(im->real_file, O_RDONLY);
+   encoded_fd = fileno(im->fp);
    if (encoded_fd < 0)
-     {
-        return 0;
-     }
+      return LOAD_FAIL;
+
+   if (fstat(encoded_fd, &stats) < 0)
+      return LOAD_FAIL;
+
+   rc = LOAD_FAIL;
 
    encoded_data = malloc(stats.st_size);
-
-   if (encoded_data == NULL)
-     {
-        close(encoded_fd);
-        return 0;
-     }
+   if (!encoded_data)
+      goto quit;
 
    if (read(encoded_fd, encoded_data, stats.st_size) < stats.st_size)
-     {
-        free(encoded_data);
-        close(encoded_fd);
-        return 0;
-     }
-   close(encoded_fd);
+      goto quit;
 
    if (WebPGetInfo(encoded_data, stats.st_size, &im->w, &im->h) == 0)
-     {
-        free(encoded_data);
-        return 0;
-     }
+      goto quit;
 
    if (!IMAGE_DIMENSIONS_OK(im->w, im->h))
-     {
-        free(encoded_data);
-        return 0;
-     }
+      goto quit;
 
    vp8return = WebPGetFeatures(encoded_data, stats.st_size, &features);
    if (vp8return != VP8_STATUS_OK)
      {
         fprintf(stderr, "%s: Error reading file header: %s\n",
                 im->real_file, webp_strerror(vp8return));
-        free(encoded_data);
-        return 0;
+        goto quit;
      }
 
    if (features.has_alpha == 0)
@@ -94,48 +76,51 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    else
       SET_FLAG(im->flags, F_HAS_ALPHA);
 
-   if (im->loader || immediate_load || progress)
+   if (!load_data)
      {
-        size_t              webp_buffer_size = sizeof(DATA32) * im->w * im->h;
-
-        __imlib_AllocateData(im);
-        if (WebPDecodeBGRAInto(encoded_data, stats.st_size,
-                               (uint8_t *) im->data, webp_buffer_size,
-                               im->w * 4) == NULL)
-          {
-             free(encoded_data);
-             __imlib_FreeData(im);
-             return 0;
-          }
-
-        if (progress)
-           progress(im, 100, 0, 0, im->w, im->h);
+        rc = LOAD_SUCCESS;
+        goto quit;
      }
 
+   /* Load data */
+
+   if (!__imlib_AllocateData(im))
+      goto quit;
+
+   if (WebPDecodeBGRAInto(encoded_data, stats.st_size, (uint8_t *) im->data,
+                          sizeof(DATA32) * im->w * im->h, im->w * 4) == NULL)
+      goto quit;
+
+   if (im->lc)
+      __imlib_LoadProgressRows(im, 0, im->h);
+
+   rc = LOAD_SUCCESS;
+
+ quit:
+   if (rc <= 0)
+      __imlib_FreeData(im);
    free(encoded_data);
-   return 1;                    /* Success */
+
+   return rc;
 }
 
 char
 save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
+   int                 rc;
    int                 encoded_fd;
    ImlibImageTag      *quality_tag;
    float               quality;
    uint8_t            *encoded_data;
    ssize_t             encoded_size;
 
-   if (!im->data)
-      return 0;
-
    encoded_fd = open(im->real_file,
                      O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-
    if (encoded_fd < 0)
-     {
-        perror(im->real_file);
-        return 0;
-     }
+      return LOAD_FAIL;
+
+   rc = LOAD_FAIL;
+   encoded_data = NULL;
 
    quality = 75;
    quality_tag = __imlib_GetTag(im, "quality");
@@ -163,27 +148,22 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
                                  im->w * 4, quality, &encoded_data);
 
    if (write(encoded_fd, encoded_data, encoded_size) < encoded_size)
-     {
-        close(encoded_fd);
-        WebPFree(encoded_data);
-        perror(im->real_file);
-        return 0;
-     }
+      goto quit;
 
+   rc = LOAD_SUCCESS;
+
+ quit:
+   if (encoded_data)
+      WebPFree(encoded_data);
    close(encoded_fd);
-   WebPFree(encoded_data);
-   return 1;
+
+   return rc;
 }
 
 void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "webp" };
-   int                 i;
-
-   l->num_formats = sizeof(list_formats) / sizeof(char *);
-   l->formats = malloc(sizeof(char *) * l->num_formats);
-
-   for (i = 0; i < l->num_formats; i++)
-      l->formats[i] = strdup(list_formats[i]);
+   __imlib_LoaderSetFormats(l, list_formats,
+                            sizeof(list_formats) / sizeof(char *));
 }

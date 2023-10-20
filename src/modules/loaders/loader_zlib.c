@@ -37,30 +37,28 @@ uncompress_file(FILE * fp, int dest)
    return ret;
 }
 
-char
-load(ImlibImage * im, ImlibProgressFunction progress,
-     char progress_granularity, char immediate_load)
+int
+load2(ImlibImage * im, int load_data)
 {
    ImlibLoader        *loader;
-   FILE               *fp;
    int                 dest, res;
    const char         *s, *p, *q;
    char                tmp[] = "/tmp/imlib2_loader_zlib-XXXXXX";
-   char               *file, *real_ext;
+   char               *real_ext;
 
    /* make sure this file ends in ".gz" and that there's another ext
     * (e.g. "foo.png.gz") */
-   for (s = im->real_file, p = q = NULL; *s; s++)
+   for (p = s = im->real_file, q = NULL; *s; s++)
      {
-        if (*s != '.')
+        if (*s != '.' && *s != '/')
            continue;
         q = p;
-        p = s;
+        p = s + 1;
      }
-   if (!q || q == im->real_file || strcasecmp(p + 1, "gz"))
+   if (!q || strcasecmp(p, "gz"))
       return 0;
 
-   if (!(real_ext = strndup(q + 1, p - q - 1)))
+   if (!(real_ext = strndup(q, p - q - 1)))
       return 0;
 
    loader = __imlib_FindBestLoaderForFormat(real_ext, 0);
@@ -68,48 +66,27 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    if (!loader)
       return 0;
 
-   if (!(fp = fopen(im->real_file, "rb")))
+   if ((dest = mkstemp(tmp)) < 0)
       return 0;
 
-   if ((dest = mkstemp(tmp)) < 0)
-     {
-        fclose(fp);
-        return 0;
-     }
-
-   res = uncompress_file(fp, dest);
-   fclose(fp);
+   res = uncompress_file(im->fp, dest);
    close(dest);
 
    if (!res)
-     {
-        unlink(tmp);
-        return 0;
-     }
+      goto quit;
 
-   /* remember the original filename */
-   file = im->real_file;
-   im->real_file = strdup(tmp);
+   res = __imlib_LoadEmbedded(loader, im, tmp, load_data);
 
-   loader->load(im, progress, progress_granularity, immediate_load);
-
-   free(im->real_file);
-   im->real_file = file;
-
+ quit:
    unlink(tmp);
 
-   return 1;
+   return res;
 }
 
 void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "gz" };
-   int                 i;
-
-   l->num_formats = sizeof(list_formats) / sizeof(char *);
-   l->formats = malloc(sizeof(char *) * l->num_formats);
-
-   for (i = 0; i < l->num_formats; i++)
-      l->formats[i] = strdup(list_formats[i]);
+   __imlib_LoaderSetFormats(l, list_formats,
+                            sizeof(list_formats) / sizeof(char *));
 }

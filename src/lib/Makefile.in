@@ -145,9 +145,10 @@ am__DEPENDENCIES_6 = $(am__DEPENDENCIES_5)
 am_libImlib2_la_OBJECTS = api.lo blend.lo color.lo color_helpers.lo \
 	colormod.lo context.lo draw.lo dynamic_filters.lo ellipse.lo \
 	file.lo filter.lo font_draw.lo font_load.lo font_main.lo \
-	font_query.lo grab.lo grad.lo image.lo line.lo modules.lo \
-	polygon.lo rectangle.lo rend.lo rgba.lo rgbadraw.lo rotate.lo \
-	scale.lo script.lo span.lo updates.lo ximage.lo
+	font_query.lo grab.lo grad.lo image.lo image_tags.lo line.lo \
+	loaders.lo modules.lo polygon.lo rectangle.lo rend.lo rgba.lo \
+	rgbadraw.lo rotate.lo scale.lo script.lo span.lo updates.lo \
+	ximage.lo
 am__EXTRA_libImlib2_la_SOURCES_DIST = amd64_blend.S amd64_blend_cmod.S \
 	asm_blend.S asm_blend_cmod.S asm_rgba.S asm_rotate.S \
 	asm_scale.S
@@ -187,7 +188,8 @@ am__depfiles_remade = ./$(DEPDIR)/amd64_blend.Plo \
 	./$(DEPDIR)/font_load.Plo ./$(DEPDIR)/font_main.Plo \
 	./$(DEPDIR)/font_query.Plo ./$(DEPDIR)/grab.Plo \
 	./$(DEPDIR)/grad.Plo ./$(DEPDIR)/image.Plo \
-	./$(DEPDIR)/line.Plo ./$(DEPDIR)/modules.Plo \
+	./$(DEPDIR)/image_tags.Plo ./$(DEPDIR)/line.Plo \
+	./$(DEPDIR)/loaders.Plo ./$(DEPDIR)/modules.Plo \
 	./$(DEPDIR)/polygon.Plo ./$(DEPDIR)/rectangle.Plo \
 	./$(DEPDIR)/rend.Plo ./$(DEPDIR)/rgba.Plo \
 	./$(DEPDIR)/rgbadraw.Plo ./$(DEPDIR)/rotate.Plo \
@@ -445,7 +447,10 @@ grad.c \
 grad.h \
 image.c \
 image.h \
+image_tags.c \
 line.c \
+loaders.c \
+loaders.h \
 modules.c \
 polygon.c \
 rectangle.c \
@@ -595,7 +600,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grab.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grad.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/image.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/image_tags.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/line.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/loaders.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/modules.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polygon.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rectangle.Plo@am__quote@ # am--include-marker
@@ -838,7 +845,9 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/grab.Plo
 	-rm -f ./$(DEPDIR)/grad.Plo
 	-rm -f ./$(DEPDIR)/image.Plo
+	-rm -f ./$(DEPDIR)/image_tags.Plo
 	-rm -f ./$(DEPDIR)/line.Plo
+	-rm -f ./$(DEPDIR)/loaders.Plo
 	-rm -f ./$(DEPDIR)/modules.Plo
 	-rm -f ./$(DEPDIR)/polygon.Plo
 	-rm -f ./$(DEPDIR)/rectangle.Plo
@@ -921,7 +930,9 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/grab.Plo
 	-rm -f ./$(DEPDIR)/grad.Plo
 	-rm -f ./$(DEPDIR)/image.Plo
+	-rm -f ./$(DEPDIR)/image_tags.Plo
 	-rm -f ./$(DEPDIR)/line.Plo
+	-rm -f ./$(DEPDIR)/loaders.Plo
 	-rm -f ./$(DEPDIR)/modules.Plo
 	-rm -f ./$(DEPDIR)/polygon.Plo
 	-rm -f ./$(DEPDIR)/rectangle.Plo

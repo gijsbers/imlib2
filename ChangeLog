@@ -1,5 +1,70 @@
 
 ***
+*** Version 1.7.0 ***
+***
+
+Alexander Volkov (3):
+      GIF loader: Don't close file descriptor twice
+      Introduce imlib_load_image_from_fd()
+      Don't rescan loaders
+
+Kim Woelders (49):
+      XPM loader: Major speedup for cpp > 2
+      imlib2_load: Properly check non-full loads (load data too)
+      imlib2_load: Use getopt()
+      imlib2_load: Add repeated load option
+      Simplify __imlib_FileExtension()
+      Refactor many __imlib_File...() functions to use common __imlib_FileStat()
+      Drop the __imlib_IsRealFile() file check in __imlib_File...() functions
+      image.c: Add some space for readability
+      image.c: Remove some unnecessary clearing of calloc'ed structs
+      image.c: Rework some obscure file name stuff in __imlib_SaveImage()
+      image.c: Don't strdup() real_name when not necessary in __imlib_LoadImage()
+      image.c: Use real_file to get file time
+      image.c: Introduce __imlib_ErrorFromErrno()
+      image.c: Use loader return value, not im->w to determine load success
+      Loader cleanups
+      Saver cleanups
+      image.c/h: Cleanups
+      image.c: Move image tag functions to separate file
+      image.c: Move loader functions to separate file
+      image.c: Enable non-dirty pixmap cache cleaning
+      image.c: Minor refactoring of pixmap cache cleaners
+      image.c: Move data_memory_func assignment to better place
+      imlib2_view: Various tweaks
+      Fix loader cleanup breakage (gif)
+      image.c: Remove redundant pixmap unref
+      image.c: Add infrastructure to simplify progress handling
+      Loaders: Simplify/fix progress handling
+      Savers: Simplify progress handling
+      Introduce __imlib_LoadEmbedded()
+      Introduce __imlib_LoaderSetFormats()
+      Make ImlibLoader struct opaque
+      autogen.sh: Add -n as alternative to NOCONFIGURE
+      Fix enum conversion warnings (gcc10)
+      JPG, PNG loaders: Avoid clobber warnings
+      Add a couple of consts
+      TIFF loader: Minor speedup
+      ID3 loader: Some mostly cosmetic rearrangements
+      GZ, BZ2 loaders: Accept more file names
+      __imlib_FileExtension: Use basename if there are no dots
+      Revert "JPG, PNG loaders: Avoid clobber warnings"
+      JPG, PNG loaders: Avoid clobber warnings - Take N+1
+      Add infrastructure for new loader entry - load2()
+      Move loaders to load2()
+      Reduce number of stat() calls during load
+      configure.ac: Drop initial config.cache removal
+      imlib2_load: Optionally use imlib_load_image_fd()
+      Fix build without X11
+      Remove a couple of unused includes
+      1.7.0
+
+Tobias Stoeckmann (2):
+      ICO loader: Do not crash on invalid files
+      ICO loader: Handle malloc failures
+
+
+***
 *** Version 1.6.1 ***
 ***
 

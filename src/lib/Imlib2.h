@@ -219,6 +219,7 @@ EAPI Imlib_Image    imlib_load_image_immediately(const char *file);
 EAPI Imlib_Image    imlib_load_image_without_cache(const char *file);
 EAPI Imlib_Image    imlib_load_image_immediately_without_cache(const char
                                                                *file);
+EAPI Imlib_Image    imlib_load_image_fd(int fd, const char *file);
 EAPI Imlib_Image    imlib_load_image_with_error_return(const char *file,
                                                        Imlib_Load_Error *
                                                        error_return);

@@ -133,13 +133,10 @@ WriteleLong(FILE * file, unsigned long val)
    return 1;
 }
 
-char
-load(ImlibImage * im, ImlibProgressFunction progress,
-     char progress_granularity, char immediate_load)
+int
+load2(ImlibImage * im, int load_data)
 {
-   FILE               *f;
-   char                pper = 0;
-   int                 pl = 0;
+   int                 rc;
    unsigned int        offset;
    unsigned int        size, comp, imgsize;
    unsigned int        bitcount, ncols, skip;
@@ -156,10 +153,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    int                 ashift2, rshift2, gshift2, bshift2;
    bih_t               bih;
 
-   f = fopen(im->real_file, "rb");
-   if (!f)
-      return 0;
-
+   rc = LOAD_FAIL;
    buffer = NULL;
 
    /* Load header */
@@ -167,28 +161,28 @@ load(ImlibImage * im, ImlibProgressFunction progress,
       struct stat         statbuf;
       bfh_t               bfh;
 
-      if (fstat(fileno(f), &statbuf) < 0)
-         goto quit_err;
+      if (fstat(fileno(im->fp), &statbuf) < 0)
+         goto quit;
 
       size = statbuf.st_size;
       if (size != statbuf.st_size)
-         goto quit_err;
+         goto quit;
 
-      if (fread(&bfh, sizeof(bfh), 1, f) != 1)
-         goto quit_err;
+      if (fread(&bfh, sizeof(bfh), 1, im->fp) != 1)
+         goto quit;
 
       if (bfh.header[0] != 'B' || bfh.header[1] != 'M')
-         goto quit_err;
+         goto quit;
 
 #define WORD_LE_32(p8) ((p8[3] << 24) | (p8[2] << 16) | (p8[1] << 8) | p8[0])
       offset = WORD_LE_32(bfh.offs);
 
       if (offset >= size)
-         goto quit_err;
+         goto quit;
 
       memset(&bih, 0, sizeof(bih));
-      if (fread(&bih, 4, 1, f) != 1)
-         goto quit_err;
+      if (fread(&bih, 4, 1, im->fp) != 1)
+         goto quit;
 
       SWAP_LE_32_INPLACE(bih.header_size);
 
@@ -196,10 +190,10 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         size, bih.header_size, WORD_LE_32(bfh.size), offset);
 
       if (bih.header_size < 12 || bih.header_size > sizeof(bih))
-         goto quit_err;
+         goto quit;
 
-      if (fread(&bih.header_size + 1, bih.header_size - 4, 1, f) != 1)
-         goto quit_err;
+      if (fread(&bih.header_size + 1, bih.header_size - 4, 1, im->fp) != 1)
+         goto quit;
 
       w = h = 0;
       bitcount = 0;
@@ -232,8 +226,8 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                 if (bih.header_size == 40)
                   {
                      ncols = (comp == BI_ALPHABITFIELDS) ? 4 : 3;
-                     if (fread(&bih.bih.mask_r, 4, ncols, f) != ncols)
-                        goto quit_err;
+                     if (fread(&bih.bih.mask_r, 4, ncols, im->fp) != ncols)
+                        goto quit;
                   }
                 rmask = SWAP_LE_32(bih.bih.mask_r);
                 gmask = SWAP_LE_32(bih.bih.mask_g);
@@ -245,7 +239,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         }
       else
         {
-           goto quit_err;
+           goto quit;
         }
 
       imgsize = size - offset;
@@ -256,12 +250,12 @@ load(ImlibImage * im, ImlibProgressFunction progress,
       h = abs(h);
 
       if (!IMAGE_DIMENSIONS_OK(w, h))
-         goto quit_err;
+         goto quit;
 
       switch (bitcount)
         {
         default:
-           goto quit_err;
+           goto quit;
 
         case 1:
         case 4:
@@ -273,16 +267,16 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                 if (ncols > 256)
                    ncols = 256;
                 for (i = 0; i < ncols; i++)
-                   if (fread(&rgbQuads[i], 3, 1, f) != 1)
-                      goto quit_err;
+                   if (fread(&rgbQuads[i], 3, 1, im->fp) != 1)
+                      goto quit;
              }
            else
              {
                 ncols /= 4;
                 if (ncols > 256)
                    ncols = 256;
-                if (fread(rgbQuads, 4, ncols, f) != ncols)
-                   goto quit_err;
+                if (fread(rgbQuads, 4, ncols, im->fp) != ncols)
+                   goto quit;
              }
            for (i = 0; i < ncols; i++)
               argbCmap[i] =
@@ -311,7 +305,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                      bmask &= 0xffffU;
                   }
                 if (rmask == 0 && gmask == 0 && bmask == 0)
-                   goto quit_err;
+                   goto quit;
                 for (bit = 0; bit < bitcount; bit++)
                   {
                      /* Find LSB bit positions */
@@ -390,29 +384,25 @@ load(ImlibImage * im, ImlibProgressFunction progress,
       im->h = h;
    }
 
-   if (!(im->loader || immediate_load || progress))
+   if (!load_data)
      {
-        fclose(f);
-        return 1;
+        rc = LOAD_SUCCESS;
+        goto quit;
      }
 
    /* Load data */
 
-   fseek(f, offset, SEEK_SET);
+   fseek(im->fp, offset, SEEK_SET);
+
+   if (!__imlib_AllocateData(im))
+      goto quit;
 
    buffer = malloc(imgsize);
    if (!buffer)
-      goto quit_err;
+      goto quit;
 
-   if (!__imlib_AllocateData(im))
-      goto quit_err;
-
-   if (fread(buffer, imgsize, 1, f) != 1)
-     {
-        __imlib_FreeData(im);
-        goto quit_err;
-     }
-   fclose(f);
+   if (fread(buffer, imgsize, 1, im->fp) != 1)
+      goto quit;
 
    buffer_ptr = buffer;
    buffer_end = buffer + imgsize;
@@ -422,13 +412,13 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    switch (bitcount)
      {
      default:                  /* It should not be possible to go here */
-        goto quit_err2;
+        goto quit;
 
      case 1:
         switch (comp)
           {
           default:
-             goto quit_err2;
+             goto quit;
 
           case BI_RGB:
              skip = ((((w + 31) / 32) * 32) - w) / 8;
@@ -444,26 +434,11 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                     }
                   buffer_ptr += skip;
                   ptr -= w * 2;
-                  if (progress)
-                    {
-                       char                per;
-                       int                 ll;
 
-                       per = (char)((100 * y) / im->h);
-                       if (((per - pper) >= progress_granularity) ||
-                           (y == (im->h - 1)))
-                         {
-                            ll = y - pl;
-                            if (!progress
-                                (im, per, 0, im->h - y - 1, im->w,
-                                 im->h - y + ll))
-                              {
-                                 free(buffer);
-                                 return 2;
-                              }
-                            pper = per;
-                            pl = y;
-                         }
+                  if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
+                    {
+                       rc = LOAD_BREAK;
+                       goto quit;
                     }
                }
              break;
@@ -474,7 +449,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         switch (comp)
           {
           default:
-             goto quit_err2;
+             goto quit;
 
           case BI_RLE4:
              buffer_end_safe = buffer_end - 1;
@@ -519,7 +494,10 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                             ptr = im->data + (h - y - 1) * w;
                             break;
                          case RLE_END:
-                            goto bail_bc4;
+                            x = 0;
+                            y = h;
+                            buffer_ptr = buffer_end_safe;
+                            break;
                          case RLE_MOVE:
                             /* Need to read two bytes */
                             if (buffer_ptr >= buffer_end_safe)
@@ -558,27 +536,17 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                             break;
                          }
                     }
-                bail_bc4:
-                  if (progress)
-                    {
-                       char                per;
-                       int                 ll;
+                  goto progress_bc4;
 
-                       per = (char)((100 * y) / im->h);
-                       if (((per - pper) >= progress_granularity) ||
-                           (y == (im->h - 1)))
-                         {
-                            ll = y - pl;
-                            if (!progress
-                                (im, per, 0, im->h - y - 1, im->w,
-                                 im->h - y + ll))
-                              {
-                                 free(buffer);
-                                 return 2;
-                              }
-                            pper = per;
-                            pl = y;
-                         }
+                bail_bc4:
+                  buffer_ptr = buffer_end_safe;
+
+                progress_bc4:
+                  if (im->lc && (x == w) &&
+                      __imlib_LoadProgressRows(im, h - y - 1, -1))
+                    {
+                       rc = LOAD_BREAK;
+                       goto quit;
                     }
                }
              break;
@@ -597,26 +565,11 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                     }
                   buffer_ptr += skip;
                   ptr -= w * 2;
-                  if (progress)
-                    {
-                       char                per;
-                       int                 ll;
 
-                       per = (char)((100 * y) / im->h);
-                       if (((per - pper) >= progress_granularity) ||
-                           (y == (im->h - 1)))
-                         {
-                            ll = y - pl;
-                            if (!progress
-                                (im, per, 0, im->h - y - 1, im->w,
-                                 im->h - y + ll))
-                              {
-                                 free(buffer);
-                                 return 2;
-                              }
-                            pper = per;
-                            pl = y;
-                         }
+                  if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
+                    {
+                       rc = LOAD_BREAK;
+                       goto quit;
                     }
                }
              break;
@@ -627,7 +580,7 @@ load(ImlibImage * im, ImlibProgressFunction progress,
         switch (comp)
           {
           default:
-             goto quit_err2;
+             goto quit;
 
           case BI_RLE8:
              buffer_end_safe = buffer_end - 1;
@@ -661,7 +614,10 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                             ptr = im->data + ((h - y - 1) * w) + x;
                             break;
                          case RLE_END:
-                            goto bail_bc8;
+                            x = 0;
+                            y = h;
+                            buffer_ptr = buffer_end_safe;
+                            break;
                          case RLE_MOVE:
                             /* Need to read two bytes */
                             if (buffer_ptr >= buffer_end_safe)
@@ -695,29 +651,17 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                             break;
                          }
                     }
-               }
-           bail_bc8:
-             if (progress)
-               {
-                  char                per;
-                  int                 ll;
+                  goto progress_bc8;
 
-                  per = (char)((100 * y) / im->h);
-#if 0
-                  /* Always call progress() at least once */
-                  if (((per - pper) >= progress_granularity) ||
-                      (y == (im->h - 1)))
-#endif
+                bail_bc8:
+                  buffer_ptr = buffer_end_safe;
+
+                progress_bc8:
+                  if (im->lc && (x == w) &&
+                      __imlib_LoadProgressRows(im, h - y - 1, -1))
                     {
-                       ll = y - pl;
-                       if (!progress
-                           (im, per, 0, im->h - y - 1, im->w, im->h - y + ll))
-                         {
-                            free(buffer);
-                            return 2;
-                         }
-                       pper = per;
-                       pl = y;
+                       rc = LOAD_BREAK;
+                       goto quit;
                     }
                }
              break;
@@ -734,26 +678,10 @@ load(ImlibImage * im, ImlibProgressFunction progress,
                   ptr -= w * 2;
                   buffer_ptr += skip;
 
-                  if (progress)
+                  if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
                     {
-                       char                per;
-                       int                 ll;
-
-                       per = (char)((100 * y) / im->h);
-                       if (((per - pper) >= progress_granularity) ||
-                           (y == (im->h - 1)))
-                         {
-                            ll = y - pl;
-                            if (!progress
-                                (im, per, 0, im->h - y - 1, im->w,
-                                 im->h - y + ll))
-                              {
-                                 free(buffer);
-                                 return 2;
-                              }
-                            pper = per;
-                            pl = y;
-                         }
+                       rc = LOAD_BREAK;
+                       goto quit;
                     }
                }
              break;
@@ -783,25 +711,10 @@ load(ImlibImage * im, ImlibProgressFunction progress,
              ptr -= w * 2;
              buffer_ptr += skip;
 
-             if (progress)
+             if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
                {
-                  char                per;
-                  int                 ll;
-
-                  per = (char)((100 * y) / im->h);
-                  if (((per - pper) >= progress_granularity) ||
-                      (y == (im->h - 1)))
-                    {
-                       ll = y - pl;
-                       if (!progress
-                           (im, per, 0, im->h - y - 1, im->w, im->h - y + ll))
-                         {
-                            free(buffer);
-                            return 2;
-                         }
-                       pper = per;
-                       pl = y;
-                    }
+                  rc = LOAD_BREAK;
+                  goto quit;
                }
           }
         break;
@@ -822,25 +735,10 @@ load(ImlibImage * im, ImlibProgressFunction progress,
              ptr -= w * 2;
              buffer_ptr += skip;
 
-             if (progress)
+             if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
                {
-                  char                per;
-                  int                 ll;
-
-                  per = (char)((100 * y) / im->h);
-                  if (((per - pper) >= progress_granularity) ||
-                      (y == (im->h - 1)))
-                    {
-                       ll = y - pl;
-                       if (!progress
-                           (im, per, 0, im->h - y - 1, im->w, im->h - y + ll))
-                         {
-                            free(buffer);
-                            return 2;
-                         }
-                       pper = per;
-                       pl = y;
-                    }
+                  rc = LOAD_BREAK;
+                  goto quit;
                }
           }
         break;
@@ -868,53 +766,38 @@ load(ImlibImage * im, ImlibProgressFunction progress,
              ptr -= w * 2;
              buffer_ptr += skip;
 
-             if (progress)
+             if (im->lc && __imlib_LoadProgressRows(im, h - y - 1, -1))
                {
-                  char                per;
-                  int                 ll;
-
-                  per = (char)((100 * y) / im->h);
-                  if (((per - pper) >= progress_granularity) ||
-                      (y == (im->h - 1)))
-                    {
-                       ll = y - pl;
-                       if (!progress
-                           (im, per, 0, im->h - y - 1, im->w, im->h - y + ll))
-                         {
-                            free(buffer);
-                            return 2;
-                         }
-                       pper = per;
-                       pl = y;
-                    }
+                  rc = LOAD_BREAK;
+                  goto quit;
                }
           }
         break;
      }
 
-   free(buffer);
-   return 1;
+   rc = LOAD_SUCCESS;
 
- quit_err:
-   fclose(f);
- quit_err2:
+ quit:
+   if (rc <= 0)
+      __imlib_FreeData(im);
    free(buffer);
-   return 0;
+
+   return rc;
 }
 
 char
 save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
+   int                 rc;
    FILE               *f;
    int                 i, j, pad;
    DATA32              pixel;
 
-   if (!im->data)
-      return 0;
-
    f = fopen(im->real_file, "wb");
    if (!f)
-      return 0;
+      return LOAD_FAIL;
+
+   rc = LOAD_SUCCESS;
 
    /* calculate number of bytes to pad on end of each row */
    pad = (4 - ((im->w * 3) % 4)) & 0x03;
@@ -952,18 +835,14 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
      }
 
    fclose(f);
-   return 1;
+
+   return rc;
 }
 
 void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "bmp" };
-   int                 i;
-
-   l->num_formats = sizeof(list_formats) / sizeof(char *);
-   l->formats = malloc(sizeof(char *) * l->num_formats);
-
-   for (i = 0; i < l->num_formats; i++)
-      l->formats[i] = strdup(list_formats[i]);
+   __imlib_LoaderSetFormats(l, list_formats,
+                            sizeof(list_formats) / sizeof(char *));
 }

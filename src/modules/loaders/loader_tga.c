@@ -65,20 +65,18 @@ typedef struct {
 char
 save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
 {
+   int                 rc;
    FILE               *f;
    DATA32             *dataptr;
    unsigned char      *buf, *bufptr;
-   int                 y, pl = 0;
-   char                pper = 0;
-
+   int                 y;
    tga_header          header;
-
-   if (!im->data)
-      return 0;
 
    f = fopen(im->real_file, "wb");
    if (!f)
-      return 0;
+      return LOAD_FAIL;
+
+   rc = LOAD_FAIL;
 
    /* assemble the TGA header information */
 
@@ -109,10 +107,7 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    /* allocate a buffer to receive the BGRA-swapped pixel values */
    buf = malloc(im->w * im->h * ((im->flags & F_HAS_ALPHA) ? 4 : 3));
    if (!buf)
-     {
-        fclose(f);
-        return 0;
-     }
+      goto quit;
 
    /* now we have to read from im->data into buf, swapping RGBA to BGRA */
    dataptr = im->data;
@@ -136,24 +131,10 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
           }                     /* end for (each pixel in row) */
 
         /* report progress every row */
-        if (progress)
+        if (im->lc && __imlib_LoadProgressRows(im, y, 1))
           {
-             char                per;
-             int                 l;
-
-             per = (char)((100 * y) / im->h);
-             if (((per - pper) >= progress_granularity) || (y == (im->h - 1)))
-               {
-                  l = y - pl;
-                  if (!progress(im, per, 0, (y - l), im->w, l))
-                    {
-                       free(buf);
-                       fclose(f);
-                       return 2;
-                    }
-                  pper = per;
-                  pl = y;
-               }
+             rc = LOAD_BREAK;
+             goto quit;
           }
      }
 
@@ -163,9 +144,13 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
    /* write the image data */
    fwrite(buf, 1, im->w * im->h * ((im->flags & F_HAS_ALPHA) ? 4 : 3), f);
 
+   rc = LOAD_SUCCESS;
+
+ quit:
    free(buf);
    fclose(f);
-   return 1;
+
+   return rc;
 }
 
 /* Load up a TGA file 
@@ -178,9 +163,8 @@ save(ImlibImage * im, ImlibProgressFunction progress, char progress_granularity)
  * There are several other (uncommon) Targa formats which this function can't currently handle
  */
 
-char
-load(ImlibImage * im, ImlibProgressFunction progress,
-     char progress_granularity, char immediate_load)
+int
+load2(ImlibImage * im, int load_data)
 {
    int                 fd, rc;
    void               *seg, *filedata;
@@ -196,11 +180,9 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    unsigned char       a, r, g, b;
    unsigned int        pix16;
 
-   fd = open(im->real_file, O_RDONLY);
-   if (fd < 0)
-      return 0;
+   fd = fileno(im->fp);
 
-   rc = 0;                      /* Error */
+   rc = LOAD_FAIL;
    seg = MAP_FAILED;
 
    if (fstat(fd, &ss) < 0)
@@ -301,9 +283,9 @@ load(ImlibImage * im, ImlibProgressFunction progress,
    else
       UNSET_FLAG(im->flags, F_HAS_ALPHA);
 
-   if (!(im->loader || immediate_load || progress))
+   if (!load_data)
      {
-        rc = 1;
+        rc = LOAD_SUCCESS;
         goto quit;
      }
 
@@ -571,19 +553,17 @@ load(ImlibImage * im, ImlibProgressFunction progress,
            tgaflip(im->data, im->w, im->h, fliph, flipv);
      }
 
-   if (progress)
-     {
-        progress(im, 100, 0, 0, im->w, im->h);
-     }
+   if (im->lc)
+      __imlib_LoadProgressRows(im, 0, im->h);
 
-   rc = 1;                      /* Success */
+   rc = LOAD_SUCCESS;
 
  quit:
-   if (rc == 0)
+   if (rc <= 0)
       __imlib_FreeData(im);
    if (seg != MAP_FAILED)
       munmap(seg, ss.st_size);
-   close(fd);
+
    return rc;
 }
 
@@ -591,13 +571,8 @@ void
 formats(ImlibLoader * l)
 {
    static const char  *const list_formats[] = { "tga" };
-   int                 i;
-
-   l->num_formats = sizeof(list_formats) / sizeof(char *);
-   l->formats = malloc(sizeof(char *) * l->num_formats);
-
-   for (i = 0; i < l->num_formats; i++)
-      l->formats[i] = strdup(list_formats[i]);
+   __imlib_LoaderSetFormats(l, list_formats,
+                            sizeof(list_formats) / sizeof(char *));
 }
 
 /**********************/

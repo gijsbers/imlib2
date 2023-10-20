@@ -45,7 +45,10 @@ grad.c \
 grad.h \
 image.c \
 image.h \
+image_tags.c \
 line.c \
+loaders.c \
+loaders.h \
 modules.c \
 polygon.c \
 rectangle.c \
