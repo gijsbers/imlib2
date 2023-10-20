@@ -145,9 +145,9 @@ am__DEPENDENCIES_6 = $(am__DEPENDENCIES_5)
 am_libImlib2_la_OBJECTS = api.lo blend.lo color.lo color_helpers.lo \
 	colormod.lo context.lo draw.lo dynamic_filters.lo ellipse.lo \
 	file.lo filter.lo font_draw.lo font_load.lo font_main.lo \
-	font_query.lo grab.lo grad.lo image.lo line.lo polygon.lo \
-	rectangle.lo rend.lo rgba.lo rgbadraw.lo rotate.lo scale.lo \
-	script.lo span.lo updates.lo ximage.lo
+	font_query.lo grab.lo grad.lo image.lo line.lo modules.lo \
+	polygon.lo rectangle.lo rend.lo rgba.lo rgbadraw.lo rotate.lo \
+	scale.lo script.lo span.lo updates.lo ximage.lo
 am__EXTRA_libImlib2_la_SOURCES_DIST = amd64_blend.S amd64_blend_cmod.S \
 	asm_blend.S asm_blend_cmod.S asm_rgba.S asm_rotate.S \
 	asm_scale.S
@@ -423,6 +423,7 @@ image.c \
 image.h \
 line.c \
 loaderpath.h \
+modules.c \
 polygon.c \
 rectangle.c \
 rend.c \
@@ -572,6 +573,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grad.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/image.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/line.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/modules.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/polygon.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rectangle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rend.Plo@am__quote@
