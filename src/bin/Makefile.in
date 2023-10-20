@@ -94,6 +94,7 @@ bin_PROGRAMS = imlib2_conv$(EXEEXT) imlib2_load$(EXEEXT) \
 subdir = src/bin
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ec_asan.m4 \
+	$(top_srcdir)/m4/ec_packing.m4 \
 	$(top_srcdir)/m4/ec_visibility.m4 \
 	$(top_srcdir)/m4/ec_warnflags.m4 $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \

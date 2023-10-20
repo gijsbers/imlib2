@@ -414,11 +414,12 @@ _load(ImlibImage * im, int load_data)
                {
                   psrc = &pxls[(y * w + x) * ie->bih.bpp / 8];
 
-                  pixel = PIXEL_ARGB(0, psrc[2], psrc[1], psrc[0]);
+                  i = 0;
                   if (ie->bih.bpp == 32)
-                     pixel |= psrc[3] << 24;
+                     i = psrc[3];
                   else if (ico_data_get_bit(mask, w, x, y) == 0)
-                     pixel |= 0xff000000;
+                     i = 0xff;
+                  pixel = PIXEL_ARGB(i, psrc[2], psrc[1], psrc[0]);
 
                   *pdst++ = pixel;
                }

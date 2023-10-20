@@ -357,12 +357,11 @@ __imlib_BlendImageToImageSkewed(ImlibImage * im_src, ImlibImage * im_dst,
    double              xy2;
    uint32_t           *data, *src;
 
-   if ((ssw < 0) || (ssh < 0))
+   /* Image data should(must) be loaded here but let's just check anyway */
+   if (!im_src->data || !im_dst->data)
       return;
 
-   if (__imlib_LoadImageData(im_src))
-      return;
-   if (__imlib_LoadImageData(im_dst))
+   if ((ssw < 0) || (ssh < 0))
       return;
 
    /*\ Complicated gonio.  Works on paper..

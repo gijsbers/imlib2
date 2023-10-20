@@ -1,15 +1,12 @@
 #ifndef X11_CONTEXT_H
 #define X11_CONTEXT_H 1
 
-#include <X11/Xlib.h>
 #include "types.h"
+#include "x11_types.h"
 
 typedef struct _Context {
    int                 last_use;
-   Display            *display;
-   Visual             *visual;
-   Colormap            colormap;
-   int                 depth;
+   ImlibContextX11     x11;
    struct _Context    *next;
 
    uint8_t            *palette;
@@ -22,11 +19,8 @@ typedef struct _Context {
 void                __imlib_SetMaxContexts(int num);
 int                 __imlib_GetMaxContexts(void);
 void                __imlib_FlushContexts(void);
-Context            *__imlib_FindContext(Display * d, Visual * v, Colormap c,
-                                        int depth);
-Context            *__imlib_NewContext(Display * d, Visual * v, Colormap c,
-                                       int depth);
-Context            *__imlib_GetContext(Display * d, Visual * v, Colormap c,
-                                       int depth);
+Context            *__imlib_FindContext(const ImlibContextX11 * x11);
+Context            *__imlib_NewContext(const ImlibContextX11 * x11);
+Context            *__imlib_GetContext(const ImlibContextX11 * x11);
 
 #endif /* X11_CONTEXT_H */

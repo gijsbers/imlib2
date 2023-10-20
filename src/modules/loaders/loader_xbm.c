@@ -211,16 +211,12 @@ _load(ImlibImage * im, int load_data)
 static int
 _save(ImlibImage * im)
 {
-   FILE               *f;
    int                 rc;
+   FILE               *f = im->fi->fp;
    const char         *s, *name;
    char               *bname;
    int                 i, k, x, y, bits, nval, val;
    uint32_t           *ptr;
-
-   f = fopen(im->fi->name, "wb");
-   if (!f)
-      return LOAD_FAIL;
 
    rc = LOAD_SUCCESS;
 
@@ -254,14 +250,12 @@ _save(ImlibImage * im)
              y += 1;
           }
         k++;
-        D("x, y = %2d,%2d: %d/%d\n", x, y, k, nval);
+        DL("x, y = %2d,%2d: %d/%d\n", x, y, k, nval);
         fprintf(f, " 0x%02x%s%s", bits, k < nval ? "," : "",
                 (k == nval) || ((k % 12) == 0) ? "\n" : "");
      }
 
    fprintf(f, "};\n");
-
-   fclose(f);
 
    return rc;
 }

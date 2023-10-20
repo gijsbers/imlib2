@@ -289,7 +289,15 @@ main(int argc, char **argv)
                       imlib_image_get_width(), imlib_image_get_height());
 
              if (load_mode == LOAD_DEFER)
-                imlib_image_get_data_for_reading_only();
+               {
+                  if (!imlib_image_get_data_for_reading_only())
+                    {
+                       err = imlib_get_error();
+                       fprintf(fout,
+                               "*** Error %d:'%s' loading image data: '%s'\n",
+                               err, imlib_strerror(err), argv[0]);
+                    }
+               }
 
              if (opt_cache)
                 imlib_free_image();

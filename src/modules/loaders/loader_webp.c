@@ -117,16 +117,12 @@ _load(ImlibImage * im, int load_data)
 static int
 _save(ImlibImage * im)
 {
-   FILE               *f;
    int                 rc;
+   FILE               *f = im->fi->fp;
    ImlibImageTag      *quality_tag;
    float               quality;
    uint8_t            *fdata;
    size_t              encoded_size;
-
-   f = fopen(im->fi->name, "wb");
-   if (!f)
-      return LOAD_FAIL;
 
    rc = LOAD_FAIL;
    fdata = NULL;
@@ -164,7 +160,6 @@ _save(ImlibImage * im)
  quit:
    if (fdata)
       WebPFree(fdata);
-   fclose(f);
 
    return rc;
 }

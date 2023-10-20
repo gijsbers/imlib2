@@ -71,24 +71,16 @@ __imlib_render_str(ImlibImage * im, ImlibFont * fn, int drx, int dry,
 {
    int                 w, h, ascent;
    ImlibImage         *im2;
-   uint32_t           *data;
    int                 nx, ny;
 
    __imlib_font_query_advance(fn, text, &w, NULL);
    h = __imlib_font_max_ascent_get(fn) - __imlib_font_max_descent_get(fn);
 
-   if (!IMAGE_DIMENSIONS_OK(w, h))
-      return;
-   data = calloc(w * h, sizeof(uint32_t));
-   if (!data)
-      return;
    /* TODO check if this is the right way of rendering. Esp for huge sizes */
-   im2 = __imlib_CreateImage(w, h, data);
+   im2 = __imlib_CreateImage(w, h, NULL, 1);
    if (!im2)
-     {
-        free(data);
-        return;
-     }
+      return;
+
    im2->has_alpha = 1;
 
    ascent = __imlib_font_max_ascent_get(fn);

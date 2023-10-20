@@ -49,7 +49,7 @@ typedef struct {
    unsigned char       descriptor;
 } tga_header;
 
-typedef struct {
+typedef struct __PACKED__ {
    unsigned int        extensionAreaOffset;
    unsigned int        developerDirectoryOffset;
    char                signature[16];
@@ -94,7 +94,8 @@ _load(ImlibImage * im, int load_data)
 
    if (im->fi->fsize > (int)(sizeof(tga_footer)))
      {
-        footer = (tga_footer *) (fptr + im->fi->fsize - sizeof(tga_footer));
+        footer =
+           PCAST(const tga_footer *, fptr + im->fi->fsize - sizeof(tga_footer));
 
         /* check the footer to see if we have a v2.0 TGA file */
         footer_present = memcmp(footer->signature, TGA_SIGNATURE,
@@ -497,15 +498,11 @@ static int
 _save(ImlibImage * im)
 {
    int                 rc;
-   FILE               *f;
+   FILE               *f = im->fi->fp;
    uint32_t           *dataptr;
    unsigned char      *buf, *bufptr;
    int                 y;
    tga_header          header;
-
-   f = fopen(im->fi->name, "wb");
-   if (!f)
-      return LOAD_FAIL;
 
    rc = LOAD_FAIL;
 
@@ -576,7 +573,6 @@ _save(ImlibImage * im)
 
  quit:
    free(buf);
-   fclose(f);
 
    return rc;
 }

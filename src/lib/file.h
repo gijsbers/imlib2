@@ -35,7 +35,6 @@ int                 __imlib_FileIsFile(const char *s);
 int                 __imlib_FileIsDir(const char *s);
 time_t              __imlib_FileModDate(const char *s);
 time_t              __imlib_FileModDateFd(int fd);
-int                 __imlib_FileCanRead(const char *s);
 
 char              **__imlib_FileDir(const char *dir, int *num);
 void                __imlib_FileFreeDirList(char **l, int num);
@@ -48,5 +47,8 @@ char              **__imlib_PathToFilters(void);
 char              **__imlib_PathToLoaders(void);
 char              **__imlib_ModulesList(char **path, int *num_ret);
 char               *__imlib_ModuleFind(char **path, const char *name);
+
+#include <stdio.h>
+FILE               *__imlib_FileOpen(const char *path, const char *mode);
 
 #endif

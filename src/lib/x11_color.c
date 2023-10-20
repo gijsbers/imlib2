@@ -87,15 +87,15 @@ _free_colors(Display * d, Colormap cmap, uint8_t * lut, int num)
 }
 
 static uint8_t     *
-__imlib_AllocColors332(Display * d, Colormap cmap, Visual * v)
+__imlib_AllocColors332(const ImlibContextX11 * x11)
 {
    int                 r, g, b, i;
    uint8_t            *color_lut;
    int                 sig_mask = 0;
 
-   for (i = 0; i < v->bits_per_rgb; i++)
+   for (i = 0; i < x11->vis->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
-   sig_mask <<= (16 - v->bits_per_rgb);
+   sig_mask <<= (16 - x11->vis->bits_per_rgb);
    i = 0;
    color_lut = malloc(256 * sizeof(uint8_t));
    if (!color_lut)
@@ -118,13 +118,13 @@ __imlib_AllocColors332(Display * d, Colormap cmap, Visual * v)
                   val = (b << 6) | (b << 4) | (b << 2) | (b);
                   xcl.blue = (unsigned short)((val << 8) | (val));
                   xcl_in = xcl;
-                  ret = XAllocColor(d, cmap, &xcl);
+                  ret = XAllocColor(x11->dpy, x11->cmap, &xcl);
                   if ((ret == 0) ||
                       ((xcl_in.red & sig_mask) != (xcl.red & sig_mask)) ||
                       ((xcl_in.green & sig_mask) != (xcl.green & sig_mask)) ||
                       ((xcl_in.blue & sig_mask) != (xcl.blue & sig_mask)))
                     {
-                       _free_colors(d, cmap, color_lut, i);
+                       _free_colors(x11->dpy, x11->cmap, color_lut, i);
                        return NULL;
                     }
                   color_lut[i] = xcl.pixel;
@@ -136,15 +136,15 @@ __imlib_AllocColors332(Display * d, Colormap cmap, Visual * v)
 }
 
 static uint8_t     *
-__imlib_AllocColors666(Display * d, Colormap cmap, Visual * v)
+__imlib_AllocColors666(const ImlibContextX11 * x11)
 {
    int                 r, g, b, i;
    uint8_t            *color_lut;
    int                 sig_mask = 0;
 
-   for (i = 0; i < v->bits_per_rgb; i++)
+   for (i = 0; i < x11->vis->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
-   sig_mask <<= (16 - v->bits_per_rgb);
+   sig_mask <<= (16 - x11->vis->bits_per_rgb);
    i = 0;
    color_lut = malloc(256 * sizeof(uint8_t));
    if (!color_lut)
@@ -167,13 +167,13 @@ __imlib_AllocColors666(Display * d, Colormap cmap, Visual * v)
                   val = (int)((((double)b) / 5.0) * 65535);
                   xcl.blue = (unsigned short)(val);
                   xcl_in = xcl;
-                  ret = XAllocColor(d, cmap, &xcl);
+                  ret = XAllocColor(x11->dpy, x11->cmap, &xcl);
                   if ((ret == 0) ||
                       ((xcl_in.red & sig_mask) != (xcl.red & sig_mask)) ||
                       ((xcl_in.green & sig_mask) != (xcl.green & sig_mask)) ||
                       ((xcl_in.blue & sig_mask) != (xcl.blue & sig_mask)))
                     {
-                       _free_colors(d, cmap, color_lut, i);
+                       _free_colors(x11->dpy, x11->cmap, color_lut, i);
                        return NULL;
                     }
                   color_lut[i] = xcl.pixel;
@@ -185,15 +185,15 @@ __imlib_AllocColors666(Display * d, Colormap cmap, Visual * v)
 }
 
 static uint8_t     *
-__imlib_AllocColors232(Display * d, Colormap cmap, Visual * v)
+__imlib_AllocColors232(const ImlibContextX11 * x11)
 {
    int                 r, g, b, i;
    uint8_t            *color_lut;
    int                 sig_mask = 0;
 
-   for (i = 0; i < v->bits_per_rgb; i++)
+   for (i = 0; i < x11->vis->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
-   sig_mask <<= (16 - v->bits_per_rgb);
+   sig_mask <<= (16 - x11->vis->bits_per_rgb);
    i = 0;
    color_lut = malloc(128 * sizeof(uint8_t));
    if (!color_lut)
@@ -216,13 +216,13 @@ __imlib_AllocColors232(Display * d, Colormap cmap, Visual * v)
                   val = (b << 6) | (b << 4) | (b << 2) | (b);
                   xcl.blue = (unsigned short)((val << 8) | (val));
                   xcl_in = xcl;
-                  ret = XAllocColor(d, cmap, &xcl);
+                  ret = XAllocColor(x11->dpy, x11->cmap, &xcl);
                   if ((ret == 0) ||
                       ((xcl_in.red & sig_mask) != (xcl.red & sig_mask)) ||
                       ((xcl_in.green & sig_mask) != (xcl.green & sig_mask)) ||
                       ((xcl_in.blue & sig_mask) != (xcl.blue & sig_mask)))
                     {
-                       _free_colors(d, cmap, color_lut, i);
+                       _free_colors(x11->dpy, x11->cmap, color_lut, i);
                        return NULL;
                     }
                   color_lut[i] = xcl.pixel;
@@ -234,15 +234,15 @@ __imlib_AllocColors232(Display * d, Colormap cmap, Visual * v)
 }
 
 static uint8_t     *
-__imlib_AllocColors222(Display * d, Colormap cmap, Visual * v)
+__imlib_AllocColors222(const ImlibContextX11 * x11)
 {
    int                 r, g, b, i;
    uint8_t            *color_lut;
    int                 sig_mask = 0;
 
-   for (i = 0; i < v->bits_per_rgb; i++)
+   for (i = 0; i < x11->vis->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
-   sig_mask <<= (16 - v->bits_per_rgb);
+   sig_mask <<= (16 - x11->vis->bits_per_rgb);
    i = 0;
    color_lut = malloc(64 * sizeof(uint8_t));
    if (!color_lut)
@@ -265,13 +265,13 @@ __imlib_AllocColors222(Display * d, Colormap cmap, Visual * v)
                   val = (b << 6) | (b << 4) | (b << 2) | (b);
                   xcl.blue = (unsigned short)((val << 8) | (val));
                   xcl_in = xcl;
-                  ret = XAllocColor(d, cmap, &xcl);
+                  ret = XAllocColor(x11->dpy, x11->cmap, &xcl);
                   if ((ret == 0) ||
                       ((xcl_in.red & sig_mask) != (xcl.red & sig_mask)) ||
                       ((xcl_in.green & sig_mask) != (xcl.green & sig_mask)) ||
                       ((xcl_in.blue & sig_mask) != (xcl.blue & sig_mask)))
                     {
-                       _free_colors(d, cmap, color_lut, i);
+                       _free_colors(x11->dpy, x11->cmap, color_lut, i);
                        return NULL;
                     }
                   color_lut[i] = xcl.pixel;
@@ -283,15 +283,15 @@ __imlib_AllocColors222(Display * d, Colormap cmap, Visual * v)
 }
 
 static uint8_t     *
-__imlib_AllocColors221(Display * d, Colormap cmap, Visual * v)
+__imlib_AllocColors221(const ImlibContextX11 * x11)
 {
    int                 r, g, b, i;
    uint8_t            *color_lut;
    int                 sig_mask = 0;
 
-   for (i = 0; i < v->bits_per_rgb; i++)
+   for (i = 0; i < x11->vis->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
-   sig_mask <<= (16 - v->bits_per_rgb);
+   sig_mask <<= (16 - x11->vis->bits_per_rgb);
    i = 0;
    color_lut = malloc(32 * sizeof(uint8_t));
    if (!color_lut)
@@ -315,13 +315,13 @@ __imlib_AllocColors221(Display * d, Colormap cmap, Visual * v)
                      (b << 3) | (b << 2) | (b << 1) | (b);
                   xcl.blue = (unsigned short)((val << 8) | (val));
                   xcl_in = xcl;
-                  ret = XAllocColor(d, cmap, &xcl);
+                  ret = XAllocColor(x11->dpy, x11->cmap, &xcl);
                   if ((ret == 0) ||
                       ((xcl_in.red & sig_mask) != (xcl.red & sig_mask)) ||
                       ((xcl_in.green & sig_mask) != (xcl.green & sig_mask)) ||
                       ((xcl_in.blue & sig_mask) != (xcl.blue & sig_mask)))
                     {
-                       _free_colors(d, cmap, color_lut, i);
+                       _free_colors(x11->dpy, x11->cmap, color_lut, i);
                        return NULL;
                     }
                   color_lut[i] = xcl.pixel;
@@ -333,15 +333,15 @@ __imlib_AllocColors221(Display * d, Colormap cmap, Visual * v)
 }
 
 static uint8_t     *
-__imlib_AllocColors121(Display * d, Colormap cmap, Visual * v)
+__imlib_AllocColors121(const ImlibContextX11 * x11)
 {
    int                 r, g, b, i;
    uint8_t            *color_lut;
    int                 sig_mask = 0;
 
-   for (i = 0; i < v->bits_per_rgb; i++)
+   for (i = 0; i < x11->vis->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
-   sig_mask <<= (16 - v->bits_per_rgb);
+   sig_mask <<= (16 - x11->vis->bits_per_rgb);
    i = 0;
    color_lut = malloc(16 * sizeof(uint8_t));
    if (!color_lut)
@@ -366,13 +366,13 @@ __imlib_AllocColors121(Display * d, Colormap cmap, Visual * v)
                      (b << 3) | (b << 2) | (b << 1) | (b);
                   xcl.blue = (unsigned short)((val << 8) | (val));
                   xcl_in = xcl;
-                  ret = XAllocColor(d, cmap, &xcl);
+                  ret = XAllocColor(x11->dpy, x11->cmap, &xcl);
                   if ((ret == 0) ||
                       ((xcl_in.red & sig_mask) != (xcl.red & sig_mask)) ||
                       ((xcl_in.green & sig_mask) != (xcl.green & sig_mask)) ||
                       ((xcl_in.blue & sig_mask) != (xcl.blue & sig_mask)))
                     {
-                       _free_colors(d, cmap, color_lut, i);
+                       _free_colors(x11->dpy, x11->cmap, color_lut, i);
                        return NULL;
                     }
                   color_lut[i] = xcl.pixel;
@@ -384,15 +384,15 @@ __imlib_AllocColors121(Display * d, Colormap cmap, Visual * v)
 }
 
 static uint8_t     *
-__imlib_AllocColors111(Display * d, Colormap cmap, Visual * v)
+__imlib_AllocColors111(const ImlibContextX11 * x11)
 {
    int                 r, g, b, i;
    uint8_t            *color_lut;
    int                 sig_mask = 0;
 
-   for (i = 0; i < v->bits_per_rgb; i++)
+   for (i = 0; i < x11->vis->bits_per_rgb; i++)
       sig_mask |= (0x1 << i);
-   sig_mask <<= (16 - v->bits_per_rgb);
+   sig_mask <<= (16 - x11->vis->bits_per_rgb);
    i = 0;
    color_lut = malloc(8 * sizeof(uint8_t));
    if (!color_lut)
@@ -418,13 +418,13 @@ __imlib_AllocColors111(Display * d, Colormap cmap, Visual * v)
                      (b << 3) | (b << 2) | (b << 1) | (b);
                   xcl.blue = (unsigned short)((val << 8) | (val));
                   xcl_in = xcl;
-                  ret = XAllocColor(d, cmap, &xcl);
+                  ret = XAllocColor(x11->dpy, x11->cmap, &xcl);
                   if ((ret == 0) ||
                       ((xcl_in.red & sig_mask) != (xcl.red & sig_mask)) ||
                       ((xcl_in.green & sig_mask) != (xcl.green & sig_mask)) ||
                       ((xcl_in.blue & sig_mask) != (xcl.blue & sig_mask)))
                     {
-                       _free_colors(d, cmap, color_lut, i);
+                       _free_colors(x11->dpy, x11->cmap, color_lut, i);
                        return NULL;
                     }
                   color_lut[i] = xcl.pixel;
@@ -436,7 +436,7 @@ __imlib_AllocColors111(Display * d, Colormap cmap, Visual * v)
 }
 
 static uint8_t     *
-__imlib_AllocColors1(Display * d, Colormap cmap, Visual * v)
+__imlib_AllocColors1(const ImlibContextX11 * x11)
 {
    XColor              xcl;
    uint8_t            *color_lut;
@@ -450,77 +450,70 @@ __imlib_AllocColors1(Display * d, Colormap cmap, Visual * v)
    xcl.red = (unsigned short)(0x0000);
    xcl.green = (unsigned short)(0x0000);
    xcl.blue = (unsigned short)(0x0000);
-   if (!XAllocColor(d, cmap, &xcl))
+   if (!XAllocColor(x11->dpy, x11->cmap, &xcl))
       goto bail;
    color_lut[i++] = xcl.pixel;
 
    xcl.red = (unsigned short)(0xffff);
    xcl.green = (unsigned short)(0xffff);
    xcl.blue = (unsigned short)(0xffff);
-   if (!XAllocColor(d, cmap, &xcl))
+   if (!XAllocColor(x11->dpy, x11->cmap, &xcl))
       goto bail;
    color_lut[i] = xcl.pixel;
 
    return color_lut;
 
  bail:
-   _free_colors(d, cmap, color_lut, i);
+   _free_colors(x11->dpy, x11->cmap, color_lut, i);
    return NULL;
 }
 
 uint8_t            *
-__imlib_AllocColorTable(Display * d, Colormap cmap,
-                        unsigned char *type_return, Visual * v)
+__imlib_AllocColorTable(const ImlibContextX11 * x11, unsigned char *type_return)
 {
    uint8_t            *color_lut = NULL;
 
-   if (v->bits_per_rgb > 1)
+   if (x11->vis->bits_per_rgb > 1)
      {
-        if ((_max_colors >= 256)
-            && (color_lut = __imlib_AllocColors332(d, cmap, v)))
+        if ((_max_colors >= 256) && (color_lut = __imlib_AllocColors332(x11)))
           {
              *type_return = PAL_TYPE_332;
              return color_lut;
           }
-        if ((_max_colors >= 216)
-            && (color_lut = __imlib_AllocColors666(d, cmap, v)))
+        if ((_max_colors >= 216) && (color_lut = __imlib_AllocColors666(x11)))
           {
              *type_return = PAL_TYPE_666;
              return color_lut;
           }
-        if ((_max_colors >= 128)
-            && (color_lut = __imlib_AllocColors232(d, cmap, v)))
+        if ((_max_colors >= 128) && (color_lut = __imlib_AllocColors232(x11)))
           {
              *type_return = PAL_TYPE_232;
              return color_lut;
           }
-        if ((_max_colors >= 64)
-            && (color_lut = __imlib_AllocColors222(d, cmap, v)))
+        if ((_max_colors >= 64) && (color_lut = __imlib_AllocColors222(x11)))
           {
              *type_return = PAL_TYPE_222;
              return color_lut;
           }
-        if ((_max_colors >= 32)
-            && (color_lut = __imlib_AllocColors221(d, cmap, v)))
+        if ((_max_colors >= 32) && (color_lut = __imlib_AllocColors221(x11)))
           {
              *type_return = PAL_TYPE_221;
              return color_lut;
           }
-        if ((_max_colors >= 16)
-            && (color_lut = __imlib_AllocColors121(d, cmap, v)))
+        if ((_max_colors >= 16) && (color_lut = __imlib_AllocColors121(x11)))
           {
              *type_return = PAL_TYPE_121;
              return color_lut;
           }
      }
 
-   if ((_max_colors >= 8) && (color_lut = __imlib_AllocColors111(d, cmap, v)))
+   if ((_max_colors >= 8) && (color_lut = __imlib_AllocColors111(x11)))
      {
         *type_return = PAL_TYPE_111;
         return color_lut;
      }
 
-   color_lut = __imlib_AllocColors1(d, cmap, v);
+   color_lut = __imlib_AllocColors1(x11);
    *type_return = PAL_TYPE_1;
    return color_lut;
 }

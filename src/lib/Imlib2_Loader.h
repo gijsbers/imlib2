@@ -58,7 +58,7 @@ typedef struct _ImlibImage ImlibImage;
 #define SWAP_LE_32_INPLACE(x)
 #endif
 
-#define PIXEL_ARGB(a, r, g, b)  ((a) << 24) | ((r) << 16) | ((g) << 8) | (b)
+#define PIXEL_ARGB(a, r, g, b)  ((uint32_t)(a) << 24) | ((r) << 16) | ((g) << 8) | (b)
 
 #define PIXEL_A(argb)  (((argb) >> 24) & 0xff)
 #define PIXEL_R(argb)  (((argb) >> 16) & 0xff)
@@ -69,15 +69,16 @@ typedef struct _ImlibImage ImlibImage;
 
 #if IMLIB2_DEBUG
 
-#define DC(M, fmt...) if (__imlib_debug & M) __imlib_printf(DBG_PFX, fmt)
+#define DC(PFX, M, fmt...) if (__imlib_debug & M) __imlib_printf(PFX, fmt)
 
 #define DBG_FILE	0x0001
 #define DBG_LOAD	0x0002
 #define DBG_LDR 	0x0004
 #define DBG_LDR2	0x0008
 
-#define D(fmt...)  DC(DBG_LDR, fmt)
-#define DL(fmt...) DC(DBG_LDR2, fmt)
+#define D(fmt...)  DC(DBG_PFX, DBG_LDR, fmt)
+#define Dx(fmt...) DC(NULL, DBG_LDR, fmt)
+#define DL(fmt...) DC(DBG_PFX, DBG_LDR2, fmt)
 
 extern unsigned int __imlib_debug;
 
@@ -87,8 +88,9 @@ unsigned int        __imlib_time_us(void);
 
 #else
 
-#define D(fmt...)
 #define DC(fmt...)
+#define D(fmt...)
+#define Dx(fmt...)
 #define DL(fmt...)
 
 #endif /* IMLIB2_DEBUG */
@@ -193,7 +195,7 @@ int                 __imlib_LoadProgressRows(ImlibImage * im,
 
 /* loader.h */
 
-#define IMLIB2_LOADER_VERSION 1
+#define IMLIB2_LOADER_VERSION 2
 
 typedef struct {
    unsigned char       ldr_version;     /* Module ABI version */
@@ -213,13 +215,8 @@ typedef struct {
         .save = _svr, \
     }
 
-typedef int         (imlib_decompress_load_f) (const void *fdata,
-                                               unsigned int fsize, int dest);
-
-int                 decompress_load(ImlibImage * im, int load_data,
-                                    const char *const *pext, int next,
-                                    imlib_decompress_load_f * fdec);
-
 #define QUIT_WITH_RC(_err) { rc = _err; goto quit; }
+
+#define PCAST(T, p) ((T)(const void *)(p))
 
 #endif /* IMLIB2_LOADER_H */

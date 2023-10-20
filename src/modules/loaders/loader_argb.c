@@ -109,13 +109,9 @@ static int
 _save(ImlibImage * im)
 {
    int                 rc;
-   FILE               *f;
+   FILE               *f = im->fi->fp;
    uint32_t           *ptr;
    int                 y, alpha = 0;
-
-   f = fopen(im->fi->name, "wb");
-   if (!f)
-      return LOAD_FAIL;
 
 #ifdef WORDS_BIGENDIAN
    uint32_t           *buf = (uint32_t *) malloc(im->w * 4);
@@ -153,7 +149,6 @@ _save(ImlibImage * im)
 #ifdef WORDS_BIGENDIAN
    free(buf);
 #endif
-   fclose(f);
 
    return rc;
 }

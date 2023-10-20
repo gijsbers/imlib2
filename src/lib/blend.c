@@ -1802,9 +1802,8 @@ __imlib_BlendImageToImage(ImlibImage * im_src, ImlibImage * im_dst,
 {
    char                rgb_src = 0;
 
-   if (__imlib_LoadImageData(im_src))
-      return;
-   if (__imlib_LoadImageData(im_dst))
+   /* Image data should(must) be loaded here but let's just check anyway */
+   if (!im_src->data || !im_dst->data)
       return;
 
    /* don't do anything if we have a 0 width or height image to render */

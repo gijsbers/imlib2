@@ -36,7 +36,7 @@
 #define SWAP_LE_32_INPLACE(x)
 #endif
 
-#define PIXEL_ARGB(a, r, g, b)  ((a) << 24) | ((r) << 16) | ((g) << 8) | (b)
+#define PIXEL_ARGB(a, r, g, b)  ((uint32_t)(a) << 24) | ((r) << 16) | ((g) << 8) | (b)
 
 #define PIXEL_A(argb)  (((argb) >> 24) & 0xff)
 #define PIXEL_R(argb)  (((argb) >> 16) & 0xff)

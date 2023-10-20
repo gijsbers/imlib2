@@ -59,9 +59,9 @@ __imlib_ConsumeImagePixmap(ImlibImagePixmap * ip)
 }
 
 static ImlibImagePixmap *
-__imlib_FindCachedImagePixmap(ImlibImage * im, int w, int h, Display * d,
-                              Visual * v, int depth, int sx, int sy, int sw,
-                              int sh, Colormap cm, char aa, char hiq,
+__imlib_FindCachedImagePixmap(const ImlibContextX11 * x11, ImlibImage * im,
+                              int w, int h, int sx, int sy, int sw, int sh,
+                              char aa, char hiq,
                               char dmask, uint64_t modification_count)
 {
    ImlibImagePixmap   *ip, *ip_prev;
@@ -69,19 +69,20 @@ __imlib_FindCachedImagePixmap(ImlibImage * im, int w, int h, Display * d,
    for (ip = pixmaps, ip_prev = NULL; ip; ip_prev = ip, ip = ip->next)
      {
         /* if all the pixmap attributes match */
-        if ((ip->w == w) && (ip->h == h) && (ip->depth == depth) && (!ip->dirty)
-            && (ip->visual == v) && (ip->display == d)
-            && (ip->source_x == sx) && (ip->source_x == sy)
-            && (ip->source_w == sw) && (ip->source_h == sh)
-            && (ip->colormap == cm) && (ip->antialias == aa)
+        if ((ip->w == w) && (ip->h == h) && (ip->depth == x11->depth)
+            && (!ip->dirty) && (ip->visual == x11->vis)
+            && (ip->display == x11->dpy) && (ip->source_x == sx)
+            && (ip->source_x == sy) && (ip->source_w == sw)
+            && (ip->source_h == sh) && (ip->colormap == x11->cmap)
+            && (ip->antialias == aa)
             && (ip->modification_count == modification_count)
             && (ip->dither_mask == dmask)
             && (ip->border.left == im->border.left)
             && (ip->border.right == im->border.right)
             && (ip->border.top == im->border.top)
-            && (ip->border.bottom == im->border.bottom) &&
-            (((im->file) && (ip->file) && !strcmp(im->file, ip->file)) ||
-             ((!im->file) && (!ip->file) && (im == ip->image))))
+            && (ip->border.bottom == im->border.bottom)
+            && (((im->file) && (ip->file) && !strcmp(im->file, ip->file))
+                || ((!im->file) && (!ip->file) && (im == ip->image))))
           {
              /* move the pixmap to the head of the pixmap list */
              if (ip_prev)
@@ -98,18 +99,17 @@ __imlib_FindCachedImagePixmap(ImlibImage * im, int w, int h, Display * d,
 
 /* add a pixmap cahce struct to the pixmap cache (at the start of course */
 static ImlibImagePixmap *
-__imlib_AddImagePixmapToCache(ImlibImage * im, Pixmap pmap, Pixmap mask,
-                              int w, int h,
-                              Display * d, Visual * v, int depth,
+__imlib_AddImagePixmapToCache(const ImlibContextX11 * x11, ImlibImage * im,
+                              Pixmap pmap, Pixmap mask, int w, int h,
                               int sx, int sy, int sw, int sh,
-                              Colormap cm, char aa, char hiq, char dmask,
+                              char aa, char hiq, char dmask,
                               uint64_t modification_count)
 {
    ImlibImagePixmap   *ip;
 
    ip = __imlib_ProduceImagePixmap();
-   ip->visual = v;
-   ip->depth = depth;
+   ip->visual = x11->vis;
+   ip->depth = x11->depth;
    ip->image = im;
    if (im->file)
       ip->file = strdup(im->file);
@@ -117,8 +117,8 @@ __imlib_AddImagePixmapToCache(ImlibImage * im, Pixmap pmap, Pixmap mask,
    ip->border.right = im->border.right;
    ip->border.top = im->border.top;
    ip->border.bottom = im->border.bottom;
-   ip->colormap = cm;
-   ip->display = d;
+   ip->colormap = x11->cmap;
+   ip->display = x11->dpy;
    ip->w = w;
    ip->h = h;
    ip->source_x = sx;
@@ -326,13 +326,12 @@ __imlib_PixmapCacheSize(void)
    return current_cache;
 }
 
-char
-__imlib_CreatePixmapsForImage(Display * d, Drawable w, Visual * v, int depth,
-                              Colormap cm, ImlibImage * im, Pixmap * p,
-                              Mask * m, int sx, int sy, int sw, int sh, int dw,
-                              int dh, char antialias, char hiq,
-                              char dither_mask, int mat,
-                              ImlibColorModifier * cmod)
+int
+__imlib_CreatePixmapsForImage(const ImlibContextX11 * x11, Drawable w,
+                              ImlibImage * im, Pixmap * p, Mask * m,
+                              int sx, int sy, int sw, int sh, int dw, int dh,
+                              char antialias, char hiq, char dither_mask,
+                              int mat, ImlibColorModifier * cmod)
 {
    ImlibImagePixmap   *ip = NULL;
    Pixmap              pmap = 0;
@@ -341,9 +340,9 @@ __imlib_CreatePixmapsForImage(Display * d, Drawable w, Visual * v, int depth,
 
    if (cmod)
       mod_count = cmod->modification_count;
-   ip = __imlib_FindCachedImagePixmap(im, dw, dh, d, v, depth, sx, sy,
-                                      sw, sh, cm, antialias, hiq, dither_mask,
-                                      mod_count);
+   ip =
+      __imlib_FindCachedImagePixmap(x11, im, dw, dh, sx, sy, sw, sh,
+                                    antialias, hiq, dither_mask, mod_count);
    if (ip)
      {
         if (p)
@@ -360,22 +359,21 @@ __imlib_CreatePixmapsForImage(Display * d, Drawable w, Visual * v, int depth,
      }
    if (p)
      {
-        pmap = XCreatePixmap(d, w, dw, dh, depth);
+        pmap = XCreatePixmap(x11->dpy, w, dw, dh, x11->depth);
         *p = pmap;
      }
    if (m)
      {
         if (im->has_alpha)
-           mask = XCreatePixmap(d, w, dw, dh, 1);
+           mask = XCreatePixmap(x11->dpy, w, dw, dh, 1);
         *m = mask;
      }
-   __imlib_RenderImage(d, im, pmap, mask, v, cm, depth, sx, sy, sw, sh, 0, 0,
+   __imlib_RenderImage(x11, im, pmap, mask, sx, sy, sw, sh, 0, 0,
                        dw, dh, antialias, hiq, 0, dither_mask, mat, cmod,
                        OP_COPY);
-   ip = __imlib_AddImagePixmapToCache(im, pmap, mask,
-                                      dw, dh, d, v, depth, sx, sy,
-                                      sw, sh, cm, antialias, hiq, dither_mask,
-                                      mod_count);
+   ip = __imlib_AddImagePixmapToCache(x11, im, pmap, mask,
+                                      dw, dh, sx, sy, sw, sh,
+                                      antialias, hiq, dither_mask, mod_count);
 #ifdef DEBUG_CACHE
    fprintf(stderr,
            "[Imlib2]  Created pixmap.  Reference count is %d, pixmap 0x%08lx, mask 0x%08lx\n",

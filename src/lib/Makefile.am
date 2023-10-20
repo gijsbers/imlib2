@@ -74,7 +74,7 @@ EXTRA_DIST = $(MMX_SRCS) $(AMD64_SRCS) asm_loadimmq.S
 
 if BUILD_X11
 libImlib2_la_SOURCES += \
-api_x11.c	\
+api_x11.c	x11_types.h	\
 x11_color.c	x11_color.h	\
 x11_context.c	x11_context.h	\
 x11_grab.c	x11_grab.h	\

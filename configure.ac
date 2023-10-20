@@ -1,4 +1,4 @@
-AC_INIT([imlib2],[1.10.0],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.11.0],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -20,9 +20,9 @@ define([AC_LIBTOOL_LANG_CXX_CONFIG], [:])dnl
 define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
-VERSION_CUR=11
+VERSION_CUR=12
 VERSION_REV=0
-VERSION_AGE=10
+VERSION_AGE=11
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
 
@@ -259,6 +259,7 @@ AM_CONDITIONAL(BUILD_DOC, test "$enable_doc_build" = "yes")
 
 EC_C_WARNINGS()
 EC_C_VISIBILITY(yes)
+EC_C_PACKING()
 EC_C_ASAN()
 
 VERSION_MAJOR=`echo $VERSION | awk -F. '{print $1}'`
@@ -328,6 +329,7 @@ echo
 echo "Include filters...........: $enable_filters"
 echo "Include text functions....: $enable_text"
 echo "Use visibility hiding.....: $enable_visibility_hiding"
+echo "Use struct packing........: $enable_packing"
 echo
 echo "Installation path.........: $prefix"
 echo

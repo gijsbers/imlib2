@@ -1513,6 +1513,7 @@ AC_SUBST([am__untar])
 ]) # _AM_PROG_TAR
 
 m4_include([m4/ec_asan.m4])
+m4_include([m4/ec_packing.m4])
 m4_include([m4/ec_visibility.m4])
 m4_include([m4/ec_warnflags.m4])
 m4_include([m4/libtool.m4])

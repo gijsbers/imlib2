@@ -3,10 +3,18 @@
 
 #include <ctype.h>
 #include <stdbool.h>
+#include <string.h>
 
 #define DBG_PFX "LDR-pnm"
 
 static const char  *const _formats[] = { "pnm", "ppm", "pgm", "pbm", "pam" };
+
+typedef enum {
+   BW_RAW_PACKED, BW_RAW, BW_PLAIN, GRAY_RAW, GRAY_PLAIN, RGB_RAW, RGB_PLAIN,
+   XV332
+} px_type;
+
+#define mm_check(p) ((const char *)(p) <= (const char *)im->fi->fdata + im->fi->fsize)
 
 static struct {
    const unsigned char *data, *dptr;
@@ -18,18 +26,6 @@ mm_init(const void *src, unsigned int size)
 {
    mdata.data = mdata.dptr = src;
    mdata.size = size;
-}
-
-static int
-mm_read(void *dst, unsigned int len)
-{
-   if (mdata.dptr + len > mdata.data + mdata.size)
-      return 1;                 /* Out of data */
-
-   memcpy(dst, mdata.dptr, len);
-   mdata.dptr += len;
-
-   return 0;
 }
 
 static int
@@ -78,6 +74,7 @@ mm_getu(unsigned int *pui)
    bool                comment;
 
    /* Strip whitespace and comments */
+
    for (comment = false;;)
      {
         ch = mm_getc();
@@ -115,69 +112,199 @@ mm_getu(unsigned int *pui)
 }
 
 static int
+mm_parse_pam_header(unsigned *w, unsigned *h, unsigned *v, px_type * pxt,
+                    char *alpha)
+{
+   char                tuple_type[32] = { 0 };
+   unsigned            tti = 0, d;
+
+   for (int ch;;)
+     {
+        if ((ch = mm_getc()) == -1)
+           return -1;
+        if (ch == '#')
+          {
+             do
+               {
+                  if ((ch = mm_getc()) == -1)
+                     return -1;
+               }
+             while (ch != '\n');
+          }
+        else
+          {
+             char                key[9] = { 0 };        /* max key size per spec: 8 */
+             for (unsigned ki = 0; !isspace(ch) && ki < sizeof(key) - 1; ++ki)
+               {
+                  key[ki] = (char)ch;
+                  if ((ch = mm_getc()) == -1)
+                     return -1;
+               }
+             if (!strcmp(key, "ENDHDR"))
+                break;
+
+             unsigned int       *p = NULL;
+
+             if (!strcmp(key, "HEIGHT"))
+                p = h;
+             else if (!strcmp(key, "WIDTH"))
+                p = w;
+             else if (!strcmp(key, "DEPTH"))
+                p = &d;
+             else if (!strcmp(key, "MAXVAL"))
+                p = v;
+             else if (!strcmp(key, "TUPLTYPE"))
+               {
+                  while (isspace(ch))
+                    {
+                       if ((ch = mm_getc()) == -1)
+                          return -1;
+                    }
+                  if (tti != 0) /* not the first TUPLE_TYPE header */
+                    {
+                       if (tti < sizeof(tuple_type) - 1)
+                          tuple_type[tti++] = ' ';
+                    }
+                  while (ch != '\n' && tti < sizeof(tuple_type) - 1)
+                    {
+                       tuple_type[tti++] = ch;
+                       if ((ch = mm_getc()) == -1)
+                          return -1;
+                    }
+               }
+             else               /* unknown header */
+               {
+
+               }
+
+             if (p)
+               {
+                  if (mm_getu(p) == -1)
+                     return -1;
+               }
+          }
+     }
+
+   *alpha = (tti >= 6 && !strcmp(tuple_type + tti - 6, "_ALPHA"));
+
+   if (!strncmp(tuple_type, "BLACKANDWHITE", 13))
+     {
+        *pxt = BW_RAW;
+        /* assert(d == *alpha + 1);
+         * assert(*v == 1); */
+     }
+   else if (!strncmp(tuple_type, "GRAYSCALE", 9))
+     {
+        *pxt = GRAY_RAW;
+        /* assert(d == *alpha + 1); */
+     }
+   else if (!strncmp(tuple_type, "RGB", 3))
+     {
+        *pxt = RGB_RAW;
+        /* assert(d == *alpha + 3); */
+     }
+   else                         /* unknown tuple type */
+     {
+        return -1;
+     }
+   return 0;
+}
+
+static int
 _load(ImlibImage * im, int load_data)
 {
    int                 rc;
-   int                 c, p;
-   int                 w, h, v, numbers, count;
-   uint8_t            *data = NULL;     /* for the binary versions */
-   uint8_t            *ptr = NULL;
-   int                *idata = NULL;    /* for the ASCII versions */
-   uint32_t           *ptr2, rval, gval, bval;
-   int                 i, j, x, y;
+   int                 p;
+   unsigned int        w, h, v, hlen;
+   const uint8_t      *ptr;
+   uint32_t           *ptr2, aval, rval, gval, bval;
+   unsigned            i, j, x, y;
+   px_type             pxt;
 
    rc = LOAD_FAIL;
 
    mm_init(im->fi->fdata, im->fi->fsize);
 
    /* read the header info */
-
-   c = mm_getc();
-   if (c != 'P')
+   if (mm_getc() != 'P')
       goto quit;
 
-   numbers = 3;
    p = mm_getc();
-   if (p == '1' || p == '4')
-      numbers = 2;              /* bitimages don't have max value */
-
-   if ((p < '1') || (p > '8'))
-      goto quit;
-
-   /* read numbers */
-   w = h = 0;
-   v = 255;
-   for (count = i = 0; count < numbers; i++)
+   hlen = 3;
+   switch (p)
      {
-        if (mm_getu(&gval))
-           goto quit;
-
-        if (p == '7' && i == 0)
+     case '1':
+        pxt = BW_PLAIN;
+        hlen = 2;
+        break;
+     case '2':
+        pxt = GRAY_PLAIN;
+        break;
+     case '3':
+        pxt = RGB_PLAIN;
+        break;
+     case '4':
+        pxt = BW_RAW_PACKED;
+        hlen = 2;
+        break;
+     case '5':
+        pxt = GRAY_RAW;
+        break;
+     case '6':
+        pxt = RGB_RAW;
+        break;
+     case '7':
+        if (mm_getc() != '\n')
           {
-             if (gval != 332)
+             if (mm_getu(&gval) || gval != 332) /* XV thumbnail format */
                 goto quit;
-             else
-                continue;
+             pxt = XV332;
           }
-
-        count++;
-        switch (count)
+        else
           {
-          case 1:              /* width */
-             w = gval;
-             break;
-          case 2:              /* height */
-             h = gval;
-             break;
-          case 3:              /* max value, only for color and greyscale */
-             v = gval;
-             break;
+             if (mm_parse_pam_header(&w, &h, &v, &pxt, &im->has_alpha))
+                goto quit;
+             hlen = 0;
+          }
+        break;
+     case '8':                 /* not in netpbm, unknown format provenance (Imlib2 specific?) */
+        pxt = RGB_RAW;
+        im->has_alpha = 1;
+        break;
+     default:
+        goto quit;
+     }
+
+   /* read header for non-PAM formats */
+   if (hlen != 0)
+     {
+        w = h = 0;
+        v = 255;
+        for (i = 0; i < hlen; i++)
+          {
+             if (mm_getu(&gval))
+                goto quit;
+
+             switch (i)
+               {
+               case 0:         /* width */
+                  w = gval;
+                  break;
+               case 1:         /* height */
+                  h = gval;
+                  break;
+               case 2:         /* max value, only for color and greyscale */
+                  v = gval;
+                  break;
+               }
           }
      }
-   if ((v < 0) || (v > 255))
+
+   if (v > 255)
       goto quit;
 
-   D("P%c: WxH=%dx%d V=%d\n", p, w, h, v);
+   D("P%c: pxtype=%d WxH=%ux%u V=%u A=%s\n",
+     p, pxt, w, h, v, im->has_alpha ? "YES" : "NO");
 
    rc = LOAD_BADIMAGE;          /* Format accepted */
 
@@ -185,8 +312,6 @@ _load(ImlibImage * im, int load_data)
    im->h = h;
    if (!IMAGE_DIMENSIONS_OK(w, h))
       goto quit;
-
-   im->has_alpha = p == '8';
 
    if (!load_data)
       QUIT_WITH_RC(LOAD_SUCCESS);
@@ -197,26 +322,30 @@ _load(ImlibImage * im, int load_data)
    if (!ptr2)
       QUIT_WITH_RC(LOAD_OOM);
 
+   ptr = mdata.dptr;
+
    /* start reading the data */
-   switch (p)
+   switch (pxt)
      {
-     case '1':                 /* ASCII monochrome */
+     case BW_PLAIN:            /* ASCII monochrome */
         for (y = 0; y < h; y++)
           {
              for (x = 0; x < w; x++)
                {
-                  i = mm_get01();
-                  if (i < 0)
+                  int                 px = mm_get01();
+
+                  if (px < 0)
                      goto quit;
 
-                  *ptr2++ = i ? 0xff000000 : 0xffffffff;
+                  *ptr2++ = px ? 0xff000000 : 0xffffffff;
                }
 
              if (im->lc && __imlib_LoadProgressRows(im, y, 1))
                 goto quit_progress;
           }
         break;
-     case '2':                 /* ASCII greyscale */
+
+     case GRAY_PLAIN:          /* ASCII greyscale */
         for (y = 0; y < h; y++)
           {
              for (x = 0; x < w; x++)
@@ -224,23 +353,17 @@ _load(ImlibImage * im, int load_data)
                   if (mm_getu(&gval))
                      goto quit;
 
-                  if (v == 0 || v == 255)
-                    {
-                       *ptr2++ = 0xff000000 | (gval << 16) | (gval << 8) | gval;
-                    }
-                  else
-                    {
-                       *ptr2++ =
-                          0xff000000 | (((gval * 255) / v) << 16) |
-                          (((gval * 255) / v) << 8) | ((gval * 255) / v);
-                    }
+                  if (v != 0 && v != 255)
+                     gval = (gval * 255) / v;
+                  *ptr2++ = PIXEL_ARGB(0xff, gval, gval, gval);
                }
 
              if (im->lc && __imlib_LoadProgressRows(im, y, 1))
                 goto quit_progress;
           }
         break;
-     case '3':                 /* ASCII RGB */
+
+     case RGB_PLAIN:           /* ASCII RGB */
         for (y = 0; y < h; y++)
           {
              for (x = 0; x < w; x++)
@@ -252,85 +375,35 @@ _load(ImlibImage * im, int load_data)
                   if (mm_getu(&bval))
                      goto quit;
 
-                  if (v == 0 || v == 255)
+                  if (v != 0 && v != 255)
                     {
-                       *ptr2++ = 0xff000000 | (rval << 16) | (gval << 8) | bval;
+                       rval = (rval * 255) / v;
+                       gval = (gval * 255) / v;
+                       bval = (bval * 255) / v;
                     }
-                  else
-                    {
-                       *ptr2++ =
-                          0xff000000 |
-                          (((rval * 255) / v) << 16) |
-                          (((gval * 255) / v) << 8) | ((bval * 255) / v);
-                    }
+                  *ptr2++ = PIXEL_ARGB(0xff, rval, gval, bval);
                }
 
              if (im->lc && __imlib_LoadProgressRows(im, y, 1))
                 goto quit_progress;
           }
         break;
-     case '4':                 /* binary 1bit monochrome */
-        data = malloc((w + 7) / 8 * sizeof(uint8_t));
-        if (!data)
-           QUIT_WITH_RC(LOAD_OOM);
 
-        ptr2 = im->data;
+     case BW_RAW_PACKED:       /* binary 1bit monochrome */
         for (y = 0; y < h; y++)
           {
-             if (mm_read(data, (w + 7) / 8))
+             if (!mm_check(ptr + (w + 7) / 8))
                 goto quit;
 
-             ptr = data;
-             for (x = 0; x < w; x += 8)
+             for (x = 0; x < w; x += 8, ptr++)
                {
                   j = (w - x >= 8) ? 8 : w - x;
                   for (i = 0; i < j; i++)
                     {
                        if (ptr[0] & (0x80 >> i))
-                          *ptr2 = 0xff000000;
+                          *ptr2++ = 0xff000000;
                        else
-                          *ptr2 = 0xffffffff;
-                       ptr2++;
-                    }
-                  ptr++;
-               }
-
-             if (im->lc && __imlib_LoadProgressRows(im, y, 1))
-                goto quit_progress;
-          }
-        break;
-     case '5':                 /* binary 8bit grayscale GGGGGGGG */
-        data = malloc(1 * sizeof(uint8_t) * w);
-        if (!data)
-           QUIT_WITH_RC(LOAD_OOM);
-
-        ptr2 = im->data;
-        for (y = 0; y < h; y++)
-          {
-             if (mm_read(data, w * 1))
-                goto quit;
-
-             ptr = data;
-             if (v == 0 || v == 255)
-               {
-                  for (x = 0; x < w; x++)
-                    {
-                       *ptr2 =
-                          0xff000000 | (ptr[0] << 16) | (ptr[0] << 8) | ptr[0];
-                       ptr2++;
-                       ptr++;
-                    }
-               }
-             else
-               {
-                  for (x = 0; x < w; x++)
-                    {
-                       *ptr2 =
-                          0xff000000 |
-                          (((ptr[0] * 255) / v) << 16) |
-                          (((ptr[0] * 255) / v) << 8) | ((ptr[0] * 255) / v);
-                       ptr2++;
-                       ptr++;
+                          *ptr2++ = 0xffffffff;
                     }
                }
 
@@ -338,115 +411,175 @@ _load(ImlibImage * im, int load_data)
                 goto quit_progress;
           }
         break;
-     case '6':                 /* 24bit binary RGBRGBRGB */
-        data = malloc(3 * sizeof(uint8_t) * w);
-        if (!data)
-           QUIT_WITH_RC(LOAD_OOM);
 
-        ptr2 = im->data;
-        for (y = 0; y < h; y++)
+     case BW_RAW:              /* binary 1byte monochrome */
+        if (im->has_alpha)
           {
-             if (mm_read(data, w * 3))
-                goto quit;
+             for (y = 0; y < h; y++)
+               {
+                  if (!mm_check(ptr + 2 * w))
+                     goto quit;
 
-             ptr = data;
-             if (v == 0 || v == 255)
-               {
-                  for (x = 0; x < w; x++)
-                    {
-                       *ptr2 =
-                          0xff000000 | (ptr[0] << 16) | (ptr[1] << 8) | ptr[2];
-                       ptr2++;
-                       ptr += 3;
-                    }
+                  for (x = 0; x < w; x++, ptr += 2)
+                     *ptr2++ =
+                        (ptr[1] ? 0xff000000 : 0) | (ptr[0] ? 0xffffff : 0);
                }
-             else
+
+             if (im->lc && __imlib_LoadProgressRows(im, y, 1))
+                goto quit_progress;
+          }
+        else
+          {
+             for (y = 0; y < h; y++)
                {
-                  for (x = 0; x < w; x++)
-                    {
-                       *ptr2 =
-                          0xff000000 |
-                          (((ptr[0] * 255) / v) << 16) |
-                          (((ptr[1] * 255) / v) << 8) | ((ptr[2] * 255) / v);
-                       ptr2++;
-                       ptr += 3;
-                    }
+                  if (!mm_check(ptr + w))
+                     goto quit;
+
+                  for (x = 0; x < w; x++, ptr++)
+                     *ptr2++ = 0xff000000 | (ptr[0] ? 0xffffff : 0);
                }
 
              if (im->lc && __imlib_LoadProgressRows(im, y, 1))
                 goto quit_progress;
           }
         break;
-     case '7':                 /* XV's 8bit 332 format */
-        data = malloc(1 * sizeof(uint8_t) * w);
-        if (!data)
-           QUIT_WITH_RC(LOAD_OOM);
 
-        ptr2 = im->data;
+     case GRAY_RAW:            /* binary 8bit grayscale GGGGGGGG */
+        if (im->has_alpha)
+          {
+             for (y = 0; y < h; y++)
+               {
+                  if (!mm_check(ptr + 2 * w))
+                     goto quit;
+
+                  if (v == 0 || v == 255)
+                    {
+                       for (x = 0; x < w; x++, ptr += 2)
+                         {
+                            aval = ptr[1];
+                            gval = ptr[0];
+                            *ptr2++ = PIXEL_ARGB(aval, gval, gval, gval);
+                         }
+                    }
+                  else
+                    {
+                       for (x = 0; x < w; x++, ptr += 2)
+                         {
+                            aval = (ptr[1] * 255) / v;
+                            gval = (ptr[0] * 255) / v;
+                            *ptr2++ = PIXEL_ARGB(aval, gval, gval, gval);
+                         }
+                    }
+
+                  if (im->lc && __imlib_LoadProgressRows(im, y, 1))
+                     goto quit_progress;
+               }
+          }
+        else
+          {
+             for (y = 0; y < h; y++)
+               {
+                  if (!mm_check(ptr + w))
+                     goto quit;
+
+                  if (v == 0 || v == 255)
+                    {
+                       for (x = 0; x < w; x++, ptr++)
+                         {
+                            gval = ptr[0];
+                            *ptr2++ = PIXEL_ARGB(0xff, gval, gval, gval);
+                         }
+                    }
+                  else
+                    {
+                       for (x = 0; x < w; x++, ptr++)
+                         {
+                            gval = (ptr[0] * 255) / v;
+                            *ptr2++ = PIXEL_ARGB(0xff, gval, gval, gval);
+                         }
+                    }
+
+                  if (im->lc && __imlib_LoadProgressRows(im, y, 1))
+                     goto quit_progress;
+               }
+          }
+        break;
+
+     case RGB_RAW:             /* 24bit binary RGBRGBRGB */
+        if (im->has_alpha)
+          {
+             for (y = 0; y < h; y++)
+               {
+                  if (!mm_check(ptr + 4 * w))
+                     goto quit;
+
+                  if (v == 0 || v == 255)
+                    {
+                       for (x = 0; x < w; x++, ptr += 4)
+                          *ptr2++ = PIXEL_ARGB(ptr[3], ptr[0], ptr[1], ptr[2]);
+                    }
+                  else
+                    {
+                       for (x = 0; x < w; x++, ptr += 4)
+                          *ptr2++ =
+                             PIXEL_ARGB((ptr[3] * 255) / v, (ptr[0] * 255) / v,
+                                        (ptr[1] * 255) / v, (ptr[2] * 255) / v);
+                    }
+
+                  if (im->lc && __imlib_LoadProgressRows(im, y, 1))
+                     goto quit_progress;
+               }
+          }
+        else
+          {
+             for (y = 0; y < h; y++)
+               {
+                  if (!mm_check(ptr + 3 * w))
+                     goto quit;
+
+                  if (v == 0 || v == 255)
+                    {
+                       for (x = 0; x < w; x++, ptr += 3)
+                          *ptr2++ = PIXEL_ARGB(0xff, ptr[0], ptr[1], ptr[2]);
+                    }
+                  else
+                    {
+                       for (x = 0; x < w; x++, ptr += 3)
+                          *ptr2++ =
+                             PIXEL_ARGB(0xff, (ptr[0] * 255) / v,
+                                        (ptr[1] * 255) / v, (ptr[2] * 255) / v);
+                    }
+
+                  if (im->lc && __imlib_LoadProgressRows(im, y, 1))
+                     goto quit_progress;
+               }
+          }
+        break;
+
+     case XV332:               /* XV's 8bit 332 format */
         for (y = 0; y < h; y++)
           {
-             if (mm_read(data, w * 1))
+             if (!mm_check(ptr + w))
                 goto quit;
 
-             ptr = data;
-             for (x = 0; x < w; x++)
+             for (x = 0; x < w; x++, ptr++)
                {
-                  int                 r, g, b;
-
-                  r = (*ptr >> 5) & 0x7;
-                  g = (*ptr >> 2) & 0x7;
-                  b = (*ptr) & 0x3;
-                  *ptr2 =
+                  aval = *ptr;
+                  rval = (aval >> 5) & 0x7;
+                  gval = (aval >> 2) & 0x7;
+                  bval = (aval) & 0x3;
+                  *ptr2++ =
                      0xff000000 |
-                     (((r << 21) | (r << 18) | (r << 15)) & 0xff0000) |
-                     (((g << 13) | (g << 10) | (g << 7)) & 0xff00) |
-                     ((b << 6) | (b << 4) | (b << 2) | (b << 0));
-                  ptr2++;
-                  ptr++;
+                     (((rval << 21) | (rval << 18) | (rval << 15)) & 0xff0000) |
+                     (((gval << 13) | (gval << 10) | (gval << 7)) & 0xff00) |
+                     ((bval << 6) | (bval << 4) | (bval << 2) | (bval << 0));
                }
 
              if (im->lc && __imlib_LoadProgressRows(im, y, 1))
                 goto quit_progress;
           }
         break;
-     case '8':                 /* 24bit binary RGBARGBARGBA */
-        data = malloc(4 * sizeof(uint8_t) * w);
-        if (!data)
-           QUIT_WITH_RC(LOAD_OOM);
 
-        ptr2 = im->data;
-        for (y = 0; y < h; y++)
-          {
-             if (mm_read(data, w * 4))
-                goto quit;
-
-             ptr = data;
-             if (v == 0 || v == 255)
-               {
-                  for (x = 0; x < w; x++)
-                    {
-                       *ptr2 = PIXEL_ARGB(ptr[3], ptr[0], ptr[1], ptr[2]);
-                       ptr2++;
-                       ptr += 4;
-                    }
-               }
-             else
-               {
-                  for (x = 0; x < w; x++)
-                    {
-                       *ptr2 =
-                          PIXEL_ARGB((ptr[3] * 255) / v,
-                                     (ptr[0] * 255) / v,
-                                     (ptr[1] * 255) / v, (ptr[2] * 255) / v);
-                       ptr2++;
-                       ptr += 4;
-                    }
-               }
-
-             if (im->lc && __imlib_LoadProgressRows(im, y, 1))
-                goto quit_progress;
-          }
-        break;
      default:
         goto quit;
       quit_progress:
@@ -457,24 +590,35 @@ _load(ImlibImage * im, int load_data)
    rc = LOAD_SUCCESS;
 
  quit:
-   free(idata);
-   free(data);
-
    return rc;
 }
+
+/**INDENT-OFF**/
+static const char fmt_rgb[] =
+    "P6\n"
+    "# PNM File written by Imlib2\n"
+    "%i %i\n"
+    "255\n";
+
+static const char fmt_rgba[] =
+    "P7\n"
+    "# PAM File written by Imlib2\n"
+    "WIDTH %d\n"
+    "HEIGHT %d\n"
+    "DEPTH 4\n"
+    "MAXVAL 255\n"
+    "TUPLTYPE RGB_ALPHA\n"
+    "ENDHDR\n";
+/**INDENT-ON**/
 
 static int
 _save(ImlibImage * im)
 {
    int                 rc;
-   FILE               *f;
+   FILE               *f = im->fi->fp;
    uint8_t            *buf, *bptr;
    uint32_t           *ptr;
    int                 x, y;
-
-   f = fopen(im->fi->name, "wb");
-   if (!f)
-      return LOAD_FAIL;
 
    rc = LOAD_FAIL;
 
@@ -488,8 +632,7 @@ _save(ImlibImage * im)
    /* if the image has a useful alpha channel */
    if (im->has_alpha)
      {
-        fprintf(f, "P8\n" "# PNM File written by Imlib2\n" "%i %i\n" "255\n",
-                im->w, im->h);
+        fprintf(f, fmt_rgba, im->w, im->h);
         for (y = 0; y < im->h; y++)
           {
              bptr = buf;
@@ -511,8 +654,7 @@ _save(ImlibImage * im)
      }
    else
      {
-        fprintf(f, "P6\n" "# PNM File written by Imlib2\n" "%i %i\n" "255\n",
-                im->w, im->h);
+        fprintf(f, fmt_rgb, im->w, im->h);
         for (y = 0; y < im->h; y++)
           {
              bptr = buf;
@@ -537,7 +679,6 @@ _save(ImlibImage * im)
  quit:
    /* finish off */
    free(buf);
-   fclose(f);
 
    return rc;
 

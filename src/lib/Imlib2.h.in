@@ -741,8 +741,8 @@ EAPI void           imlib_flush_loaders(void);
 /**
  * Get error code from previous imlib function call
  *
- * For now an error code is only meaningful when an image loading
- * function (imlib_load_image...()) has failed (returned NULL).
+ * The error code is set in function calls that involve direct or indirect
+ * image loading or saving.
  *
  * @return error code
  *          0: Success,
@@ -1141,27 +1141,28 @@ EAPI void           imlib_render_image_on_drawable_at_size(int x, int y,
 /**
  * Render part of image onto drawable at given size
  *
- * Renders the source (@p source_x, @p source_y, @p source_width, @p source_height)
+ * Renders the source (@p src_x, @p src_y, @p src_width, @p src_height)
  * pixel rectangle from the current image onto the current drawable at the
- * (@p x, @p y) location scaled to the width @p width and height @p height.
+ * (@p dst_x, @p dst_y) location scaled to the width @p dst_width and
+ * height @p dst_height.
  *
- * @param source_x      X coordinate of the source image
- * @param source_y      Y coordinate of the source image
- * @param source_width  Width of the source image
- * @param source_height Height of the source image
- * @param x             X coordinate of the destination image
- * @param y             Y coordinate of the destination image
- * @param width         Width of the destination image
- * @param height        Height of the destination image
+ * @param src_x         X coordinate of the source image
+ * @param src_y         Y coordinate of the source image
+ * @param src_width     Width of the source image
+ * @param src_height    Height of the source image
+ * @param dst_x         X coordinate of the destination image
+ * @param dst_y         Y coordinate of the destination image
+ * @param dst_width     Width of the destination image
+ * @param dst_height    Height of the destination image
  */
-EAPI void           imlib_render_image_part_on_drawable_at_size(int source_x,
-                                                                int source_y,
-                                                                int
-                                                                source_width, int
-                                                                source_height,
-                                                                int x, int y,
-                                                                int width,
-                                                                int height);
+EAPI void           imlib_render_image_part_on_drawable_at_size(int src_x,
+                                                                int src_y,
+                                                                int src_width,
+                                                                int src_height,
+                                                                int dst_x,
+                                                                int dst_y,
+                                                                int dst_width,
+                                                                int dst_height);
 
 /**
  * Return X11 pixel value of current color
@@ -1173,33 +1174,29 @@ EAPI uint32_t       imlib_render_get_pixel_color(void);
 /**
  * Blend part of image onto image
  *
- * Blends the source rectangle (@p source_x, @p source_y,
- * @p source_width, @p source_height) from @p source_image onto the current
- * image at the destination (@p destination_x, @p destination_y) location
- * scaled to the width @p destination_width and height @p * destination_height.
+ * Blends the source rectangle (@p src_x, @p src_y, @p src_width, @p src_height)
+ * from @p src_image onto the current image at the destination (@p dst_x, @p dst_y)
+ * location scaled to the width @p dst_width and height @p * dst_height.
  * If @p merge_alpha is set to 1 it will also modify the destination image
  * alpha channel, otherwise the destination alpha channel is left untouched.
  *
- * @param source_image  The source image
+ * @param src_image     The source image
  * @param merge_alpha   Alpha flag
- * @param source_x      X coordinate of the source image
- * @param source_y      Y coordinate of the source image
- * @param source_width  Width of the source image
- * @param source_height Height of the source image
- * @param destination_x X coordinate of the destination image
- * @param destination_y Y coordinate of the destination image
- * @param destination_width  Width of the destination image
- * @param destination_height Height of the destination image
+ * @param src_x         X coordinate of the source image
+ * @param src_y         Y coordinate of the source image
+ * @param src_width     Width of the source image
+ * @param src_height    Height of the source image
+ * @param dst_x         X coordinate of the destination image
+ * @param dst_y         Y coordinate of the destination image
+ * @param dst_width     Width of the destination image
+ * @param dst_height    Height of the destination image
  */
-EAPI void           imlib_blend_image_onto_image(Imlib_Image source_image,
+EAPI void           imlib_blend_image_onto_image(Imlib_Image src_image,
                                                  char merge_alpha,
-                                                 int source_x, int source_y,
-                                                 int source_width,
-                                                 int source_height,
-                                                 int destination_x,
-                                                 int destination_y,
-                                                 int destination_width,
-                                                 int destination_height);
+                                                 int src_x, int src_y,
+                                                 int src_width, int src_height,
+                                                 int dst_x, int dst_y,
+                                                 int dst_width, int dst_height);
 
 /*--------------------------------
  * Image creation functions
@@ -1249,24 +1246,23 @@ EAPI Imlib_Image    imlib_create_cropped_image(int x, int y, int width,
  * Create cropped and scaled image
  *
  * Works the same as imlib_create_cropped_image() but will scale the
- * new image to the new destination @p destination_width and
- * @p destination_height whilst cropping.
+ * new image to the new destination @p dst_width and @p dst_height
+ * whilst cropping.
  *
- * @param source_x      The top left x coordinate of the source rectangle
- * @param source_y      The top left y coordinate of the source rectangle
- * @param source_width  The width of the source rectangle
- * @param source_height The height of the source rectangle
- * @param destination_width The width of the destination image
- * @param destination_height The height of the destination image
+ * @param src_x         The top left x coordinate of the source rectangle
+ * @param src_y         The top left y coordinate of the source rectangle
+ * @param src_width     The width of the source rectangle
+ * @param src_height    The height of the source rectangle
+ * @param dst_width     The width of the destination image
+ * @param dst_height    The height of the destination image
  *
  * @return Image handle (NULL on failure)
  */
-EAPI Imlib_Image    imlib_create_cropped_scaled_image(int source_x,
-                                                      int source_y,
-                                                      int source_width,
-                                                      int source_height,
-                                                      int destination_width,
-                                                      int destination_height);
+EAPI Imlib_Image    imlib_create_cropped_scaled_image(int src_x, int src_y,
+                                                      int src_width,
+                                                      int src_height,
+                                                      int dst_width,
+                                                      int dst_height);
 
 /**
  * Create a new image using given pixel data
@@ -1383,36 +1379,35 @@ EAPI Imlib_Image    imlib_create_image_from_ximage(XImage * image,
  * @p mask pixmap specified to determine alpha transparency) and scale
  * the grabbed data first before converting to an actual image (to
  * minimize reads from the frame buffer which can be slow).
- * The source (@p source_x, @p source_y, @p source_width, @p source_height)
- * rectangle will be grabbed, scaled to the destination @p destination_width
- * and @p destination_height, then converted to an image.
+ * The source (@p src_x, @p src_y, @p src_width, @p src_height)
+ * rectangle will be grabbed, scaled to the destination @p dst_width
+ * and @p dst_height, then converted to an image.
  * If @p need_to_grab_x is 1 the X Server s grabbed to avoid possible
  * race conditions. Set to 1 unless the server is already grabbed.
  * If @p get_mask_from_shape and the current drawable is a window its shape
  * is used for determining the alpha channel.
  *
  * @param mask          A mask
- * @param source_x      The top left x coordinate of the rectangle
- * @param source_y      The top left y coordinate of the rectangle
- * @param source_width  The width of the rectangle
- * @param source_height The height of the rectangle
- * @param destination_width The width of the returned image
- * @param destination_height The height of the returned image
+ * @param src_x         The top left x coordinate of the rectangle
+ * @param src_y         The top left y coordinate of the rectangle
+ * @param src_width     The width of the rectangle
+ * @param src_height    The height of the rectangle
+ * @param dst_width     The width of the returned image
+ * @param dst_height    The height of the returned image
  * @param need_to_grab_x Grab flag
  * @param get_mask_from_shape A char
  *
  * @return Image handle (NULL on failure)
  */
 EAPI Imlib_Image    imlib_create_scaled_image_from_drawable(Pixmap mask,
-                                                            int source_x,
-                                                            int source_y,
-                                                            int source_width,
-                                                            int
-                                                            source_height, int
-                                                            destination_width, int
-                                                            destination_height, char
-                                                            need_to_grab_x, char
-                                                            get_mask_from_shape);
+                                                            int src_x,
+                                                            int src_y,
+                                                            int src_width,
+                                                            int src_height,
+                                                            int dst_width,
+                                                            int dst_height,
+                                                            char need_to_grab_x,
+                                                            char get_mask_from_shape);
 
 /**
  * Copy part of drawable to image
@@ -1421,27 +1416,27 @@ EAPI Imlib_Image    imlib_create_scaled_image_from_drawable(Pixmap mask,
  * provided as a corresponding mask for that drawable - if @p mask is 0
  * this is not used).
  * If @p mask is 1 the mask will be set to the shape mask of the drawable.
- * It grabs the (@p x, @p y, @p width, @p height) rectangle and places it at
- * the destination (@p destination_x, @p destination_y) location in the current
- * image.
+ * It grabs the (@p src_x, @p src_y, @p src_width, @p src_height) rectangle
+ * and places it at the destination (@p dst_x, @p dst_y) location in the
+ * current image.
  * If @p need_to_grab_x is 1 the X Server s grabbed to avoid possible
  * race conditions. Set to 1 unless the server is already grabbed.
  *
  * @param mask          A mask
- * @param x             The top left x coordinate of the rectangle
- * @param y             The top left y coordinate of the rectangle
- * @param width         The width of the rectangle
- * @param height        The height of the rectangle
- * @param destination_x The x coordinate of the new location
- * @param destination_y The x coordinate of the new location
+ * @param src_x         The top left x coordinate of the rectangle
+ * @param src_y         The top left y coordinate of the rectangle
+ * @param src_width     The width of the rectangle
+ * @param src_height    The height of the rectangle
+ * @param dst_x         The x coordinate of the new location
+ * @param dst_y         The x coordinate of the new location
  * @param need_to_grab_x Grab flag
  *
  * @return 1 on success, 0 otherwise
  */
-EAPI char           imlib_copy_drawable_to_image(Pixmap mask, int x, int y,
-                                                 int width, int height,
-                                                 int destination_x,
-                                                 int destination_y,
+EAPI char           imlib_copy_drawable_to_image(Pixmap mask,
+                                                 int src_x, int src_y,
+                                                 int src_width, int src_height,
+                                                 int dst_x, int dst_y,
                                                  char need_to_grab_x);
 
 /**
@@ -1748,26 +1743,27 @@ EAPI void           imlib_image_copy_alpha_to_image(Imlib_Image image_source,
 /**
  * Copy partial image alpha
  *
- * Copies the source (@p x, @p y, @p width, @p height) rectangle alpha channel from
- * the source image @p image_source and replaces the alpha channel on the destination
- * image at the (@p destination_x, @p destination_y) coordinates.
+ * Copies the source (@p src_x, @p src_y, @p src_width, @p src_height) rectangle
+ * alpha channel from the source image @p image_source and replaces the
+ * alpha channel on the destination image at the (@p dst_x, @p dst_y)
+ * coordinates.
  *
  * @param image_source  An image
- * @param x             The top left x coordinate of the rectangle
- * @param y             The top left y coordinate of the rectangle
- * @param width         The width of the rectangle
- * @param height        The height of the rectangle
- * @param destination_x The top left x coordinate of the destination rectangle
- * @param destination_y The top left x coordinate of the destination rectangle
+ * @param src_x         The top left x coordinate of the rectangle
+ * @param src_y         The top left y coordinate of the rectangle
+ * @param src_width     The width of the rectangle
+ * @param src_height    The height of the rectangle
+ * @param dst_x         The top left x coordinate of the destination rectangle
+ * @param dst_y         The top left x coordinate of the destination rectangle
  */
 EAPI void           imlib_image_copy_alpha_rectangle_to_image(Imlib_Image
                                                               image_source,
-                                                              int x, int y,
-                                                              int width,
-                                                              int height,
-                                                              int destination_x,
-                                                              int
-                                                              destination_y);
+                                                              int src_x,
+                                                              int src_y,
+                                                              int src_width,
+                                                              int src_height,
+                                                              int dst_x,
+                                                              int dst_y);
 
 /**
  * Scroll image
@@ -1897,9 +1893,9 @@ EAPI void           imlib_text_draw(int x, int y, const char *text);
 EAPI void           imlib_text_draw_with_return_metrics(int x, int y,
                                                         const char *text,
                                                         int *width_return,
-                                                        int *height_return, int
-                                                        *horizontal_advance_return, int
-                                                        *vertical_advance_return);
+                                                        int *height_return,
+                                                        int *horizontal_advance_return,
+                                                        int *vertical_advance_return);
 
 /**
  * Get text size
@@ -2557,11 +2553,12 @@ EAPI void           imlib_image_remove_and_free_attached_data_value(const char
  * Save image to file
  *
  * Saves the current image in the format specified by the current
- * image's format settings to the filename @p filename.
+ * image's format setting to the filename @p file.
+ * If the image's format is not set, the format is derived from @p file.
  *
- * @param filename      The file name
+ * @param file          The file name
  */
-EAPI void           imlib_save_image(const char *filename);
+EAPI void           imlib_save_image(const char *file);
 
 /**
  * Save image to file with error return
@@ -2573,11 +2570,26 @@ EAPI void           imlib_save_image(const char *filename);
  *   positive: Regular errnos,
  *   negative: IMLIB_ERR_... values, see above
  *
- * @param filename      The file name
+ * @param file          The file name
  * @param error_return  The returned error
  */
-EAPI void           imlib_save_image_with_errno_return(const char *filename,
+EAPI void           imlib_save_image_with_errno_return(const char *file,
                                                        int *error_return);
+
+/**
+ * Save image to file descriptor
+ *
+ * Saves the current image in the format specified by the current
+ * image's format setting to the file given by @p fd.
+ * The file name @p file is used only to derive the file format if the
+ * image's format is not set.
+ *
+ * @p fd will be closed after calling this function.
+ *
+ * @param fd            Image file descriptor
+ * @param file          The file name
+ */
+EAPI void           imlib_save_image_fd(int fd, const char *file);
 
 /*--------------------------------
  * Image rotation/skewing
@@ -2597,13 +2609,13 @@ EAPI Imlib_Image    imlib_create_rotated_image(double angle);
 /**
  * Rotate image onto image
  *
- * Rotate @ source_image onto current image.
+ * Rotate @ src_image onto current image.
  *
- * @param source_image  The source image
+ * @param src_image     The source image
  * @param angle         An angle in radians
  */
 EAPI void           imlib_rotate_image_from_buffer(double angle,
-                                                   Imlib_Image source_image);
+                                                   Imlib_Image src_image);
 
 /**
  * Blend image onto image at angle
@@ -2611,45 +2623,43 @@ EAPI void           imlib_rotate_image_from_buffer(double angle,
  * Works just like imlib_blend_image_onto_image_skewed() except you
  * cannot skew an image (@p v_angle_x and @p v_angle_y are 0).
  *
- * @param source_image  The image source
+ * @param src_image     The image source
  * @param merge_alpha   A char
- * @param source_x      The source x coordinate
- * @param source_y      The source y coordinate
- * @param source_width  The source width
- * @param source_height The source height
- * @param destination_x The destination x coordinate
- * @param destination_y The destination y coordinate
+ * @param src_x         The source x coordinate
+ * @param src_y         The source y coordinate
+ * @param src_width     The source width
+ * @param src_height    The source height
+ * @param dst_x         The destination x coordinate
+ * @param dst_y         The destination y coordinate
  * @param angle_x       An angle
  * @param angle_y       An angle
  */
 EAPI void           imlib_blend_image_onto_image_at_angle(Imlib_Image
-                                                          source_image,
+                                                          src_image,
                                                           char merge_alpha,
-                                                          int source_x,
-                                                          int source_y,
-                                                          int source_width,
-                                                          int source_height,
-                                                          int destination_x,
-                                                          int destination_y,
+                                                          int src_x,
+                                                          int src_y,
+                                                          int src_width,
+                                                          int src_height,
+                                                          int dst_x,
+                                                          int dst_y,
                                                           int angle_x,
                                                           int angle_y);
 
 /**
  * Blend image onto image at angle, skewed
  *
- * Blends the source rectangle (@p source_x, @p source_y, @p source_width,
- * @p source_height) from the
- * @p source_image onto the current image at the destination
- * (@p destination_x, @p destination_y)
- * location. It will be rotated and scaled so that the upper right
- * corner will be positioned @p h_angle_x pixels to the right (or left,
- * if negative) and @p h_angle_y pixels down (from (@p destination_x,
- * @p destination_y). If
- * @p v_angle_x and @p v_angle_y are not 0, the image will also be skewed so
- * that the lower left corner will be positioned @p v_angle_x pixels to
- * the right and @p v_angle_y pixels down. The at_angle versions simply
- * have the @p v_angle_x and @p v_angle_y set to 0 so the rotation doesn't
- * get skewed, and the render_..._on_drawable ones seem obvious
+ * Blends the source rectangle (@p src_x, @p src_y, @p src_width, * @p src_height)
+ * from the @p src_image onto the current image at the destination
+ * (@p dst_x, @p dst_y) location.
+ * It will be rotated and scaled so that the upper right corner will be
+ * positioned @p h_angle_x pixels to the right (or left, if negative) and
+ * @p h_angle_y pixels down (from (@p dst_x, @p dst_y).
+ * If @p v_angle_x and @p v_angle_y are not 0, the image will also be
+ * skewed so that the lower left corner will be positioned @p v_angle_x
+ * pixels to the right and @p v_angle_y pixels down. The at_angle versions
+ * simply have the @p v_angle_x and @p v_angle_y set to 0 so the rotation
+ * doesn't get skewed, and the render_..._on_drawable ones seem obvious
  * enough; they do the same on a drawable.
  *
  * Example:
@@ -2676,28 +2686,28 @@ EAPI void           imlib_blend_image_onto_image_at_angle(Imlib_Image
  * @endcode
  * will rotate the image `a' degrees, with its upper left corner at (50,50).
  *
- * @param source_image  The source image
+ * @param src_image     The source image
  * @param merge_alpha   A char
- * @param source_x      The source x coordinate
- * @param source_y      The source y coordinate
- * @param source_width  The source width
- * @param source_height The source height
- * @param destination_x The destination x coordinate
- * @param destination_y The destination y coordinate
+ * @param src_x         The source x coordinate
+ * @param src_y         The source y coordinate
+ * @param src_width     The source width
+ * @param src_height    The source height
+ * @param dst_x         The destination x coordinate
+ * @param dst_y         The destination y coordinate
  * @param h_angle_x     An angle
  * @param h_angle_y     An angle
  * @param v_angle_x     An angle
  * @param v_angle_y     An angle
  */
 EAPI void           imlib_blend_image_onto_image_skewed(Imlib_Image
-                                                        source_image,
+                                                        src_image,
                                                         char merge_alpha,
-                                                        int source_x,
-                                                        int source_y,
-                                                        int source_width,
-                                                        int source_height,
-                                                        int destination_x,
-                                                        int destination_y,
+                                                        int src_x,
+                                                        int src_y,
+                                                        int src_width,
+                                                        int src_height,
+                                                        int dst_x,
+                                                        int dst_y,
                                                         int h_angle_x,
                                                         int h_angle_y,
                                                         int v_angle_x,
@@ -2711,23 +2721,23 @@ EAPI void           imlib_blend_image_onto_image_skewed(Imlib_Image
  * blends the image onto the current drawable instead of the current
  * image.
  *
- * @param source_x      The source x coordinate
- * @param source_y      The source y coordinate
- * @param source_width  The source width
- * @param source_height The source height
- * @param destination_x The destination x coordinate
- * @param destination_y The destination y coordinate
+ * @param src_x         The source x coordinate
+ * @param src_y         The source y coordinate
+ * @param src_width     The source width
+ * @param src_height    The source height
+ * @param dst_x         The destination x coordinate
+ * @param dst_y         The destination y coordinate
  * @param h_angle_x     An angle
  * @param h_angle_y     An angle
  * @param v_angle_x     An angle
  * @param v_angle_y     An angle
  */
-EAPI void           imlib_render_image_on_drawable_skewed(int source_x,
-                                                          int source_y,
-                                                          int source_width,
-                                                          int source_height,
-                                                          int destination_x,
-                                                          int destination_y,
+EAPI void           imlib_render_image_on_drawable_skewed(int src_x,
+                                                          int src_y,
+                                                          int src_width,
+                                                          int src_height,
+                                                          int dst_x,
+                                                          int dst_y,
                                                           int h_angle_x,
                                                           int h_angle_y,
                                                           int v_angle_x,
@@ -2739,21 +2749,21 @@ EAPI void           imlib_render_image_on_drawable_skewed(int source_x,
  * Works just like imlib_render_image_on_drawable_skewed() except you
  * cannot skew an image (@p v_angle_x and @p v_angle_y are 0).
  *
- * @param source_x      The source x coordinate
- * @param source_y      The source y coordinate
- * @param source_width  The source width
- * @param source_height The source height
- * @param destination_x The destination x coordinate
- * @param destination_y The destination y coordinate
+ * @param src_x         The source x coordinate
+ * @param src_y         The source y coordinate
+ * @param src_width     The source width
+ * @param src_height    The source height
+ * @param dst_x         The destination x coordinate
+ * @param dst_y         The destination y coordinate
  * @param angle_x       An angle
  * @param angle_y       An angle
  */
-EAPI void           imlib_render_image_on_drawable_at_angle(int source_x,
-                                                            int source_y,
-                                                            int source_width,
-                                                            int source_height,
-                                                            int destination_x,
-                                                            int destination_y,
+EAPI void           imlib_render_image_on_drawable_at_angle(int src_x,
+                                                            int src_y,
+                                                            int src_width,
+                                                            int src_height,
+                                                            int dst_x,
+                                                            int dst_y,
                                                             int angle_x,
                                                             int angle_y);
 
@@ -2879,7 +2889,7 @@ EAPI Imlib_Image    imlib_load_image_frame_mem(const char *file, int frame,
 /**
  * Get information about current image frame
  *
- * @param info		Imlib_Frame_Info struct returning the information
+ * @param info          Imlib_Frame_Info struct returning the information
  */
 EAPI void           imlib_image_get_frame_info(Imlib_Frame_Info * info);
 
@@ -2889,7 +2899,7 @@ EAPI void           imlib_image_get_frame_info(Imlib_Frame_Info * info);
  * @p err must be a value returned by imlib_load/save_image_with_errno_return().
  * The returned string must not be modified or freed.
  *
- * @param err 		The error code
+ * @param err           The error code
  *
  * @return String describing the error code
  */
@@ -2954,13 +2964,13 @@ EAPI Imlib_Image    imlib_load_image_with_error_return(const char *file,
  * Works the same way imlib_save_image() works, but will set the
  * @p error_return to an error value if the save fails.
  *
- * @param filename      The file name
+ * @param file          The file name
  * @param error_return  The returned error
  *
  * @deprecated Use imlib_save_image_with_errno_return()
  */
 /* IMLIB2_DEPRECATED */
-EAPI void           imlib_save_image_with_error_return(const char *filename,
+EAPI void           imlib_save_image_with_error_return(const char *file,
                                                        Imlib_Load_Error *
                                                        error_return);
 

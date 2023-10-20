@@ -20,14 +20,17 @@ Tmp_HandleXError(Display * d, XErrorEvent * ev)
    return 0;
 }
 
+/* xim->data is properly aligned (malloc'ed), assuming bytes_per_line behaves */
+#define PTR(T, im_, y_) (T*)(void*)(im_->data + (im_->bytes_per_line * y_))
+
 void
-__imlib_GrabXImageToRGBA(uint32_t * data,
+__imlib_GrabXImageToRGBA(const ImlibContextX11 * x11, uint32_t * data,
                          int x_dst, int y_dst, int w_dst, int h_dst,
-                         Display * d, XImage * xim, XImage * mxim, Visual * v,
-                         int depth,
+                         XImage * xim, XImage * mxim,
                          int x_src, int y_src, int w_src, int h_src, int grab)
 {
    int                 x, y, inx, iny;
+   int                 depth;
    const uint32_t     *src;
    const uint16_t     *s16;
    uint32_t           *ptr;
@@ -39,9 +42,9 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
       return;
 
    if (grab)
-      XGrabServer(d);           /* This may prevent the image to be changed under our feet */
+      XGrabServer(x11->dpy);    /* This may prevent the image to be changed under our feet */
 
-   if (v->blue_mask > v->red_mask)
+   if (x11->vis->blue_mask > x11->vis->red_mask)
       bgr = 1;
 
    if (x_src < 0)
@@ -55,6 +58,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
 
    /* go thru the XImage and convert */
 
+   depth = x11->depth;
    if ((depth == 24) && (xim->bits_per_pixel == 32))
       depth = 25;               /* fake depth meaning 24 bit in 32 bpp ximage */
 
@@ -81,10 +85,9 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
           case 16:
              for (y = 0; y < h_src; y++)
                {
-                  unsigned short     *tmp;
+                  uint16_t           *tmp;
 
-                  tmp =
-                     (unsigned short *)(xim->data + (xim->bytes_per_line * y));
+                  tmp = PTR(uint16_t, xim, y);
                   for (x = 0; x < w_src; x++)
                     {
                        *tmp = SWAP16(*tmp);
@@ -98,9 +101,9 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
           case 32:
              for (y = 0; y < h_src; y++)
                {
-                  unsigned int       *tmp;
+                  uint32_t           *tmp;
 
-                  tmp = (unsigned int *)(xim->data + (xim->bytes_per_line * y));
+                  tmp = PTR(uint32_t, xim, y);
                   for (x = 0; x < w_src; x++)
                     {
                        *tmp = SWAP32(*tmp);
@@ -179,7 +182,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
           {
              for (y = 0; y < h_src; y++)
                {
-                  s16 = (uint16_t *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = PTR(uint16_t, xim, y);
                   ptr = data + ((y + iny) * w_dst) + inx;
                   for (x = 0; x < w_src; x++)
                     {
@@ -193,7 +196,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
           {
              for (y = 0; y < h_src; y++)
                {
-                  s16 = (uint16_t *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = PTR(uint16_t, xim, y);
                   ptr = data + ((y + iny) * w_dst) + inx;
                   for (x = 0; x < w_src; x++)
                     {
@@ -226,7 +229,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
           {
              for (y = 0; y < h_src; y++)
                {
-                  s16 = (uint16_t *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = PTR(uint16_t, xim, y);
                   ptr = data + ((y + iny) * w_dst) + inx;
                   for (x = 0; x < w_src; x++)
                     {
@@ -240,7 +243,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
           {
              for (y = 0; y < h_src; y++)
                {
-                  s16 = (uint16_t *) (xim->data + (xim->bytes_per_line * y));
+                  s16 = PTR(uint16_t, xim, y);
                   ptr = data + ((y + iny) * w_dst) + inx;
                   for (x = 0; x < w_src; x++)
                     {
@@ -324,8 +327,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -342,8 +344,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -361,8 +362,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -378,8 +378,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -397,8 +396,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -416,8 +414,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -436,8 +433,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -455,8 +451,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -477,8 +472,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -494,8 +488,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -511,8 +504,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -527,8 +519,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
                {
                   for (y = 0; y < h_src; y++)
                     {
-                       src =
-                          (uint32_t *) (xim->data + (xim->bytes_per_line * y));
+                       src = PTR(uint32_t, xim, y);
                        ptr = data + ((y + iny) * w_dst) + inx;
                        for (x = 0; x < w_src; x++)
                          {
@@ -543,7 +534,7 @@ __imlib_GrabXImageToRGBA(uint32_t * data,
      }
 
    if (grab)
-      XUngrabServer(d);
+      XUngrabServer(x11->dpy);
 }
 
 static              Pixmap
@@ -589,165 +580,191 @@ _WindowGetShapeMask(Display * d, Window p,
    return mask;
 }
 
-int
-__imlib_GrabDrawableToRGBA(uint32_t * data, int x_dst, int y_dst, int w_dst,
-                           int h_dst, Display * d, Drawable p, Pixmap m_,
-                           Visual * v, Colormap cm, int depth, int x_src,
-                           int y_src, int w_src, int h_src, char *pdomask,
-                           int grab)
+static bool
+_DrawableCheck(Display * dpy, Drawable draw, XWindowAttributes * patt)
 {
-   XErrorHandler       prev_erh = NULL;
-   XWindowAttributes   xatt, ratt;
-   char                is_pixmap = 0, is_shm = 0, is_mshm = 0;
+   XErrorHandler       prev_erh;
+
+   XSync(dpy, False);
+   prev_erh = XSetErrorHandler(Tmp_HandleXError);
+   _x_err = 0;
+
+   /* lets see if its a pixmap or not */
+   XGetWindowAttributes(dpy, draw, patt);
+   XSync(dpy, False);
+
+   XSetErrorHandler(prev_erh);
+
+   return _x_err != 0;
+}
+
+int
+__imlib_GrabDrawableToRGBA(const ImlibContextX11 * x11, uint32_t * data,
+                           int x_dst, int y_dst,
+                           int w_dst, int h_dst,
+                           Drawable draw, Pixmap mask_,
+                           int x_src, int y_src, int w_src, int h_src,
+                           char *pdomask, int grab, bool clear,
+                           const XWindowAttributes * attr)
+{
+   XWindowAttributes   xatt;
+   bool                is_pixmap, is_shm, is_mshm;
    char                domask;
-   int                 i;
-   int                 src_x, src_y, src_w, src_h;
-   int                 width, height, clipx, clipy;
-   Pixmap              m = m_;
+   int                 i, j;
+   int                 width, height;
+   Pixmap              mask = mask_;
    XShmSegmentInfo     shminfo, mshminfo;
    XImage             *xim, *mxim;
    XColor              cols[256];
 
    domask = (pdomask) ? *pdomask : 0;
 
-   h_dst = 0;                   /* h_dst is not used */
-
    if (grab)
-      XGrabServer(d);
-   XSync(d, False);
-   prev_erh = XSetErrorHandler(Tmp_HandleXError);
-   _x_err = 0;
+      XGrabServer(x11->dpy);
 
-   /* lets see if its a pixmap or not */
-   XGetWindowAttributes(d, p, &xatt);
-   XSync(d, False);
-   if (_x_err)
-      is_pixmap = 1;
-   /* reset our error handler */
-   XSetErrorHandler((XErrorHandler) prev_erh);
+   width = w_src;
+   height = h_src;
 
-   if (is_pixmap)
+   if (attr)
      {
-        Window              dw;
-
-        XGetGeometry(d, p, &dw, &src_x, &src_y,
-                     (unsigned int *)&src_w, (unsigned int *)&src_h,
-                     (unsigned int *)&src_x, (unsigned int *)&xatt.depth);
-        src_x = 0;
-        src_y = 0;
+        is_pixmap = true;
+        xatt.width = attr->width;
+        xatt.height = attr->height;
+        xatt.depth = attr->depth;
      }
    else
      {
-        Window              dw;
+        is_pixmap = _DrawableCheck(x11->dpy, draw, &xatt);
 
-        XGetWindowAttributes(d, xatt.root, &ratt);
-        XTranslateCoordinates(d, p, xatt.root, 0, 0, &src_x, &src_y, &dw);
-        src_w = xatt.width;
-        src_h = xatt.height;
-        if ((xatt.map_state != IsViewable) && (xatt.backing_store == NotUseful))
+        if (is_pixmap)
           {
-             if (grab)
-                XUngrabServer(d);
-             return 0;
+             Window              rret;
+             unsigned int        bw;
+
+             XGetGeometry(x11->dpy, draw, &rret, &xatt.x, &xatt.y,
+                          (unsigned int *)&xatt.width,
+                          (unsigned int *)&xatt.height,
+                          &bw, (unsigned int *)&xatt.depth);
+          }
+        else
+          {
+             XWindowAttributes   ratt;
+             Window              cret;
+
+             if (xatt.map_state != IsViewable &&
+                 xatt.backing_store == NotUseful)
+                goto bail;
+
+             /* Clip source to screen */
+             XGetWindowAttributes(x11->dpy, xatt.root, &ratt);
+             XTranslateCoordinates(x11->dpy, draw, xatt.root,
+                                   0, 0, &xatt.x, &xatt.y, &cret);
+
+             if (xatt.x + x_src < 0)
+               {
+                  width += xatt.x + x_src;
+                  x_src = -xatt.x;
+               }
+             if (xatt.x + x_src + width > ratt.width)
+                width = ratt.width - (xatt.x + x_src);
+
+             if (xatt.y + y_src < 0)
+               {
+                  height += xatt.y + y_src;
+                  y_src = -xatt.y;
+               }
+             if (xatt.y + y_src + height > ratt.height)
+                height = ratt.height - (xatt.y + y_src);
+
+             /* Is this ever relevant? */
+             if (xatt.colormap == None)
+                xatt.colormap = ratt.colormap;
           }
      }
 
-   /* clip to the drawable tree and screen */
-   clipx = 0;
-   clipy = 0;
-   width = src_w - x_src;
-   height = src_h - y_src;
-   if (width > w_src)
-      width = w_src;
-   if (height > h_src)
-      height = h_src;
-
-   if (!is_pixmap)
-     {
-        if ((src_x + x_src + width) > ratt.width)
-           width = ratt.width - (src_x + x_src);
-        if ((src_y + y_src + height) > ratt.height)
-           height = ratt.height - (src_y + y_src);
-     }
-
+   /* Clip source to drawable */
    if (x_src < 0)
      {
-        clipx = -x_src;
+        x_dst += -x_src;
         width += x_src;
         x_src = 0;
      }
+   if (x_src + width > xatt.width)
+      width = xatt.width - x_src;
 
    if (y_src < 0)
      {
-        clipy = -y_src;
+        y_dst += -y_src;
         height += y_src;
         y_src = 0;
      }
+   if (y_src + height > xatt.height)
+      height = xatt.height - y_src;
 
-   if (!is_pixmap)
+   /* Clip source to destination */
+   if (x_dst < 0)
      {
-        if ((src_x + x_src) < 0)
-          {
-             clipx -= (src_x + x_src);
-             width += (src_x + x_src);
-             x_src = -src_x;
-          }
-        if ((src_y + y_src) < 0)
-          {
-             clipy -= (src_y + y_src);
-             height += (src_y + y_src);
-             y_src = -src_y;
-          }
+        x_src -= x_dst;
+        width += x_dst;
+        x_dst = 0;
      }
+   if (x_dst + width > w_dst)
+      width = w_dst - x_dst;
 
-   if ((width <= 0) || (height <= 0))
+   if (y_dst < 0)
      {
-        if (grab)
-           XUngrabServer(d);
-        return 0;
+        y_src -= y_dst;
+        height += y_dst;
+        y_dst = 0;
      }
+   else if (y_dst + height > h_dst)
+      height = h_dst - y_dst;
+
+   if (width <= 0 || height <= 0)
+      goto bail;
 
    w_src = width;
    h_src = height;
 
-   if ((!is_pixmap) && (domask) && (m == None))
-      m = _WindowGetShapeMask(d, p, x_src, y_src, w_src, h_src,
-                              xatt.width, xatt.height);
+   if ((!is_pixmap) && (domask) && (mask == None))
+      mask = _WindowGetShapeMask(x11->dpy, draw,
+                                 x_src, y_src, w_src, h_src,
+                                 xatt.width, xatt.height);
 
    /* Create an Ximage (shared or not) */
-   xim = __imlib_ShmGetXImage(d, v, p, xatt.depth, x_src, y_src, w_src, h_src,
-                              &shminfo);
+   xim = __imlib_ShmGetXImage(x11, draw, xatt.depth,
+                              x_src, y_src, w_src, h_src, &shminfo);
    is_shm = !!xim;
 
    if (!xim)
-      xim = XGetImage(d, p, x_src, y_src, w_src, h_src, 0xffffffff, ZPixmap);
+      xim = XGetImage(x11->dpy, draw, x_src, y_src,
+                      w_src, h_src, 0xffffffff, ZPixmap);
    if (!xim)
-     {
-        if (grab)
-           XUngrabServer(d);
-        return 0;
-     }
+      goto bail;
 
+   is_mshm = false;
    mxim = NULL;
-   if ((m) && (domask))
+   if ((mask) && (domask))
      {
-        mxim = __imlib_ShmGetXImage(d, v, m, 1, 0, 0, w_src, h_src, &mshminfo);
+        mxim = __imlib_ShmGetXImage(x11, mask, 1, 0, 0, w_src, h_src,
+                                    &mshminfo);
         is_mshm = !!mxim;
         if (!mxim)
-           mxim = XGetImage(d, m, 0, 0, w_src, h_src, 0xffffffff, ZPixmap);
+           mxim = XGetImage(x11->dpy, mask, 0, 0, w_src, h_src,
+                            0xffffffff, ZPixmap);
      }
 
    if ((is_shm) || (is_mshm))
      {
-        XSync(d, False);
+        XSync(x11->dpy, False);
         if (grab)
-           XUngrabServer(d);
-        XSync(d, False);
+           XUngrabServer(x11->dpy);
+        XSync(x11->dpy, False);
      }
    else if (grab)
-      XUngrabServer(d);
+      XUngrabServer(x11->dpy);
 
-   if ((xatt.depth == 1) && (!cm) && (is_pixmap))
+   if ((xatt.depth == 1) && (!x11->cmap) && (is_pixmap))
      {
         rtab[0] = 255;
         gtab[0] = 255;
@@ -758,18 +775,14 @@ __imlib_GrabDrawableToRGBA(uint32_t * data, int x_dst, int y_dst, int w_dst,
      }
    else if (xatt.depth <= 8)
      {
-        if (!cm)
+        Colormap            cmap = x11->cmap;
+
+        if (!cmap)
           {
              if (is_pixmap)
-               {
-                  cm = DefaultColormap(d, DefaultScreen(d));
-               }
+                cmap = DefaultColormap(x11->dpy, DefaultScreen(x11->dpy));
              else
-               {
-                  cm = xatt.colormap;
-                  if (cm == None)
-                     cm = ratt.colormap;
-               }
+                cmap = xatt.colormap;
           }
 
         for (i = 0; i < (1 << xatt.depth); i++)
@@ -777,7 +790,7 @@ __imlib_GrabDrawableToRGBA(uint32_t * data, int x_dst, int y_dst, int w_dst,
              cols[i].pixel = i;
              cols[i].flags = DoRed | DoGreen | DoBlue;
           }
-        XQueryColors(d, cm, cols, 1 << xatt.depth);
+        XQueryColors(x11->dpy, cmap, cols, 1 << xatt.depth);
         for (i = 0; i < (1 << xatt.depth); i++)
           {
              rtab[i] = cols[i].red >> 8;
@@ -786,52 +799,74 @@ __imlib_GrabDrawableToRGBA(uint32_t * data, int x_dst, int y_dst, int w_dst,
           }
      }
 
-   __imlib_GrabXImageToRGBA(data, x_dst + clipx, y_dst + clipy, w_dst, h_dst,
-                            d, xim, mxim, v, xatt.depth, x_src, y_src, w_src,
-                            h_src, 0);
+#define CLEAR(x0, x1, y0, y1) \
+   do { \
+   for (j = y0; j < y1; j++) \
+      for (i = x0; i < x1; i++) \
+         data[j * w_dst + i] = 0; \
+   } while(0)
+
+   if (clear)
+     {
+        CLEAR(0, w_dst, 0, y_dst);
+        CLEAR(0, w_dst, y_dst + h_src, h_dst);
+        CLEAR(0, x_dst, y_dst, y_dst + h_src);
+        CLEAR(x_dst + w_src, w_dst, y_dst, y_dst + h_src);
+     }
+
+   __imlib_GrabXImageToRGBA(x11, data, x_dst, y_dst, w_dst, h_dst,
+                            xim, mxim, x_src, y_src, w_src, h_src, 0);
 
    /* destroy the Ximage */
    if (is_shm)
-      __imlib_ShmDestroyXImage(d, xim, &shminfo);
+      __imlib_ShmDestroyXImage(x11, xim, &shminfo);
    else
       XDestroyImage(xim);
 
    if (mxim)
      {
         if (is_mshm)
-           __imlib_ShmDestroyXImage(d, mxim, &mshminfo);
+           __imlib_ShmDestroyXImage(x11, mxim, &mshminfo);
         else
            XDestroyImage(mxim);
      }
 
-   if (m != None && m != m_)
-      XFreePixmap(d, m);
+   if (mask != None && mask != mask_)
+      XFreePixmap(x11->dpy, mask);
 
    if (pdomask)
      {
         /* Set domask according to whether or not we have useful alpha data */
         if (xatt.depth == 32)
            *pdomask = 1;
-        else if (m == None)
+        else if (mask == None)
            *pdomask = 0;
      }
 
+   return 0;
+
+ bail:
+   if (grab)
+      XUngrabServer(x11->dpy);
    return 1;
 }
 
 int
-__imlib_GrabDrawableScaledToRGBA(uint32_t * data, int nu_x_dst, int nu_y_dst,
+__imlib_GrabDrawableScaledToRGBA(const ImlibContextX11 * x11, uint32_t * data,
+                                 int nu_x_dst, int nu_y_dst,
                                  int w_dst, int h_dst,
-                                 Display * d, Drawable p, Pixmap m_,
-                                 Visual * v, Colormap cm, int depth,
+                                 Drawable draw, Pixmap mask_,
                                  int x_src, int y_src, int w_src, int h_src,
-                                 char *pdomask, int grab)
+                                 char *pdomask, int grab, bool clear)
 {
    int                 rc;
+   XWindowAttributes   xatt;
+   bool                is_pixmap;
    int                 h_tmp, i, xx;
+   int                 x_src_, y_src_, width, height, x_dst_, y_dst_;
    XGCValues           gcv;
    GC                  gc, mgc = NULL;
-   Pixmap              m = m_;
+   Pixmap              mask = mask_;
    Pixmap              psc, msc;
 
    h_tmp = h_dst > h_src ? h_dst : h_src;
@@ -839,86 +874,153 @@ __imlib_GrabDrawableScaledToRGBA(uint32_t * data, int nu_x_dst, int nu_y_dst,
    gcv.foreground = 0;
    gcv.subwindow_mode = IncludeInferiors;
    gcv.graphics_exposures = False;
-   gc = XCreateGC(d, p, GCSubwindowMode | GCGraphicsExposures, &gcv);
+   gc = XCreateGC(x11->dpy, draw, GCSubwindowMode | GCGraphicsExposures, &gcv);
 
-   if (*pdomask && m == None)
-     {
-        m = _WindowGetShapeMask(d, p, 0, 0, w_src, h_src, w_src, h_src);
-        if (m == None)
-           *pdomask = 0;
-     }
+   is_pixmap = _DrawableCheck(x11->dpy, draw, &xatt);
 
-   if (w_dst == w_src && h_dst == h_src)
+   width = w_dst;
+   height = h_dst;
+
+   if (is_pixmap)
      {
-        if (x_src == 0 && y_src == 0)
-          {
-             psc = p;
-          }
-        else
-          {
-             psc = XCreatePixmap(d, p, w_src, h_tmp, depth);
-             XCopyArea(d, p, psc, gc, x_src, y_src, w_src, h_src, 0, 0);
-          }
-        msc = m;
+        Window              rret;
+        unsigned int        bw;
+
+        XGetGeometry(x11->dpy, draw, &rret, &xatt.x, &xatt.y,
+                     (unsigned int *)&xatt.width, (unsigned int *)&xatt.height,
+                     &bw, (unsigned int *)&xatt.depth);
      }
    else
      {
-        psc = XCreatePixmap(d, p, w_dst, h_tmp, depth);
+        XWindowAttributes   ratt;
+        Window              cret;
 
-        if (*pdomask)
-          {
-             msc = XCreatePixmap(d, p, w_dst, h_tmp, 1);
-             mgc = XCreateGC(d, msc, GCForeground | GCGraphicsExposures, &gcv);
-          }
-        else
-           msc = None;
+        if ((xatt.map_state != IsViewable) && (xatt.backing_store == NotUseful))
+           return 1;
 
-        for (i = 0; i < w_dst; i++)
+        /* Clip source to screen */
+        XGetWindowAttributes(x11->dpy, xatt.root, &ratt);
+        XTranslateCoordinates(x11->dpy, draw, xatt.root,
+                              0, 0, &xatt.x, &xatt.y, &cret);
+
+#if 0
+        if (xatt.x + x_src < 0)
           {
-             xx = (w_src * i) / w_dst;
-             XCopyArea(d, p, psc, gc, x_src + xx, y_src, 1, h_src, i, 0);
-             if (msc != None)
-                XCopyArea(d, m, msc, mgc, xx, 0, 1, h_src, i, 0);
+             width += xatt.x + x_src;
+             x_src = -xatt.x;
           }
-        if (h_dst > h_src)
+        if (xatt.x + x_src + width > ratt.width)
+           width = ratt.width - (xatt.x + x_src);
+
+        if (xatt.y + y_src < 0)
           {
-             for (i = h_dst - 1; i > 0; i--)
-               {
-                  xx = (h_src * i) / h_dst;
-                  if (xx == i)
-                     continue;  /* Don't copy onto self */
-                  XCopyArea(d, psc, psc, gc, 0, xx, w_dst, 1, 0, i);
-                  if (msc != None)
-                     XCopyArea(d, msc, msc, mgc, 0, xx, w_dst, 1, 0, i);
-               }
+             height += xatt.y + y_src;
+             y_src = -xatt.y;
           }
-        else
+        if (xatt.y + y_src + height > ratt.height)
+           height = ratt.height - (xatt.y + y_src);
+#endif
+
+        if (*pdomask && mask == None)
           {
-             for (i = 0; i < h_dst; i++)
-               {
-                  xx = (h_src * i) / h_dst;
-                  if (xx == i)
-                     continue;  /* Don't copy onto self */
-                  XCopyArea(d, psc, psc, gc, 0, xx, w_dst, 1, 0, i);
-                  if (msc != None)
-                     XCopyArea(d, msc, msc, mgc, 0, xx, w_dst, 1, 0, i);
-               }
+             mask = _WindowGetShapeMask(x11->dpy, draw,
+                                        0, 0, w_src, h_src, w_src, h_src);
+             if (mask == None)
+                *pdomask = 0;
           }
      }
 
-   rc = __imlib_GrabDrawableToRGBA(data, 0, 0, w_dst, h_dst, d, psc, msc,
-                                   v, cm, depth, 0, 0, w_dst, h_dst,
-                                   pdomask, grab);
+   psc = XCreatePixmap(x11->dpy, draw, w_dst, h_tmp, xatt.depth);
+
+   if (!is_pixmap && *pdomask)
+     {
+        msc = XCreatePixmap(x11->dpy, draw, w_dst, h_tmp, 1);
+        mgc =
+           XCreateGC(x11->dpy, msc, GCForeground | GCGraphicsExposures, &gcv);
+     }
+   else
+      msc = None;
+
+   /* Copy source height vertical lines from input to intermediate */
+   for (i = 0; i < w_dst; i++)
+     {
+        xx = (w_src * i) / w_dst;
+        XCopyArea(x11->dpy, draw, psc, gc, x_src + xx, y_src, 1, h_src, i, 0);
+        if (msc != None)
+           XCopyArea(x11->dpy, mask, msc, mgc, xx, 0, 1, h_src, i, 0);
+     }
+
+   /* Copy destination width horzontal lines from/to intermediate */
+   if (h_dst > h_src)
+     {
+        for (i = h_dst - 1; i > 0; i--)
+          {
+             xx = (h_src * i) / h_dst;
+             if (xx == i)
+                continue;       /* Don't copy onto self */
+             XCopyArea(x11->dpy, psc, psc, gc, 0, xx, w_dst, 1, 0, i);
+             if (msc != None)
+                XCopyArea(x11->dpy, msc, msc, mgc, 0, xx, w_dst, 1, 0, i);
+          }
+     }
+   else
+     {
+        for (i = 0; i < h_dst; i++)
+          {
+             xx = (h_src * i) / h_dst;
+             if (xx == i)
+                continue;       /* Don't copy onto self */
+             XCopyArea(x11->dpy, psc, psc, gc, 0, xx, w_dst, 1, 0, i);
+             if (msc != None)
+                XCopyArea(x11->dpy, msc, msc, mgc, 0, xx, w_dst, 1, 0, i);
+          }
+     }
+
+   x_dst_ = y_dst_ = 0;         /* Clipped x_dst, y_dst */
+   x_src_ = y_src_ = 0;         /* Clipped, scaled x_src, y_src */
+
+   /* Adjust offsets and areas to not touch "non-existing" pixels */
+   if (x_src < 0)
+     {
+        xx = (-x_src * w_dst + w_src - 1) / w_src;
+        width -= xx;
+        x_src_ = x_dst_ = xx;
+     }
+   if (x_src + w_src > xatt.width)
+     {
+        xx = x_src + w_src - xatt.width;
+        xx = (xx * w_dst + w_src - 1) / w_src;
+        width -= xx;
+     }
+
+   if (y_src < 0)
+     {
+        xx = (-y_src * h_dst + h_src - 1) / h_src;
+        height -= xx;
+        y_src_ = y_dst_ = xx;
+     }
+   if (y_src + h_src > xatt.height)
+     {
+        xx = y_src + h_src - xatt.height;
+        xx = (xx * h_dst + h_src - 1) / h_src;
+        height -= xx;
+     }
+
+   xatt.width = w_dst;          /* Not the actual pixmap size but the scaled size */
+   xatt.height = h_dst;
+   rc = __imlib_GrabDrawableToRGBA(x11, data, x_dst_, y_dst_, w_dst, h_dst,
+                                   psc, msc, x_src_, y_src_, width, height,
+                                   pdomask, grab, clear, &xatt);
 
    if (mgc)
-      XFreeGC(d, mgc);
-   if (msc != None && msc != m)
-      XFreePixmap(d, msc);
-   if (m != None && m != m_)
-      XFreePixmap(d, m);
-   XFreeGC(d, gc);
-   if (psc != p)
-      XFreePixmap(d, psc);
+      XFreeGC(x11->dpy, mgc);
+   if (msc != None && msc != mask)
+      XFreePixmap(x11->dpy, msc);
+   if (mask != None && mask != mask_)
+      XFreePixmap(x11->dpy, mask);
+   XFreeGC(x11->dpy, gc);
+   if (psc != draw)
+      XFreePixmap(x11->dpy, psc);
 
    return rc;
 }

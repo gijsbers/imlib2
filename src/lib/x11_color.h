@@ -1,8 +1,7 @@
 #ifndef X11_COLOR_H
 #define X11_COLOR_H 1
 
-#include <X11/Xlib.h>
-#include "types.h"
+#include "x11_types.h"
 
 typedef enum {
    PAL_TYPE_332,                /* 0 */
@@ -21,8 +20,7 @@ int                 __imlib_XActualDepth(Display * d, Visual * v);
 Visual             *__imlib_BestVisual(Display * d, int screen,
                                        int *depth_return);
 
-uint8_t            *__imlib_AllocColorTable(Display * d, Colormap cmap,
-                                            unsigned char *type_return,
-                                            Visual * v);
+uint8_t            *__imlib_AllocColorTable(const ImlibContextX11 * x11,
+                                            unsigned char *type_return);
 
 #endif /* X11_COLOR_H */

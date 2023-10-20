@@ -1,5 +1,8 @@
 
 #include "rgbadraw.h"
+#ifdef BUILD_X11
+#include "x11_types.h"
+#endif
 
 /* convenience macros */
 #define   CAST_IMAGE(im, image) (im) = (ImlibImage *)(image)
@@ -34,10 +37,7 @@ typedef void        (*Imlib_Internal_Data_Destructor_Function)(void *, void *);
 
 typedef struct {
 #ifdef BUILD_X11
-   Display            *display;
-   Visual             *visual;
-   Colormap            colormap;
-   int                 depth;
+   ImlibContextX11     x11;
    Drawable            drawable;
    Pixmap              mask;
 #endif

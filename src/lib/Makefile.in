@@ -105,7 +105,7 @@ host_triplet = @host@
 
 @ENABLE_TEXT_TRUE@am__append_3 = $(FREETYPE_LIBS)
 @BUILD_X11_TRUE@am__append_4 = \
-@BUILD_X11_TRUE@api_x11.c	\
+@BUILD_X11_TRUE@api_x11.c	x11_types.h	\
 @BUILD_X11_TRUE@x11_color.c	x11_color.h	\
 @BUILD_X11_TRUE@x11_context.c	x11_context.h	\
 @BUILD_X11_TRUE@x11_grab.c	x11_grab.h	\
@@ -121,6 +121,7 @@ host_triplet = @host@
 subdir = src/lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ec_asan.m4 \
+	$(top_srcdir)/m4/ec_packing.m4 \
 	$(top_srcdir)/m4/ec_visibility.m4 \
 	$(top_srcdir)/m4/ec_warnflags.m4 $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
@@ -180,11 +181,12 @@ am__libImlib2_la_SOURCES_DIST = api.c api.h api_obsolete.c asm.h \
 	strutils.c strutils.h types.h updates.c updates.h api_filter.c \
 	dynamic_filters.c dynamic_filters.h filter.c filter.h script.c \
 	script.h api_text.c font.h font_draw.c font_load.c font_main.c \
-	font_query.c api_x11.c x11_color.c x11_color.h x11_context.c \
-	x11_context.h x11_grab.c x11_grab.h x11_pixmap.c x11_pixmap.h \
-	x11_rend.c x11_rend.h x11_rgba.c x11_rgba.h x11_ximage.c \
-	x11_ximage.h asm_blend.S asm_blend_cmod.S asm_rgba.S \
-	asm_rotate.S asm_scale.S amd64_blend.S amd64_blend_cmod.S
+	font_query.c api_x11.c x11_types.h x11_color.c x11_color.h \
+	x11_context.c x11_context.h x11_grab.c x11_grab.h x11_pixmap.c \
+	x11_pixmap.h x11_rend.c x11_rend.h x11_rgba.c x11_rgba.h \
+	x11_ximage.c x11_ximage.h asm_blend.S asm_blend_cmod.S \
+	asm_rgba.S asm_rotate.S asm_scale.S amd64_blend.S \
+	amd64_blend_cmod.S
 @ENABLE_FILTERS_TRUE@am__objects_1 = api_filter.lo dynamic_filters.lo \
 @ENABLE_FILTERS_TRUE@	filter.lo script.lo
 @ENABLE_TEXT_TRUE@am__objects_2 = api_text.lo font_draw.lo \

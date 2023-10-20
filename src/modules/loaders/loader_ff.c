@@ -84,15 +84,11 @@ static int
 _save(ImlibImage * im)
 {
    int                 rc;
-   FILE               *f;
+   FILE               *f = im->fi->fp;
    size_t              rowlen, i, j;
    uint32_t            tmp32;
    uint16_t           *row;
    uint8_t            *dat;
-
-   f = fopen(im->fi->name, "wb");
-   if (!f)
-      return LOAD_FAIL;
 
    rc = LOAD_FAIL;
    row = NULL;
@@ -139,7 +135,6 @@ _save(ImlibImage * im)
 
  quit:
    free(row);
-   fclose(f);
 
    return rc;
 }

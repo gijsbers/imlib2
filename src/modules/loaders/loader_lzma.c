@@ -1,5 +1,6 @@
 #include "config.h"
 #include "Imlib2_Loader.h"
+#include "compression.h"
 
 #include <lzma.h>
 

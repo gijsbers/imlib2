@@ -181,22 +181,6 @@ __imlib_FileModDateFd(int fd)
    return (st.st_mtime > st.st_ctime) ? st.st_mtime : st.st_ctime;
 }
 
-int
-__imlib_FileCanRead(const char *s)
-{
-   struct stat         st;
-
-   DP("%s: '%s'\n", __func__, s);
-
-   if (__imlib_FileStat(s, &st))
-      return 0;
-
-   if (!(st.st_mode & (S_IRUSR | S_IRGRP | S_IROTH)))
-      return 0;
-
-   return access(s, R_OK) == 0 ? 1 : 0; // ??? TBD
-}
-
 char              **
 __imlib_FileDir(const char *dir, int *num)
 {
@@ -207,26 +191,27 @@ __imlib_FileDir(const char *dir, int *num)
    struct dirent      *dp;
 
    if ((!dir) || (!*dir))
-      return 0;
+      return NULL;
+
    dirp = opendir(dir);
    if (!dirp)
-     {
-        *num = 0;
-        return NULL;
-     }
+      return NULL;
+
    /* count # of entries in dir (worst case) */
    for (dirlen = 0; readdir(dirp) != NULL; dirlen++)
       ;
    if (!dirlen)
      {
         closedir(dirp);
-        *num = dirlen;
         return NULL;
      }
-   names = (char **)malloc(dirlen * sizeof(char *));
 
+   names = malloc(dirlen * sizeof(char *));
    if (!names)
-      return NULL;
+     {
+        closedir(dirp);
+        return NULL;
+     }
 
    rewinddir(dirp);
    for (i = 0; i < dirlen;)
@@ -234,17 +219,19 @@ __imlib_FileDir(const char *dir, int *num)
         dp = readdir(dirp);
         if (!dp)
            break;
+
         if ((strcmp(dp->d_name, ".")) && (strcmp(dp->d_name, "..")))
           {
              names[i] = strdup(dp->d_name);
              i++;
           }
      }
+   closedir(dirp);
 
    if (i < dirlen)
       dirlen = i;               /* dir got shorter... */
-   closedir(dirp);
    *num = dirlen;
+
    /* do a simple bubble sort here to alphanumberic it */
    while (!done)
      {
@@ -262,6 +249,7 @@ __imlib_FileDir(const char *dir, int *num)
                }
           }
      }
+
    return names;
 }
 
@@ -331,4 +319,23 @@ __imlib_ItemInList(char **list, int size, char *item)
            return 1;
      }
    return 0;
+}
+
+#include <errno.h>
+
+FILE               *
+__imlib_FileOpen(const char *path, const char *mode)
+{
+   FILE               *fp;
+
+   for (;;)
+     {
+        fp = fopen(path, mode);
+        if (fp)
+           break;
+        if (errno != EINTR)
+           break;
+     }
+
+   return fp;
 }

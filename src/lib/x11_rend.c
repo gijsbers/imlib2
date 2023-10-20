@@ -22,12 +22,12 @@
 #define LINESIZE 16
 
 uint32_t
-__imlib_RenderGetPixel(Display * d, Drawable w, Visual * v, Colormap cm,
-                       int depth, uint8_t r, uint8_t g, uint8_t b)
+__imlib_RenderGetPixel(const ImlibContextX11 * x11, Drawable w,
+                       uint8_t r, uint8_t g, uint8_t b)
 {
    Context            *ct;
 
-   ct = __imlib_GetContext(d, v, cm, depth);
+   ct = __imlib_GetContext(x11);
 
    if (ct->palette)
      {
@@ -76,9 +76,9 @@ __imlib_RenderGetPixel(Display * d, Drawable w, Visual * v, Colormap cm,
         int                 i, rshift = 0, gshift = 0, bshift = 0;
         uint32_t            val;
 
-        rm = v->red_mask;
-        gm = v->green_mask;
-        bm = v->blue_mask;
+        rm = x11->vis->red_mask;
+        gm = x11->vis->green_mask;
+        bm = x11->vis->blue_mask;
         if ((rm == 0xf800) && (gm == 0x7e0) && (bm == 0x1f))    /* 565 */
           {
              return (((r << 8) & 0xf800) |
@@ -247,13 +247,13 @@ __imlib_RenderDisconnect(Display * d)
 }
 
 void
-__imlib_RenderImage(Display * d, ImlibImage * im,
+__imlib_RenderImage(const ImlibContextX11 * x11, ImlibImage * im,
                     Drawable w, Drawable m,
-                    Visual * v, Colormap cm, int depth,
                     int sx, int sy, int sw, int sh,
                     int dx, int dy, int dw, int dh,
-                    char antialias, char hiq, char blend, char dither_mask,
-                    int mat, ImlibColorModifier * cmod, ImlibOp op)
+                    char antialias, char hiq, char blend,
+                    char dither_mask, int mat,
+                    ImlibColorModifier * cmod, ImlibOp op)
 {
    XImage             *xim = NULL, *mxim = NULL;
    Context            *ct;
@@ -313,20 +313,20 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
    /* Sign not needed anymore */
    dw = abs(dw);
    dh = abs(dh);
-   ct = __imlib_GetContext(d, v, cm, depth);
+   ct = __imlib_GetContext(x11);
    __imlib_RGBASetupContext(ct);
    if (blend && im->has_alpha)
      {
         back = malloc(dw * dh * sizeof(uint32_t));
-        if (!__imlib_GrabDrawableToRGBA
-            (back, 0, 0, dw, dh, d, w, 0, v, cm, depth, dx, dy, dw, dh, 0, 1))
+        if (__imlib_GrabDrawableToRGBA(x11, back, 0, 0, dw, dh,
+                                       w, 0, dx, dy, dw, dh, 0, 1, false, NULL))
           {
              free(back);
              back = NULL;
           }
      }
    /* get a new XImage - or get one from the cached list */
-   xim = __imlib_ProduceXImage(d, v, depth, dw, dh, &shm);
+   xim = __imlib_ProduceXImage(x11, x11->depth, dw, dh, &shm);
    if (!xim)
      {
         __imlib_FreeScaleInfo(scaleinfo);
@@ -335,10 +335,10 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
      }
    if (m)
      {
-        mxim = __imlib_ProduceXImage(d, v, 1, dw, dh, &shm);
+        mxim = __imlib_ProduceXImage(x11, 1, dw, dh, &shm);
         if (!mxim)
           {
-             __imlib_ConsumeXImage(d, xim);
+             __imlib_ConsumeXImage(x11, xim);
              __imlib_FreeScaleInfo(scaleinfo);
              free(back);
              return;
@@ -352,9 +352,9 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
         buf = malloc(dw * LINESIZE * sizeof(uint32_t));
         if (!buf)
           {
-             __imlib_ConsumeXImage(d, xim);
+             __imlib_ConsumeXImage(x11, xim);
              if (m)
-                __imlib_ConsumeXImage(d, mxim);
+                __imlib_ConsumeXImage(x11, mxim);
              __imlib_FreeScaleInfo(scaleinfo);
              free(back);
              return;
@@ -365,8 +365,8 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
    /* scale in LINESIZE Y chunks and convert to depth */
    /* Get rgba and mask functions for XImage rendering */
    rgbaer = __imlib_GetRGBAFunction(xim->bits_per_pixel,
-                                    v->red_mask, v->green_mask, v->blue_mask,
-                                    hiq, ct->palette_type);
+                                    x11->vis->red_mask, x11->vis->green_mask,
+                                    x11->vis->blue_mask, hiq, ct->palette_type);
    if (m)
       masker = __imlib_GetMaskFunction(dither_mask);
    for (y = 0; y < dh; y += LINESIZE)
@@ -405,9 +405,9 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
                      buf = malloc(im->w * LINESIZE * sizeof(uint32_t));
                   if (!buf)
                     {
-                       __imlib_ConsumeXImage(d, xim);
+                       __imlib_ConsumeXImage(x11, xim);
                        if (m)
-                          __imlib_ConsumeXImage(d, mxim);
+                          __imlib_ConsumeXImage(x11, mxim);
                        __imlib_FreeScaleInfo(scaleinfo);
                        free(back);
                        return;
@@ -437,7 +437,8 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
                   ((uint8_t *) xim->data) + (y * (xim->bytes_per_line)),
                   xim->bytes_per_line, dw, hh, dx, dy + y);
         else
-           __imlib_generic_render(pointer, jump, dw, hh, 0, y, xim, v, ct);
+           __imlib_generic_render(pointer, jump, dw, hh, 0, y, xim, x11->vis,
+                                  ct);
         if (m)
            masker(pointer, jump,
                   ((uint8_t *) mxim->data) + (y * (mxim->bytes_per_line)),
@@ -450,7 +451,7 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
       __imlib_FreeScaleInfo(scaleinfo);
    free(back);
    /* if we changed diplays or depth since last time... free old gc */
-   if ((gc) && ((last_depth != depth) || (disp != d)))
+   if ((gc) && ((last_depth != x11->depth) || (disp != x11->dpy)))
      {
         XFreeGC(disp, gc);
         gc = 0;
@@ -458,15 +459,15 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
    /* if we didn't have a gc... create it */
    if (!gc)
      {
-        disp = d;
-        last_depth = depth;
+        disp = x11->dpy;
+        last_depth = x11->depth;
         gcv.graphics_exposures = False;
-        gc = XCreateGC(d, w, GCGraphicsExposures, &gcv);
+        gc = XCreateGC(x11->dpy, w, GCGraphicsExposures, &gcv);
      }
    if (m)
      {
         /* if we changed diplays since last time... free old gc */
-        if ((gcm) && (disp != d))
+        if ((gcm) && (disp != x11->dpy))
           {
              XFreeGC(disp, gcm);
              gcm = 0;
@@ -474,40 +475,41 @@ __imlib_RenderImage(Display * d, ImlibImage * im,
         if (!gcm)
           {
              gcv.graphics_exposures = False;
-             gcm = XCreateGC(d, m, GCGraphicsExposures, &gcv);
+             gcm = XCreateGC(x11->dpy, m, GCGraphicsExposures, &gcv);
           }
         /* write the mask */
         if (shm)
            /* write shm XImage */
-           XShmPutImage(d, m, gcm, mxim, 0, 0, dx, dy, dw, dh, False);
+           XShmPutImage(x11->dpy, m, gcm, mxim, 0, 0, dx, dy, dw, dh, False);
         /* write regular XImage */
         else
-           XPutImage(d, m, gcm, mxim, 0, 0, dx, dy, dw, dh);
+           XPutImage(x11->dpy, m, gcm, mxim, 0, 0, dx, dy, dw, dh);
      }
    /* write the image */
    if (shm)
       /* write shm XImage */
-      XShmPutImage(d, w, gc, xim, 0, 0, dx, dy, dw, dh, False);
+      XShmPutImage(x11->dpy, w, gc, xim, 0, 0, dx, dy, dw, dh, False);
    /* write regular XImage */
    else
-      XPutImage(d, w, gc, xim, 0, 0, dx, dy, dw, dh);
+      XPutImage(x11->dpy, w, gc, xim, 0, 0, dx, dy, dw, dh);
    /* free the XImage and put onto our free list */
    /* wait for the write to be done */
    if (shm)
-      XSync(d, False);
-   __imlib_ConsumeXImage(d, xim);
+      XSync(x11->dpy, False);
+   __imlib_ConsumeXImage(x11, xim);
    if (m)
-      __imlib_ConsumeXImage(d, mxim);
+      __imlib_ConsumeXImage(x11, mxim);
 }
 
 void
-__imlib_RenderImageSkewed(Display * d, ImlibImage * im, Drawable w, Drawable m,
-                          Visual * v, Colormap cm, int depth,
-                          int sx, int sy, int sw, int sh, int dx, int dy,
+__imlib_RenderImageSkewed(const ImlibContextX11 * x11, ImlibImage * im,
+                          Drawable w, Drawable m,
+                          int sx, int sy, int sw,
+                          int sh, int dx, int dy,
                           int hsx, int hsy, int vsx, int vsy,
-                          char antialias, char hiq, char blend,
-                          char dither_mask, int mat, ImlibColorModifier * cmod,
-                          ImlibOp op)
+                          char antialias, char hiq,
+                          char blend, char dither_mask,
+                          int mat, ImlibColorModifier * cmod, ImlibOp op)
 {
    int                 dx1, dy1, dx2, dy2, dw, dh, tsx, tsy;
    ImlibImage         *back;
@@ -559,22 +561,22 @@ __imlib_RenderImageSkewed(Display * d, ImlibImage * im, Drawable w, Drawable m,
         dy1 = 0;
      }
 
-   if (!IMAGE_DIMENSIONS_OK(dw, dh))
+   back = __imlib_CreateImage(dw, dh, NULL, 1);
+   if (!back)
       return;
 
-   __imlib_GetContext(d, v, cm, depth);
+   __imlib_GetContext(x11);
 
-   back = __imlib_CreateImage(dw, dh, NULL);
-   back->data = calloc(dw * dh, sizeof(uint32_t));
-   __imlib_GrabDrawableToRGBA(back->data, 0, 0, dw, dh, d, w, 0, v, cm,
-                              depth, dx1, dy1, dw, dh, 0, 1);
+   __imlib_GrabDrawableToRGBA(x11, back->data, 0, 0, dw, dh,
+                              w, 0, dx1, dy1, dw, dh, 0, 1, false, NULL);
 
    __imlib_BlendImageToImageSkewed(im, back, antialias, 1, 0, sx, sy, sw, sh,
                                    dx - dx1, dy - dy1, hsx, hsy, vsx, vsy,
                                    cmod, op, 0, 0, 0, 0);
 
-   __imlib_RenderImage(d, back, w, m, v, cm, depth, 0, 0, dw, dh,
+   __imlib_RenderImage(x11, back, w, m, 0, 0, dw, dh,
                        dx1, dy1, dw, dh, 0, hiq, 0, dither_mask, mat, 0,
                        OP_COPY);
+
    __imlib_FreeImage(back);
 }

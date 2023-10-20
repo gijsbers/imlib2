@@ -1,33 +1,36 @@
 #ifndef X11_GRAB_H
 #define X11_GRAB_H 1
 
-#include <X11/Xlib.h>
 #include "types.h"
+#include "x11_types.h"
 
-int                 __imlib_GrabDrawableToRGBA(uint32_t * data, int x_dst,
-                                               int y_dst, int w_dst, int h_dst,
-                                               Display * d, Drawable p,
-                                               Pixmap m, Visual * v,
-                                               Colormap cm, int depth,
-                                               int x_src, int y_src, int w_src,
-                                               int h_src, char *domask,
-                                               int grab);
+int                 __imlib_GrabDrawableToRGBA(const ImlibContextX11 * x11,
+                                               uint32_t * data,
+                                               int x_dst, int y_dst,
+                                               int w_dst, int h_dst,
+                                               Drawable p, Pixmap m,
+                                               int x_src, int y_src,
+                                               int w_src, int h_src,
+                                               char *domask, int grab,
+                                               bool clear,
+                                               const XWindowAttributes * attr);
 
-int                 __imlib_GrabDrawableScaledToRGBA(uint32_t * data, int x_dst,
-                                                     int y_dst, int w_dst,
-                                                     int h_dst, Display * d,
+int                 __imlib_GrabDrawableScaledToRGBA(const ImlibContextX11 *
+                                                     x11, uint32_t * data,
+                                                     int x_dst, int y_dst,
+                                                     int w_dst, int h_dst,
                                                      Drawable p, Pixmap m,
-                                                     Visual * v, Colormap cm,
-                                                     int depth, int x_src,
-                                                     int y_src, int w_src,
-                                                     int h_src, char *pdomask,
-                                                     int grab);
+                                                     int x_src, int y_src,
+                                                     int w_src, int h_src,
+                                                     char *domask, int grab,
+                                                     bool clear);
 
-void                __imlib_GrabXImageToRGBA(uint32_t * data, int x_dst,
-                                             int y_dst, int w_dst, int h_dst,
-                                             Display * d, XImage * xim,
-                                             XImage * mxim, Visual * v,
-                                             int depth, int x_src, int y_src,
+void                __imlib_GrabXImageToRGBA(const ImlibContextX11 * x11,
+                                             uint32_t * data,
+                                             int x_dst, int y_dst,
+                                             int w_dst, int h_dst,
+                                             XImage * xim, XImage * mxim,
+                                             int x_src, int y_src,
                                              int w_src, int h_src, int grab);
 
 #endif /* X11_GRAB_H */

@@ -48,7 +48,7 @@ __imlib_FlushContexts(void)
 
                   for (i = 0; i < num[ct->palette_type]; i++)
                      pixels[i] = (unsigned long)ct->palette[i];
-                  XFreeColors(ct->display, ct->colormap, pixels,
+                  XFreeColors(ct->x11.dpy, ct->x11.cmap, pixels,
                               num[ct->palette_type], 0);
 
                   free(ct->palette);
@@ -72,14 +72,14 @@ __imlib_FlushContexts(void)
 }
 
 Context            *
-__imlib_FindContext(Display * d, Visual * v, Colormap c, int depth)
+__imlib_FindContext(const ImlibContextX11 * x11)
 {
    Context            *ct, *ct_prev;
 
    for (ct = context, ct_prev = NULL; ct; ct_prev = ct, ct = ct->next)
      {
-        if ((ct->display == d) && (ct->visual == v) &&
-            (ct->colormap == c) && (ct->depth == depth))
+        if ((ct->x11.dpy == x11->dpy) && (ct->x11.vis == x11->vis) &&
+            (ct->x11.cmap == x11->cmap) && (ct->x11.depth == x11->depth))
           {
              if (ct_prev)
                {
@@ -94,39 +94,36 @@ __imlib_FindContext(Display * d, Visual * v, Colormap c, int depth)
 }
 
 Context            *
-__imlib_NewContext(Display * d, Visual * v, Colormap c, int depth)
+__imlib_NewContext(const ImlibContextX11 * x11)
 {
    Context            *ct;
 
    context_counter++;
    ct = malloc(sizeof(Context));
    ct->last_use = context_counter;
-   ct->display = d;
-   ct->visual = v;
-   ct->colormap = c;
-   ct->depth = depth;
+   ct->x11 = *x11;
    ct->next = NULL;
 
-   if (depth <= 8)
+   if (x11->depth <= 8)
      {
-        ct->palette = __imlib_AllocColorTable(d, c, &(ct->palette_type), v);
+        ct->palette = __imlib_AllocColorTable(x11, &ct->palette_type);
         ct->r_dither = malloc(sizeof(uint8_t) * DM_X * DM_Y * 256);
         ct->g_dither = malloc(sizeof(uint8_t) * DM_X * DM_Y * 256);
         ct->b_dither = malloc(sizeof(uint8_t) * DM_X * DM_Y * 256);
         __imlib_RGBA_init((void *)ct->r_dither, (void *)ct->g_dither,
-                          (void *)ct->b_dither, depth, ct->palette_type);
+                          (void *)ct->b_dither, x11->depth, ct->palette_type);
      }
    else
      {
         ct->palette = NULL;
         ct->palette_type = 0;
-        if ((depth > 8) && (depth <= 16))
+        if ((x11->depth > 8) && (x11->depth <= 16))
           {
              ct->r_dither = malloc(sizeof(uint16_t) * 4 * 4 * 256);
              ct->g_dither = malloc(sizeof(uint16_t) * 4 * 4 * 256);
              ct->b_dither = malloc(sizeof(uint16_t) * 4 * 4 * 256);
              __imlib_RGBA_init((void *)ct->r_dither, (void *)ct->g_dither,
-                               (void *)ct->b_dither, depth, 0);
+                               (void *)ct->b_dither, x11->depth, 0);
           }
         else
           {
@@ -134,7 +131,7 @@ __imlib_NewContext(Display * d, Visual * v, Colormap c, int depth)
              ct->g_dither = NULL;
              ct->b_dither = NULL;
              __imlib_RGBA_init((void *)ct->r_dither, (void *)ct->g_dither,
-                               (void *)ct->b_dither, depth, 0);
+                               (void *)ct->b_dither, x11->depth, 0);
           }
      }
 
@@ -142,11 +139,11 @@ __imlib_NewContext(Display * d, Visual * v, Colormap c, int depth)
 }
 
 Context            *
-__imlib_GetContext(Display * d, Visual * v, Colormap c, int depth)
+__imlib_GetContext(const ImlibContextX11 * x11)
 {
    Context            *ct;
 
-   ct = __imlib_FindContext(d, v, c, depth);
+   ct = __imlib_FindContext(x11);
    if (ct)
      {
         ct->last_use = context_counter;
@@ -155,7 +152,7 @@ __imlib_GetContext(Display * d, Visual * v, Colormap c, int depth)
 
    __imlib_FlushContexts();
 
-   ct = __imlib_NewContext(d, v, c, depth);
+   ct = __imlib_NewContext(x11);
    ct->next = context;
    context = ct;
 

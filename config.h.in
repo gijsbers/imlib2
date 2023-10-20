@@ -250,5 +250,8 @@
 /* Symbol is exported */
 #undef __EXPORT__
 
+/* Not using struct packing for unaligned access */
+#undef __PACKED__
+
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const

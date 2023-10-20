@@ -16,6 +16,8 @@
 
 #include "x11_ximage.h"
 
+static void         __imlib_FlushXImage(const ImlibContextX11 * x11);
+
 static signed char  x_does_shm = -1;
 
 #ifdef HAVE_X11_SHM_FD
@@ -107,19 +109,19 @@ ShmCheck(Display * d)
 }
 
 XImage             *
-__imlib_ShmGetXImage(Display * d, Visual * v, Drawable draw, int depth,
+__imlib_ShmGetXImage(const ImlibContextX11 * x11, Drawable draw, int depth,
                      int x, int y, int w, int h, XShmSegmentInfo * si)
 {
    XImage             *xim;
 
    if (x_does_shm < 0)
-      ShmCheck(d);
+      ShmCheck(x11->dpy);
 
    if (!x_does_shm)
       return NULL;
 
    /* try create an shm image */
-   xim = XShmCreateImage(d, v, depth, ZPixmap, NULL, si, w, h);
+   xim = XShmCreateImage(x11->dpy, x11->vis, depth, ZPixmap, NULL, si, w, h);
    if (!xim)
       return NULL;
 
@@ -129,7 +131,7 @@ __imlib_ShmGetXImage(Display * d, Visual * v, Drawable draw, int depth,
         xcb_generic_error_t *error = NULL;
         xcb_shm_create_segment_cookie_t cookie;
         xcb_shm_create_segment_reply_t *reply;
-        xcb_connection_t   *c = XGetXCBConnection(d);
+        xcb_connection_t   *c = XGetXCBConnection(x11->dpy);
         size_t              segment_size = xim->bytes_per_line * xim->height;
 
         si->shmaddr = NULL;
@@ -165,7 +167,7 @@ __imlib_ShmGetXImage(Display * d, Visual * v, Drawable draw, int depth,
           {
              xim->data = si->shmaddr;
              if (draw != None)
-                XShmGetImage(d, draw, xim, x, y, 0xffffffff);
+                XShmGetImage(x11->dpy, draw, xim, x, y, 0xffffffff);
 
              return xim;
           }
@@ -195,17 +197,17 @@ __imlib_ShmGetXImage(Display * d, Visual * v, Drawable draw, int depth,
                     {
                        /* setup a temporary error handler */
                        _x_err = 0;
-                       XSync(d, False);
+                       XSync(x11->dpy, False);
                        ph = XSetErrorHandler(TmpXError);
                     }
                   /* ask X to attach to the shared mem segment */
-                  XShmAttach(d, si);
+                  XShmAttach(x11->dpy, si);
                   if (draw != None)
-                     XShmGetImage(d, draw, xim, x, y, 0xffffffff);
+                     XShmGetImage(x11->dpy, draw, xim, x, y, 0xffffffff);
                   if (x_does_shm == 2)
                     {
                        /* wait for X to reply and do this */
-                       XSync(d, False);
+                       XSync(x11->dpy, False);
                        /* reset the error handler */
                        XSetErrorHandler(ph);
                        x_does_shm = 1;
@@ -237,10 +239,11 @@ __imlib_ShmGetXImage(Display * d, Visual * v, Drawable draw, int depth,
 }
 
 void
-__imlib_ShmDestroyXImage(Display * d, XImage * xim, XShmSegmentInfo * si)
+__imlib_ShmDestroyXImage(const ImlibContextX11 * x11, XImage * xim,
+                         XShmSegmentInfo * si)
 {
-   XSync(d, False);
-   XShmDetach(d, si);
+   XSync(x11->dpy, False);
+   XShmDetach(x11->dpy, si);
 #ifdef HAVE_X11_SHM_FD
    if (x_does_shm_fd)
      {
@@ -256,45 +259,45 @@ __imlib_ShmDestroyXImage(Display * d, XImage * xim, XShmSegmentInfo * si)
 }
 
 void
-__imlib_SetXImageCacheCountMax(Display * d, int num)
+__imlib_SetXImageCacheCountMax(const ImlibContextX11 * x11, int num)
 {
    list_max_count = num;
-   __imlib_FlushXImage(d);
+   __imlib_FlushXImage(x11);
 }
 
 int
-__imlib_GetXImageCacheCountMax(Display * d)
+__imlib_GetXImageCacheCountMax(const ImlibContextX11 * x11)
 {
    return list_max_count;
 }
 
 int
-__imlib_GetXImageCacheCountUsed(Display * d)
+__imlib_GetXImageCacheCountUsed(const ImlibContextX11 * x11)
 {
    return list_num;
 }
 
 void
-__imlib_SetXImageCacheSizeMax(Display * d, int num)
+__imlib_SetXImageCacheSizeMax(const ImlibContextX11 * x11, int num)
 {
    list_max_mem = num;
-   __imlib_FlushXImage(d);
+   __imlib_FlushXImage(x11);
 }
 
 int
-__imlib_GetXImageCacheSizeMax(Display * d)
+__imlib_GetXImageCacheSizeMax(const ImlibContextX11 * x11)
 {
    return list_max_mem;
 }
 
 int
-__imlib_GetXImageCacheSizeUsed(Display * d)
+__imlib_GetXImageCacheSizeUsed(const ImlibContextX11 * x11)
 {
    return list_mem_use;
 }
 
 void
-__imlib_FlushXImage(Display * d)
+__imlib_FlushXImage(const ImlibContextX11 * x11)
 {
    int                 i, j;
    XImage             *xim;
@@ -317,7 +320,7 @@ __imlib_FlushXImage(Display * d)
 
              if (xim_cache[i].si)
                {
-                  __imlib_ShmDestroyXImage(d, xim, xim_cache[i].si);
+                  __imlib_ShmDestroyXImage(x11, xim, xim_cache[i].si);
                   free(xim_cache[i].si);
                }
              else
@@ -349,7 +352,7 @@ __imlib_FlushXImage(Display * d)
 
 /* free (consume == opposite of produce) the XImage (mark as unused) */
 void
-__imlib_ConsumeXImage(Display * d, XImage * xim)
+__imlib_ConsumeXImage(const ImlibContextX11 * x11, XImage * xim)
 {
    int                 i;
 
@@ -362,7 +365,7 @@ __imlib_ConsumeXImage(Display * d, XImage * xim)
              /* we have a match = mark as unused */
              xim_cache[i].used = 0;
              /* flush the XImage list to get rud of stuff we dont want */
-             __imlib_FlushXImage(d);
+             __imlib_FlushXImage(x11);
              /* return */
              return;
           }
@@ -372,7 +375,7 @@ __imlib_ConsumeXImage(Display * d, XImage * xim)
 /* create a new XImage or find it on our list of currently available ones so */
 /* we dont need to create a new one */
 XImage             *
-__imlib_ProduceXImage(Display * d, Visual * v, int depth, int w, int h,
+__imlib_ProduceXImage(const ImlibContextX11 * x11, int depth, int w, int h,
                       char *shared)
 {
    XImage             *xim;
@@ -423,7 +426,7 @@ __imlib_ProduceXImage(Display * d, Visual * v, int depth, int w, int h,
      }
 
    /* work on making a shared image */
-   xim = __imlib_ShmGetXImage(d, v, None, depth, 0, 0, w, h,
+   xim = __imlib_ShmGetXImage(x11, None, depth, 0, 0, w, h,
                               xim_cache[list_num - 1].si);
    /* ok if xim == NULL it all failed - fall back to XImages */
    if (xim)
@@ -437,7 +440,9 @@ __imlib_ProduceXImage(Display * d, Visual * v, int depth, int w, int h,
         /* flag it as NULL ot indicate a normal XImage */
         xim_cache[list_num - 1].si = NULL;
         /* create a normal ximage */
-        xim = XCreateImage(d, v, depth, ZPixmap, 0, NULL, w, h, 32, 0);
+        xim =
+           XCreateImage(x11->dpy, x11->vis, depth, ZPixmap, 0, NULL, w, h, 32,
+                        0);
         /* allocate data for it */
         if (xim)
            xim->data = malloc(xim->bytes_per_line * xim->height);
@@ -457,10 +462,10 @@ __imlib_ProduceXImage(Display * d, Visual * v, int depth, int w, int h,
    /* mark image as used */
    xim_cache[list_num - 1].used = 1;
    /* remember what display that XImage was for */
-   xim_cache[list_num - 1].dpy = d;
+   xim_cache[list_num - 1].dpy = x11->dpy;
 
    /* flush unused images from the image list */
-   __imlib_FlushXImage(d);
+   __imlib_FlushXImage(x11);
 
    /* set the byte order of the XImage to the byte_order of the Xclient */
    /* (rather than the Xserver) */

@@ -98,7 +98,8 @@ typedef struct {
 ImlibLoader        *__imlib_FindBestLoader(const char *file, const char *format,
                                            int for_save);
 
-ImlibImage         *__imlib_CreateImage(int w, int h, uint32_t * data);
+ImlibImage         *__imlib_CreateImage(int w, int h, uint32_t * data,
+                                        int zero);
 ImlibImage         *__imlib_LoadImage(const char *file, ImlibLoadArgs * ila);
 int                 __imlib_LoadEmbedded(ImlibLoader * l, ImlibImage * im,
                                          int load_data, const char *file);

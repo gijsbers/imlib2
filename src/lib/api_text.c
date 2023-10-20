@@ -108,7 +108,8 @@ imlib_text_draw_with_return_metrics(int x, int y, const char *text,
    CHECK_PARAM_POINTER("image", ctx->image);
    CHECK_PARAM_POINTER("text", text);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    fn = (ImlibFont *) ctx->font;
    __imlib_DirtyImage(im);

@@ -1,5 +1,6 @@
 #include "config.h"
 #include "Imlib2_Loader.h"
+#include "compression.h"
 
 int
 decompress_load(ImlibImage * im, int load_data, const char *const *pext,

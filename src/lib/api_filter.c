@@ -18,7 +18,8 @@ imlib_image_filter(void)
    CHECK_PARAM_POINTER("image", ctx->image);
    CHECK_PARAM_POINTER("filter", ctx->filter);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_FilterImage(im, (ImlibFilter *) ctx->filter);
@@ -125,7 +126,8 @@ imlib_apply_filter(const char *script, ...)
 
    __imlib_dynamic_filters_init();
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    va_start(param_list, script);

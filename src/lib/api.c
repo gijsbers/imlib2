@@ -762,7 +762,8 @@ imlib_image_get_data(void)
 
    CHECK_PARAM_POINTER_RETURN("image", ctx->image, NULL);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return NULL;
    __imlib_DirtyImage(im);
    return im->data;
@@ -775,7 +776,8 @@ imlib_image_get_data_for_reading_only(void)
 
    CHECK_PARAM_POINTER_RETURN("image", ctx->image, NULL);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return NULL;
    return im->data;
 }
@@ -897,33 +899,34 @@ imlib_image_set_has_alpha(char has_alpha)
 }
 
 EAPI void
-imlib_blend_image_onto_image(Imlib_Image source_image, char merge_alpha,
-                             int source_x, int source_y, int source_width,
-                             int source_height, int destination_x,
-                             int destination_y, int destination_width,
-                             int destination_height)
+imlib_blend_image_onto_image(Imlib_Image src_image, char merge_alpha,
+                             int src_x, int src_y,
+                             int src_width, int src_height,
+                             int dst_x, int dst_y,
+                             int dst_width, int dst_height)
 {
    ImlibImage         *im_src, *im_dst;
    int                 aa;
 
-   CHECK_PARAM_POINTER("source_image", source_image);
+   CHECK_PARAM_POINTER("src_image", src_image);
    CHECK_PARAM_POINTER("image", ctx->image);
-   CAST_IMAGE(im_src, source_image);
+   CAST_IMAGE(im_src, src_image);
    CAST_IMAGE(im_dst, ctx->image);
-   if (__imlib_LoadImageData(im_src))
+   ctx->error = __imlib_LoadImageData(im_src);
+   if (ctx->error)
       return;
-   if (__imlib_LoadImageData(im_dst))
+   ctx->error = __imlib_LoadImageData(im_dst);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im_dst);
    /* FIXME: hack to get around infinite loops for scaling down too far */
    aa = ctx->anti_alias;
-   if ((abs(destination_width) < (source_width >> 7))
-       || (abs(destination_height) < (source_height >> 7)))
+   if ((abs(dst_width) < (src_width >> 7)) ||
+       (abs(dst_height) < (src_height >> 7)))
       aa = 0;
-   __imlib_BlendImageToImage(im_src, im_dst, aa, ctx->blend,
-                             merge_alpha, source_x, source_y, source_width,
-                             source_height, destination_x, destination_y,
-                             destination_width, destination_height,
+   __imlib_BlendImageToImage(im_src, im_dst, aa, ctx->blend, merge_alpha,
+                             src_x, src_y, src_width, src_height,
+                             dst_x, dst_y, dst_width, dst_height,
                              ctx->color_modifier, ctx->operation,
                              ctx->cliprect.x, ctx->cliprect.y,
                              ctx->cliprect.w, ctx->cliprect.h);
@@ -932,14 +935,11 @@ imlib_blend_image_onto_image(Imlib_Image source_image, char merge_alpha,
 EAPI                Imlib_Image
 imlib_create_image(int width, int height)
 {
-   uint32_t           *data;
+   ImlibImage         *im;
 
-   if (!IMAGE_DIMENSIONS_OK(width, height))
-      return NULL;
-   data = malloc(width * height * sizeof(uint32_t));
-   if (data)
-      return __imlib_CreateImage(width, height, data);
-   return NULL;
+   im = __imlib_CreateImage(width, height, NULL, 0);
+
+   return im;
 }
 
 EAPI                Imlib_Image
@@ -948,11 +948,13 @@ imlib_create_image_using_data(int width, int height, uint32_t * data)
    ImlibImage         *im;
 
    CHECK_PARAM_POINTER_RETURN("data", data, NULL);
-   if (!IMAGE_DIMENSIONS_OK(width, height))
+
+   im = __imlib_CreateImage(width, height, data, 0);
+   if (!im)
       return NULL;
-   im = __imlib_CreateImage(width, height, data);
-   if (im)
-      IM_FLAG_SET(im, F_DONT_FREE_DATA);
+
+   IM_FLAG_SET(im, F_DONT_FREE_DATA);
+
    return im;
 }
 
@@ -963,11 +965,12 @@ EAPI                Imlib_Image
    ImlibImage         *im;
 
    CHECK_PARAM_POINTER_RETURN("data", data, NULL);
-   if (!IMAGE_DIMENSIONS_OK(width, height))
+
+   im = __imlib_CreateImage(width, height, data, 0);
+   if (!im)
       return NULL;
-   im = __imlib_CreateImage(width, height, data);
-   if (im)
-      im->data_memory_func = func;
+
+   im->data_memory_func = func;
 
    return im;
 }
@@ -978,20 +981,14 @@ imlib_create_image_using_copied_data(int width, int height, uint32_t * data)
    ImlibImage         *im;
 
    CHECK_PARAM_POINTER_RETURN("data", data, NULL);
-   if (!IMAGE_DIMENSIONS_OK(width, height))
-      return NULL;
-   im = __imlib_CreateImage(width, height, NULL);
+
+   im = __imlib_CreateImage(width, height, NULL, 0);
    if (!im)
       return NULL;
-   im->data = malloc(width * height * sizeof(uint32_t));
-   if (data)
-     {
-        memcpy(im->data, data, width * height * sizeof(uint32_t));
-        return im;
-     }
-   else
-      __imlib_FreeImage(im);
-   return NULL;
+
+   memcpy(im->data, data, width * height * sizeof(uint32_t));
+
+   return im;
 }
 
 EAPI                Imlib_Image
@@ -1001,21 +998,15 @@ imlib_clone_image(void)
 
    CHECK_PARAM_POINTER_RETURN("image", ctx->image, NULL);
    CAST_IMAGE(im_old, ctx->image);
-   if (__imlib_LoadImageData(im_old))
+
+   ctx->error = __imlib_LoadImageData(im_old);
+   if (ctx->error)
       return NULL;
-   /* Note: below check should've ensured by original image allocation,
-    * but better safe than sorry. */
-   if (!IMAGE_DIMENSIONS_OK(im_old->w, im_old->h))
+
+   im = __imlib_CreateImage(im_old->w, im_old->h, NULL, 0);
+   if (!im)
       return NULL;
-   im = __imlib_CreateImage(im_old->w, im_old->h, NULL);
-   if (!(im))
-      return NULL;
-   im->data = malloc(im->w * im->h * sizeof(uint32_t));
-   if (!(im->data))
-     {
-        __imlib_FreeImage(im);
-        return NULL;
-     }
+
    memcpy(im->data, im_old->data, im->w * im->h * sizeof(uint32_t));
    im->flags = im_old->flags;
    IM_FLAG_SET(im, F_UNCACHEABLE);
@@ -1026,6 +1017,7 @@ imlib_clone_image(void)
       im->format = strdup(im_old->format);
    if (im_old->file)
       im->file = strdup(im_old->file);
+
    return im;
 }
 
@@ -1035,79 +1027,52 @@ imlib_create_cropped_image(int x, int y, int width, int height)
    ImlibImage         *im, *im_old;
 
    CHECK_PARAM_POINTER_RETURN("image", ctx->image, NULL);
-   if (!IMAGE_DIMENSIONS_OK(abs(width), abs(height)))
-      return NULL;
    CAST_IMAGE(im_old, ctx->image);
-   if (__imlib_LoadImageData(im_old))
+
+   ctx->error = __imlib_LoadImageData(im_old);
+   if (ctx->error)
       return NULL;
-   im = __imlib_CreateImage(abs(width), abs(height), NULL);
-   im->data = malloc(abs(width * height) * sizeof(uint32_t));
-   if (!(im->data))
-     {
-        __imlib_FreeImage(im);
-        return NULL;
-     }
-   if (im_old->has_alpha)
-     {
-        im->has_alpha = 1;
-        __imlib_BlendImageToImage(im_old, im, 0, 0, 1, x, y, abs(width),
-                                  abs(height), 0, 0, width, height, NULL,
-                                  (ImlibOp) IMLIB_OP_COPY,
-                                  ctx->cliprect.x, ctx->cliprect.y,
-                                  ctx->cliprect.w, ctx->cliprect.h);
-     }
-   else
-     {
-        __imlib_BlendImageToImage(im_old, im, 0, 0, 0, x, y, abs(width),
-                                  abs(height), 0, 0, width, height, NULL,
-                                  (ImlibOp) IMLIB_OP_COPY,
-                                  ctx->cliprect.x, ctx->cliprect.y,
-                                  ctx->cliprect.w, ctx->cliprect.h);
-     }
+
+   im = __imlib_CreateImage(abs(width), abs(height), NULL, 0);
+   if (!im)
+      return NULL;
+
+   im->has_alpha = im_old->has_alpha;
+   __imlib_BlendImageToImage(im_old, im, 0, 0, im->has_alpha,
+                             x, y, abs(width), abs(height), 0, 0, width, height,
+                             NULL, (ImlibOp) IMLIB_OP_COPY,
+                             ctx->cliprect.x, ctx->cliprect.y,
+                             ctx->cliprect.w, ctx->cliprect.h);
+
    return im;
 }
 
 EAPI                Imlib_Image
-imlib_create_cropped_scaled_image(int source_x, int source_y,
-                                  int source_width, int source_height,
-                                  int destination_width, int destination_height)
+imlib_create_cropped_scaled_image(int src_x, int src_y,
+                                  int src_width, int src_height,
+                                  int dst_width, int dst_height)
 {
    ImlibImage         *im, *im_old;
 
    CHECK_PARAM_POINTER_RETURN("image", ctx->image, NULL);
-   if (!IMAGE_DIMENSIONS_OK(abs(destination_width), abs(destination_height)))
-      return NULL;
    CAST_IMAGE(im_old, ctx->image);
-   if (__imlib_LoadImageData(im_old))
+
+   ctx->error = __imlib_LoadImageData(im_old);
+   if (ctx->error)
       return NULL;
-   im = __imlib_CreateImage(abs(destination_width), abs(destination_height),
-                            NULL);
-   im->data =
-      malloc(abs(destination_width * destination_height) * sizeof(uint32_t));
-   if (!(im->data))
-     {
-        __imlib_FreeImage(im);
-        return NULL;
-     }
-   if (im_old->has_alpha)
-     {
-        im->has_alpha = 1;
-        __imlib_BlendImageToImage(im_old, im, ctx->anti_alias, 0, 1, source_x,
-                                  source_y, source_width, source_height, 0, 0,
-                                  destination_width, destination_height, NULL,
-                                  (ImlibOp) IMLIB_OP_COPY,
-                                  ctx->cliprect.x, ctx->cliprect.y,
-                                  ctx->cliprect.w, ctx->cliprect.h);
-     }
-   else
-     {
-        __imlib_BlendImageToImage(im_old, im, ctx->anti_alias, 0, 0, source_x,
-                                  source_y, source_width, source_height, 0, 0,
-                                  destination_width, destination_height, NULL,
-                                  (ImlibOp) IMLIB_OP_COPY,
-                                  ctx->cliprect.x, ctx->cliprect.y,
-                                  ctx->cliprect.w, ctx->cliprect.h);
-     }
+
+   im = __imlib_CreateImage(abs(dst_width), abs(dst_height), NULL, 0);
+   if (!im)
+      return NULL;
+
+   im->has_alpha = im_old->has_alpha;
+   __imlib_BlendImageToImage(im_old, im, ctx->anti_alias, 0, im->has_alpha,
+                             src_x, src_y, src_width, src_height,
+                             0, 0, dst_width, dst_height,
+                             NULL, (ImlibOp) IMLIB_OP_COPY,
+                             ctx->cliprect.x, ctx->cliprect.y,
+                             ctx->cliprect.w, ctx->cliprect.h);
+
    return im;
 }
 
@@ -1235,7 +1200,8 @@ imlib_image_flip_horizontal(void)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_FlipImageHoriz(im);
@@ -1248,7 +1214,8 @@ imlib_image_flip_vertical(void)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_FlipImageVert(im);
@@ -1261,7 +1228,8 @@ imlib_image_flip_diagonal(void)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_FlipImageDiagonal(im, 0);
@@ -1274,7 +1242,8 @@ imlib_image_orientate(int orientation)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    switch (orientation)
@@ -1313,7 +1282,8 @@ imlib_image_blur(int radius)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_BlurImage(im, radius);
@@ -1326,7 +1296,8 @@ imlib_image_sharpen(int radius)
 
    CAST_IMAGE(im, ctx->image);
    CHECK_PARAM_POINTER("image", ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_SharpenImage(im, radius);
@@ -1339,7 +1310,8 @@ imlib_image_tile_horizontal(void)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_TileImageHoriz(im);
@@ -1352,7 +1324,8 @@ imlib_image_tile_vertical(void)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_TileImageVert(im);
@@ -1365,7 +1338,8 @@ imlib_image_tile(void)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_TileImageHoriz(im);
@@ -1443,7 +1417,8 @@ imlib_apply_color_modifier(void)
    CHECK_PARAM_POINTER("image", ctx->image);
    CHECK_PARAM_POINTER("color_modifier", ctx->color_modifier);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_DataCmodApply(im->data, im->w, im->h, 0, im->has_alpha,
@@ -1480,7 +1455,8 @@ imlib_apply_color_modifier_to_rectangle(int x, int y, int width, int height)
       height = (im->h - y);
    if (height <= 0)
       return;
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_DataCmodApply(im->data + (y * im->w) + x, width, height,
@@ -1495,7 +1471,8 @@ imlib_image_draw_pixel(int x, int y, char make_updates)
 
    CHECK_PARAM_POINTER_RETURN("image", ctx->image, NULL);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return NULL;
    __imlib_DirtyImage(im);
    return __imlib_Point_DrawToImage(x, y, ctx->pixel, im,
@@ -1513,7 +1490,8 @@ imlib_image_draw_line(int x1, int y1, int x2, int y2, char make_updates)
 
    CHECK_PARAM_POINTER_RETURN("image", ctx->image, NULL);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return NULL;
    __imlib_DirtyImage(im);
    return __imlib_Line_DrawToImage(x1, y1, x2, y2, ctx->pixel,
@@ -1532,7 +1510,8 @@ imlib_image_draw_rectangle(int x, int y, int width, int height)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_Rectangle_DrawToImage(x, y, width, height, ctx->pixel,
@@ -1548,7 +1527,8 @@ imlib_image_fill_rectangle(int x, int y, int width, int height)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_Rectangle_FillToImage(x, y, width, height, ctx->pixel,
@@ -1566,18 +1546,21 @@ imlib_image_copy_alpha_to_image(Imlib_Image image_source, int x, int y)
    CHECK_PARAM_POINTER("image_destination", ctx->image);
    CAST_IMAGE(im, image_source);
    CAST_IMAGE(im2, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
-   if (__imlib_LoadImageData(im2))
+   ctx->error = __imlib_LoadImageData(im2);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_copy_alpha_data(im, im2, 0, 0, im->w, im->h, x, y);
 }
 
 EAPI void
-imlib_image_copy_alpha_rectangle_to_image(Imlib_Image image_source, int x,
-                                          int y, int width, int height,
-                                          int destination_x, int destination_y)
+imlib_image_copy_alpha_rectangle_to_image(Imlib_Image image_source,
+                                          int src_x, int src_y,
+                                          int src_width, int src_height,
+                                          int dst_x, int dst_y)
 {
    ImlibImage         *im, *im2;
 
@@ -1585,13 +1568,15 @@ imlib_image_copy_alpha_rectangle_to_image(Imlib_Image image_source, int x,
    CHECK_PARAM_POINTER("image_destination", ctx->image);
    CAST_IMAGE(im, image_source);
    CAST_IMAGE(im2, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
-   if (__imlib_LoadImageData(im2))
+   ctx->error = __imlib_LoadImageData(im2);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
-   __imlib_copy_alpha_data(im, im2, x, y, width, height, destination_x,
-                           destination_y);
+   __imlib_copy_alpha_data(im, im2, src_x, src_y, src_width, src_height,
+                           dst_x, dst_y);
 }
 
 EAPI void
@@ -1603,7 +1588,8 @@ imlib_image_scroll_rect(int x, int y, int width, int height, int delta_x,
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    if (delta_x > 0)
      {
@@ -1640,7 +1626,8 @@ imlib_image_copy_rect(int x, int y, int width, int height, int new_x, int new_y)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_copy_image_data(im, x, y, width, height, new_x, new_y);
@@ -1678,7 +1665,8 @@ imlib_image_fill_color_range_rectangle(int x, int y, int width, int height,
    CHECK_PARAM_POINTER("image", ctx->image);
    CHECK_PARAM_POINTER("color_range", ctx->color_range);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_DrawGradient(im, x, y, width, height,
@@ -1697,7 +1685,8 @@ imlib_image_fill_hsva_color_range_rectangle(int x, int y, int width, int height,
    CHECK_PARAM_POINTER("image", ctx->image);
    CHECK_PARAM_POINTER("color_range", ctx->color_range);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_DrawHsvaGradient(im, x, y, width, height,
@@ -1716,7 +1705,8 @@ imlib_image_query_pixel(int x, int y, Imlib_Color * color_return)
    CHECK_PARAM_POINTER("image", ctx->image);
    CHECK_PARAM_POINTER("color_return", color_return);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    if ((x < 0) || (x >= im->w) || (y < 0) || (y >= im->h))
      {
@@ -1743,7 +1733,8 @@ imlib_image_query_pixel_hsva(int x, int y, float *hue, float *saturation,
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    if ((x < 0) || (x >= im->w) || (y < 0) || (y >= im->h))
      {
@@ -1772,7 +1763,8 @@ imlib_image_query_pixel_hlsa(int x, int y, float *hue, float *lightness,
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    if ((x < 0) || (x >= im->w) || (y < 0) || (y >= im->h))
      {
@@ -1800,7 +1792,8 @@ imlib_image_query_pixel_cmya(int x, int y, int *cyan, int *magenta, int *yellow,
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    if ((x < 0) || (x >= im->w) || (y < 0) || (y >= im->h))
      {
@@ -1886,54 +1879,70 @@ imlib_image_remove_and_free_attached_data_value(const char *key)
 }
 
 static void
-_imlib_save_image(const char *file, int *err)
+_imlib_save_image(const char *file, FILE * fp)
 {
    ImlibImage         *im;
    ImlibLoadArgs       ila = { ILA0(ctx, 0, 0) };
 
    CHECK_PARAM_POINTER("image", ctx->image);
-   CHECK_PARAM_POINTER("file", file);
    CAST_IMAGE(im, ctx->image);
 
-   ctx->error = 0;
-
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
 
+   ila.fp = fp;
    __imlib_SaveImage(im, file, &ila);
    ctx->error = ila.err;
-   *err = ctx->error;
 }
 
 EAPI void
 imlib_save_image(const char *file)
 {
-   int                 err;
+   CHECK_PARAM_POINTER("file", file);
 
-   _imlib_save_image(file, &err);
+   _imlib_save_image(file, NULL);
 }
 
 EAPI void
 imlib_save_image_with_error_return(const char *file,
                                    Imlib_Load_Error * error_return)
 {
-   int                 err = 0;
+   CHECK_PARAM_POINTER("file", file);
 
-   _imlib_save_image(file, &err);
+   _imlib_save_image(file, NULL);
 
    if (error_return)
-      *error_return = __imlib_ErrorFromErrno(err, 1);
+      *error_return = __imlib_ErrorFromErrno(ctx->error, 1);
 }
 
 EAPI void
 imlib_save_image_with_errno_return(const char *file, int *error_return)
 {
-   int                 err = 0;
+   CHECK_PARAM_POINTER("file", file);
 
-   _imlib_save_image(file, &err);
+   _imlib_save_image(file, NULL);
 
    if (error_return)
-      *error_return = err;
+      *error_return = ctx->error;
+}
+
+EAPI void
+imlib_save_image_fd(int fd, const char *file)
+{
+   FILE               *fp;
+
+   fp = fdopen(fd, "wb");
+   if (!fp)
+     {
+        ctx->error = errno;
+        close(fd);
+        return;
+     }
+
+   _imlib_save_image(file, fp);
+
+   fclose(fp);
 }
 
 EAPI                Imlib_Image
@@ -1945,7 +1954,8 @@ imlib_create_rotated_image(double angle)
 
    CHECK_PARAM_POINTER_RETURN("image", ctx->image, NULL);
    CAST_IMAGE(im_old, ctx->image);
-   if (__imlib_LoadImageData(im_old))
+   ctx->error = __imlib_LoadImageData(im_old);
+   if (ctx->error)
       return NULL;
 
    d = hypot((double)(im_old->w + 4), (double)(im_old->h + 4)) / sqrt(2.0);
@@ -1959,16 +1969,9 @@ imlib_create_rotated_image(double angle)
    dx = (int)(cos(angle) * _ROTATE_PREC_MAX);
    dy = -(int)(sin(angle) * _ROTATE_PREC_MAX);
 
-   if (!IMAGE_DIMENSIONS_OK(sz, sz))
+   im = __imlib_CreateImage(sz, sz, NULL, 1);
+   if (!im)
       return NULL;
-
-   im = __imlib_CreateImage(sz, sz, NULL);
-   im->data = calloc(sz * sz, sizeof(uint32_t));
-   if (!(im->data))
-     {
-        __imlib_FreeImage(im);
-        return NULL;
-     }
 
    if (ctx->anti_alias)
      {
@@ -1986,21 +1989,22 @@ imlib_create_rotated_image(double angle)
 }
 
 void
-imlib_rotate_image_from_buffer(double angle, Imlib_Image source_image)
+imlib_rotate_image_from_buffer(double angle, Imlib_Image src_image)
 {
    ImlibImage         *im, *im_old;
    int                 x, y, dx, dy, sz;
    double              x1, y1, d;
 
    // source image (to rotate)
-   CHECK_PARAM_POINTER("source_image", source_image);
-   CAST_IMAGE(im_old, source_image);
+   CHECK_PARAM_POINTER("src_image", src_image);
+   CAST_IMAGE(im_old, src_image);
 
    // current context image
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
 
-   if (__imlib_LoadImageData(im_old))
+   ctx->error = __imlib_LoadImageData(im_old);
+   if (ctx->error)
       return;
 
    d = hypot((double)(im_old->w + 4), (double)(im_old->h + 4)) / sqrt(2.0);
@@ -2019,16 +2023,6 @@ imlib_rotate_image_from_buffer(double angle, Imlib_Image source_image)
    else
       sz = im->w;               // update sz with real width
 
-#if 0                           /* Not necessary 'cause destination is context */
-   im = __imlib_CreateImage(sz, sz, NULL);
-   im->data = calloc(sz * sz, sizeof(uint32_t));
-   if (!(im->data))
-     {
-        __imlib_FreeImage(im);
-        return;
-     }
-#endif
-
    if (ctx->anti_alias)
      {
         __imlib_RotateAA(im_old->data, im->data, im_old->w, im_old->w,
@@ -2045,58 +2039,60 @@ imlib_rotate_image_from_buffer(double angle, Imlib_Image source_image)
 }
 
 EAPI void
-imlib_blend_image_onto_image_at_angle(Imlib_Image source_image,
-                                      char merge_alpha, int source_x,
-                                      int source_y, int source_width,
-                                      int source_height, int destination_x,
-                                      int destination_y, int angle_x,
-                                      int angle_y)
+imlib_blend_image_onto_image_at_angle(Imlib_Image src_image, char merge_alpha,
+                                      int src_x, int src_y,
+                                      int src_width, int src_height,
+                                      int dst_x, int dst_y,
+                                      int angle_x, int angle_y)
 {
    ImlibImage         *im_src, *im_dst;
 
-   CHECK_PARAM_POINTER("source_image", source_image);
+   CHECK_PARAM_POINTER("src_image", src_image);
    CHECK_PARAM_POINTER("image", ctx->image);
-   CAST_IMAGE(im_src, source_image);
+   CAST_IMAGE(im_src, src_image);
    CAST_IMAGE(im_dst, ctx->image);
-   if (__imlib_LoadImageData(im_src))
+   ctx->error = __imlib_LoadImageData(im_src);
+   if (ctx->error)
       return;
-   if (__imlib_LoadImageData(im_dst))
+   ctx->error = __imlib_LoadImageData(im_dst);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im_dst);
    __imlib_BlendImageToImageSkewed(im_src, im_dst, ctx->anti_alias,
-                                   ctx->blend, merge_alpha, source_x,
-                                   source_y, source_width, source_height,
-                                   destination_x, destination_y, angle_x,
-                                   angle_y, 0, 0, ctx->color_modifier,
-                                   ctx->operation,
+                                   ctx->blend, merge_alpha,
+                                   src_x, src_y, src_width, src_height,
+                                   dst_x, dst_y, angle_x, angle_y,
+                                   0, 0, ctx->color_modifier, ctx->operation,
                                    ctx->cliprect.x, ctx->cliprect.y,
                                    ctx->cliprect.w, ctx->cliprect.h);
 }
 
 EAPI void
-imlib_blend_image_onto_image_skewed(Imlib_Image source_image,
-                                    char merge_alpha, int source_x,
-                                    int source_y, int source_width,
-                                    int source_height, int destination_x,
-                                    int destination_y, int h_angle_x,
-                                    int h_angle_y, int v_angle_x, int v_angle_y)
+imlib_blend_image_onto_image_skewed(Imlib_Image src_image, char merge_alpha,
+                                    int src_x, int src_y,
+                                    int src_width, int src_height,
+                                    int dst_x, int dst_y,
+                                    int h_angle_x, int h_angle_y,
+                                    int v_angle_x, int v_angle_y)
 {
    ImlibImage         *im_src, *im_dst;
 
-   CHECK_PARAM_POINTER("source_image", source_image);
+   CHECK_PARAM_POINTER("src_image", src_image);
    CHECK_PARAM_POINTER("image", ctx->image);
-   CAST_IMAGE(im_src, source_image);
+   CAST_IMAGE(im_src, src_image);
    CAST_IMAGE(im_dst, ctx->image);
-   if (__imlib_LoadImageData(im_src))
+   ctx->error = __imlib_LoadImageData(im_src);
+   if (ctx->error)
       return;
-   if (__imlib_LoadImageData(im_dst))
+   ctx->error = __imlib_LoadImageData(im_dst);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im_dst);
    __imlib_BlendImageToImageSkewed(im_src, im_dst, ctx->anti_alias,
-                                   ctx->blend, merge_alpha, source_x,
-                                   source_y, source_width, source_height,
-                                   destination_x, destination_y, h_angle_x,
-                                   h_angle_y, v_angle_x, v_angle_y,
+                                   ctx->blend, merge_alpha,
+                                   src_x, src_y, src_width, src_height,
+                                   dst_x, dst_y,
+                                   h_angle_x, h_angle_y, v_angle_x, v_angle_y,
                                    ctx->color_modifier, ctx->operation,
                                    ctx->cliprect.x, ctx->cliprect.y,
                                    ctx->cliprect.w, ctx->cliprect.h);
@@ -2129,7 +2125,8 @@ imlib_image_draw_polygon(ImlibPolygon poly, unsigned char closed)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_Polygon_DrawToImage((ImlibPoly *) poly, closed, ctx->pixel,
@@ -2145,7 +2142,8 @@ imlib_image_fill_polygon(ImlibPolygon poly)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_Polygon_FillToImage((ImlibPoly *) poly, ctx->pixel,
@@ -2169,7 +2167,8 @@ imlib_image_draw_ellipse(int xc, int yc, int a, int b)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_Ellipse_DrawToImage(xc, yc, a, b, ctx->pixel,
@@ -2185,7 +2184,8 @@ imlib_image_fill_ellipse(int xc, int yc, int a, int b)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    __imlib_Ellipse_FillToImage(xc, yc, a, b, ctx->pixel,
@@ -2208,7 +2208,8 @@ imlib_image_clear(void)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    memset(im->data, 0, im->w * im->h * sizeof(uint32_t));
@@ -2223,7 +2224,8 @@ imlib_image_clear_color(int r, int g, int b, int a)
 
    CHECK_PARAM_POINTER("image", ctx->image);
    CAST_IMAGE(im, ctx->image);
-   if (__imlib_LoadImageData(im))
+   ctx->error = __imlib_LoadImageData(im);
+   if (ctx->error)
       return;
    __imlib_DirtyImage(im);
    max = im->w * im->h;

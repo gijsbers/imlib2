@@ -190,8 +190,8 @@ _load(ImlibImage * im, int load_data)
                   inc = -h;
                   break;
                }
-             D("l,s,y=%d,%d, %d - x,y=%4ld,%4ld\n", l, y, l + y,
-               (ptr2 - im->data) % im->w, (ptr2 - im->data) / im->w);
+             DL("l,s,y=%d,%d, %d - x,y=%4ld,%4ld\n", l, y, l + y,
+                (ptr2 - im->data) % im->w, (ptr2 - im->data) / im->w);
 
              switch (jds.out_color_space)
                {
@@ -256,7 +256,7 @@ _save(ImlibImage * im)
    int                 rc;
    struct jpeg_compress_struct jcs;
    ImLib_JPEG_data     jdata;
-   FILE               *f;
+   FILE               *f = im->fi->fp;
    uint8_t            *buf;
    uint32_t           *ptr;
    JSAMPROW           *jbuf;
@@ -271,14 +271,10 @@ _save(ImlibImage * im)
 
    rc = LOAD_FAIL;
 
-   f = fopen(im->fi->name, "wb");
-   if (!f)
-      goto quit;
-
    /* set up error handling */
    jcs.err = _jdata_init(&jdata);
    if (sigsetjmp(jdata.setjmp_buffer, 1))
-      goto quit;
+      QUIT_WITH_RC(LOAD_FAIL);
 
    /* setup compress params */
    jpeg_create_compress(&jcs);
@@ -353,7 +349,6 @@ _save(ImlibImage * im)
    jpeg_finish_compress(&jcs);
    jpeg_destroy_compress(&jcs);
    free(buf);
-   fclose(f);
 
    return rc;
 }

@@ -11,7 +11,7 @@
 #include "Imlib2_Loader.h"
 
 #define DBG_PFX "LDR-bmp"
-#define Dx(fmt...)
+#define DD(fmt...)
 
 static const char  *const _formats[] = { "bmp" };
 
@@ -459,7 +459,7 @@ _load(ImlibImage * im, int load_data)
                   byte1 = buffer_ptr[0];
                   byte2 = buffer_ptr[1];
                   buffer_ptr += 2;
-                  Dx("%3d %3d: %02x %02x (%d %d)\n",
+                  DD("%3d %3d: %02x %02x (%d %d)\n",
                      x, y, byte1, byte2, byte2 >> 4, byte2 & 0xf);
                   if (byte1)
                     {
@@ -520,7 +520,7 @@ _load(ImlibImage * im, int load_data)
                             for (j = 0; j < l; j++)
                               {
                                  byte = *buffer_ptr++;
-                                 Dx("%3d %3d:   %d/%d: %2d %2d\n",
+                                 DD("%3d %3d:   %d/%d: %2d %2d\n",
                                     x, y, j, l, byte >> 4, byte & 0xf);
                                  *ptr++ = argbCmap[byte >> 4];
                                  if (++j < l)
@@ -583,7 +583,7 @@ _load(ImlibImage * im, int load_data)
                   byte1 = buffer_ptr[0];
                   byte2 = buffer_ptr[1];
                   buffer_ptr += 2;
-                  Dx("%3d %3d: %02x %02x\n", x, y, byte1, byte2);
+                  DD("%3d %3d: %02x %02x\n", x, y, byte1, byte2);
                   if (byte1)
                     {
                        pixel = argbCmap[byte2];
@@ -632,7 +632,7 @@ _load(ImlibImage * im, int load_data)
                             for (j = 0; j < l; j++)
                               {
                                  byte = *buffer_ptr++;
-                                 Dx("%3d %3d:   %d/%d: %2d\n",
+                                 DD("%3d %3d:   %d/%d: %2d\n",
                                     x, y, j, l, byte);
                                  *ptr++ = argbCmap[byte];
                               }
@@ -681,7 +681,7 @@ _load(ImlibImage * im, int load_data)
           {
              for (x = 0; x < w && buffer_ptr < buffer_end_safe; x++)
                {
-                  pixel = *(unsigned short *)buffer_ptr;
+                  pixel = *PCAST(const unsigned short *, buffer_ptr);
 
                   if (im->has_alpha)
                      a = SCALE(a, pixel);
@@ -730,7 +730,7 @@ _load(ImlibImage * im, int load_data)
           {
              for (x = 0; x < w && buffer_ptr < buffer_end_safe; x++)
                {
-                  pixel = *(unsigned int *)buffer_ptr;
+                  pixel = *PCAST(const unsigned int *, buffer_ptr);
 
                   if (im->has_alpha)
                      a = SCALE(a, pixel);
@@ -761,13 +761,9 @@ static int
 _save(ImlibImage * im)
 {
    int                 rc;
-   FILE               *f;
+   FILE               *f = im->fi->fp;
    int                 i, j, pad;
    uint32_t            pixel;
-
-   f = fopen(im->fi->name, "wb");
-   if (!f)
-      return LOAD_FAIL;
 
    rc = LOAD_SUCCESS;
 
@@ -805,8 +801,6 @@ _save(ImlibImage * im)
         for (j = 0; j < pad; j++)
            WriteleByte(f, 0);
      }
-
-   fclose(f);
 
    return rc;
 }

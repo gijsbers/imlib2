@@ -104,7 +104,7 @@ __imlib_FileContextOpen(ImlibImageFileInfo * fi, FILE * fp,
      }
    else
      {
-        fi->fp = fopen(fi->name, "rb");
+        fi->fp = __imlib_FileOpen(fi->name, "rb");
         if (!fi->fp)
            return -1;
      }
@@ -362,19 +362,42 @@ __imlib_GetCacheSize(void)
    return cache_size;
 }
 
-/* create a new image struct from data passed that is wize w x h then return */
-/* a pointer to that image sturct */
+/* Create a new image struct
+ * If data is non-zero use it for pixel data, otherwise allocate the
+ * pixel data buffer.
+ * If zero is set the pixel data buffer is zeroed. */
 ImlibImage         *
-__imlib_CreateImage(int w, int h, uint32_t * data)
+__imlib_CreateImage(int w, int h, uint32_t * data, int zero)
 {
    ImlibImage         *im;
+   uint32_t           *dptr = data;
+
+   if (!IMAGE_DIMENSIONS_OK(w, h))
+      return NULL;
+
+   if (!dptr)
+     {
+        if (zero)
+           dptr = calloc(w * h, sizeof(uint32_t));
+        else
+           dptr = malloc(w * h * sizeof(uint32_t));
+     }
+   if (!dptr)
+      return NULL;
 
    im = __imlib_ProduceImage();
+   if (!im)
+     {
+        if (!data)
+           free(dptr);
+        return NULL;
+     }
    im->w = w;
    im->h = h;
-   im->data = data;
+   im->data = dptr;
    im->references = 1;
    IM_FLAG_SET(im, F_UNCACHEABLE);
+
    return im;
 }
 
@@ -843,9 +866,10 @@ __imlib_SaveImage(ImlibImage * im, const char *file, ImlibLoadArgs * ila)
 {
    ImlibLoader        *l;
    ImlibLoaderCtx      ilc;
+   FILE               *fp = ila->fp;
    int                 loader_ret;
 
-   if (!file)
+   if (!file && !fp)
      {
         ila->err = ENOENT;
         return;
@@ -860,13 +884,27 @@ __imlib_SaveImage(ImlibImage * im, const char *file, ImlibLoadArgs * ila)
         return;
      }
 
+   if (!fp)
+     {
+        fp = __imlib_FileOpen(file, "wb");
+        if (!fp)
+          {
+             ila->err = errno;
+             return;
+          }
+     }
+
    if (ila->pfunc)
       __imlib_LoadCtxInit(im, &ilc, ila->pfunc, ila->pgran);
 
-   __imlib_ImageFileContextPush(im, strdup(file));
+   __imlib_ImageFileContextPush(im, file ? strdup(file) : NULL);
+   im->fi->fp = fp;
 
    /* call the saver */
    loader_ret = l->module->save(im);
+
+   if (!ila->fp)
+      fclose(fp);
 
    __imlib_ImageFileContextPop(im);
 
