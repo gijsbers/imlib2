@@ -4,10 +4,10 @@
 #include <X11/Xlib.h>
 
 typedef struct {
-   Display            *dpy;
-   Visual             *vis;
-   Colormap            cmap;
-   int                 depth;
+    Display        *dpy;
+    Visual         *vis;
+    Colormap        cmap;
+    int             depth;
 } ImlibContextX11;
 
-#endif /* X11_TYPES_H */
+#endif                          /* X11_TYPES_H */

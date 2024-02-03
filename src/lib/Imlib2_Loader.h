@@ -83,10 +83,10 @@ typedef struct _ImlibImage ImlibImage;
 
 #define DC(PFX, M, fmt...) if (__imlib_debug & M) __imlib_printf(PFX, fmt)
 
-#define DBG_FILE	0x0001
-#define DBG_LOAD	0x0002
-#define DBG_LDR 	0x0004
-#define DBG_LDR2	0x0008
+#define DBG_FILE    0x0001
+#define DBG_LOAD    0x0002
+#define DBG_LDR     0x0004
+#define DBG_LDR2    0x0008
 
 #define D(fmt...)  DC(DBG_PFX, DBG_LDR, fmt)
 #define Dx(fmt...) DC(NULL, DBG_LDR, fmt)
@@ -94,9 +94,9 @@ typedef struct _ImlibImage ImlibImage;
 
 extern unsigned int __imlib_debug;
 
-__PRINTF_2__ void   __imlib_printf(const char *pfx, const char *fmt, ...);
+__PRINTF_2__ void __imlib_printf(const char *pfx, const char *fmt, ...);
 
-unsigned int        __imlib_time_us(void);
+unsigned int    __imlib_time_us(void);
 
 #else
 
@@ -105,10 +105,10 @@ unsigned int        __imlib_time_us(void);
 #define Dx(fmt...)
 #define DL(fmt...)
 
-#endif /* IMLIB2_DEBUG */
+#endif                          /* IMLIB2_DEBUG */
 
 #define E(fmt...) __imlib_perror(DBG_PFX, fmt)
-__PRINTF_2__ void   __imlib_perror(const char *pfx, const char *fmt, ...);
+__PRINTF_2__ void __imlib_perror(const char *pfx, const char *fmt, ...);
 
 /* image.h */
 
@@ -131,44 +131,44 @@ __PRINTF_2__ void   __imlib_perror(const char *pfx, const char *fmt, ...);
 #define LOAD_BADFRAME   -4      /* Requested frame not found           */
 
 typedef struct _ImlibImageFileInfo {
-   struct _ImlibImageFileInfo *next;
-   char               *name;
-   FILE               *fp;
-   const void         *fdata;
-   off_t               fsize;
+    struct _ImlibImageFileInfo *next;
+    char           *name;
+    FILE           *fp;
+    const void     *fdata;
+    off_t           fsize;
 } ImlibImageFileInfo;
 
 typedef struct _ImlibLoaderCtx ImlibLoaderCtx;
 
 typedef struct _ImlibImageTag {
-   char               *key;
-   int                 val;
-   void               *data;
-   void                (*destructor)(ImlibImage * im, void *data);
-   struct _ImlibImageTag *next;
+    char           *key;
+    int             val;
+    void           *data;
+    void            (*destructor)(ImlibImage * im, void *data);
+    struct _ImlibImageTag *next;
 } ImlibImageTag;
 
 typedef struct {
-   int                 canvas_w;        /* Canvas size      */
-   int                 canvas_h;
-   int                 frame_count;     /* Number of frames */
-   int                 frame_x; /* Frame origin     */
-   int                 frame_y;
-   int                 frame_flags;     /* Frame flags      */
-   int                 frame_delay;     /* Frame delay (ms) */
-   int                 loop_count;      /* Animation loops  */
+    int             canvas_w;   /* Canvas size      */
+    int             canvas_h;
+    int             frame_count;        /* Number of frames */
+    int             frame_x;    /* Frame origin     */
+    int             frame_y;
+    int             frame_flags;        /* Frame flags      */
+    int             frame_delay;        /* Frame delay (ms) */
+    int             loop_count; /* Animation loops  */
 } ImlibImageFrame;
 
 struct _ImlibImage {
-   ImlibImageFileInfo *fi;
-   ImlibLoaderCtx     *lc;
+    ImlibImageFileInfo *fi;
+    ImlibLoaderCtx *lc;
 
-   int                 w, h;
-   uint32_t           *data;
-   char                has_alpha;
-   char                rsvd[3];
+    int             w, h;
+    uint32_t       *data;
+    char            has_alpha;
+    char            rsvd[3];
 
-   int                 frame;
+    int             frame;
 };
 
 /* Must match the ones in Imlib2.h.in */
@@ -177,36 +177,35 @@ struct _ImlibImage {
 #define FF_FRAME_DISPOSE_CLEAR  (1 << 2)        /* Clear before rendering next frame  */
 #define FF_FRAME_DISPOSE_PREV   (1 << 3)        /* Revert before rendering next frame */
 
-ImlibLoader        *__imlib_FindBestLoader(const char *file, const char *format,
-                                           int for_save);
-int                 __imlib_LoadEmbedded(ImlibLoader * l, ImlibImage * im,
-                                         int load_data, const char *file);
-int                 __imlib_LoadEmbeddedMem(ImlibLoader * l, ImlibImage * im,
-                                            int load_data, const void *fdata,
-                                            unsigned int fsize);
+ImlibLoader    *__imlib_FindBestLoader(const char *file, const char *format,
+                                       int for_save);
+int             __imlib_LoadEmbedded(ImlibLoader * l, ImlibImage * im,
+                                     int load_data, const char *file);
+int             __imlib_LoadEmbeddedMem(ImlibLoader * l, ImlibImage * im,
+                                        int load_data, const void *fdata,
+                                        unsigned int fsize);
 
-uint32_t           *__imlib_AllocateData(ImlibImage * im);
-void                __imlib_FreeData(ImlibImage * im);
+uint32_t       *__imlib_AllocateData(ImlibImage * im);
+void            __imlib_FreeData(ImlibImage * im);
 
-typedef void        (*ImlibDataDestructorFunction)(ImlibImage * im, void *data);
+typedef void    (*ImlibDataDestructorFunction)(ImlibImage * im, void *data);
 
-void                __imlib_AttachTag(ImlibImage * im, const char *key,
-                                      int val, void *data,
-                                      ImlibDataDestructorFunction destructor);
-ImlibImageTag      *__imlib_GetTag(const ImlibImage * im, const char *key);
-ImlibImageTag      *__imlib_RemoveTag(ImlibImage * im, const char *key);
-void                __imlib_FreeTag(ImlibImage * im, ImlibImageTag * t);
+void            __imlib_AttachTag(ImlibImage * im, const char *key,
+                                  int val, void *data,
+                                  ImlibDataDestructorFunction destructor);
+ImlibImageTag  *__imlib_GetTag(const ImlibImage * im, const char *key);
+ImlibImageTag  *__imlib_RemoveTag(ImlibImage * im, const char *key);
+void            __imlib_FreeTag(ImlibImage * im, ImlibImageTag * t);
 
-const char         *__imlib_GetKey(const ImlibImage * im);
+const char     *__imlib_GetKey(const ImlibImage * im);
 
-ImlibImageFrame    *__imlib_GetFrame(ImlibImage * im);
+ImlibImageFrame *__imlib_GetFrame(ImlibImage * im);
 
-void                __imlib_LoadProgressSetPass(ImlibImage * im,
-                                                int pass, int n_pass);
-int                 __imlib_LoadProgress(ImlibImage * im,
-                                         int x, int y, int w, int h);
-int                 __imlib_LoadProgressRows(ImlibImage * im,
-                                             int row, int nrows);
+void            __imlib_LoadProgressSetPass(ImlibImage * im,
+                                            int pass, int n_pass);
+int             __imlib_LoadProgress(ImlibImage * im,
+                                     int x, int y, int w, int h);
+int             __imlib_LoadProgressRows(ImlibImage * im, int row, int nrows);
 
 /* loader.h */
 
@@ -215,13 +214,13 @@ int                 __imlib_LoadProgressRows(ImlibImage * im,
 #define LDR_FLAG_KEEP   0x01    /* Don't unload loader */
 
 typedef struct {
-   unsigned char       ldr_version;     /* Module ABI version */
-   unsigned char       ldr_flags;       /* LDR_FLAG_... */
-   unsigned short      num_formats;     /* Length og known extension list */
-   const char         *const *formats;  /* Known extension list */
-   void                (*inex)(int init);       /* Module init/exit */
-   int                 (*load)(ImlibImage * im, int load_data);
-   int                 (*save)(ImlibImage * im);
+    unsigned char   ldr_version;        /* Module ABI version */
+    unsigned char   ldr_flags;  /* LDR_FLAG_... */
+    unsigned short  num_formats;        /* Length og known extension list */
+    const char     *const *formats;     /* Known extension list */
+    void            (*inex)(int init);  /* Module init/exit */
+    int             (*load)(ImlibImage * im, int load_data);
+    int             (*save)(ImlibImage * im);
 } ImlibLoaderModule;
 
 #define IMLIB_LOADER_(_fmts, _ldr, _svr, _inex, _flags) \
@@ -248,4 +247,4 @@ typedef struct {
 
 #define PCAST(T, p) ((T)(const void *)(p))
 
-#endif /* IMLIB2_LOADER_H */
+#endif                          /* IMLIB2_LOADER_H */

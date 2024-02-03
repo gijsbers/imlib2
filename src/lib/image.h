@@ -7,12 +7,12 @@
 
 #include "types.h"
 
-typedef void        (*ImlibDataDestructorFunction)(ImlibImage * im, void *data);
-typedef void       *(*ImlibImageDataMemoryFunction)(void *, size_t size);
+typedef void    (*ImlibDataDestructorFunction)(ImlibImage * im, void *data);
+typedef void   *(*ImlibImageDataMemoryFunction)(void *, size_t size);
 
-typedef int         (*ImlibProgressFunction)(ImlibImage * im, char percent,
-                                             int update_x, int update_y,
-                                             int update_w, int update_h);
+typedef int     (*ImlibProgressFunction)(ImlibImage * im, char percent,
+                                         int update_x, int update_y,
+                                         int update_w, int update_h);
 
 #define F_UNCACHEABLE           (1 << 1)
 #define F_ALWAYS_CHECK_DISK     (1 << 2)
@@ -31,114 +31,112 @@ typedef struct _ImlibImageFileInfo ImlibImageFileInfo;
 typedef struct _ImlibLoaderCtx ImlibLoaderCtx;
 
 typedef struct {
-   int                 left, right, top, bottom;
+    int             left, right, top, bottom;
 } ImlibBorder;
 
 typedef struct _ImlibImageTag {
-   char               *key;
-   int                 val;
-   void               *data;
-   void                (*destructor)(ImlibImage * im, void *data);
-   struct _ImlibImageTag *next;
+    char           *key;
+    int             val;
+    void           *data;
+    void            (*destructor)(ImlibImage * im, void *data);
+    struct _ImlibImageTag *next;
 } ImlibImageTag;
 
 typedef struct {
-   int                 canvas_w;        /* Canvas size      */
-   int                 canvas_h;
-   int                 frame_count;     /* Number of frames */
-   int                 frame_x; /* Frame origin     */
-   int                 frame_y;
-   int                 frame_flags;     /* Frame flags      */
-   int                 frame_delay;     /* Frame delay (ms) */
-   int                 loop_count;      /* Animation loops  */
+    int             canvas_w;   /* Canvas size      */
+    int             canvas_h;
+    int             frame_count;        /* Number of frames */
+    int             frame_x;    /* Frame origin     */
+    int             frame_y;
+    int             frame_flags;        /* Frame flags      */
+    int             frame_delay;        /* Frame delay (ms) */
+    int             loop_count; /* Animation loops  */
 } ImlibImageFrame;
 
 struct _ImlibImage {
-   ImlibImageFileInfo *fi;
-   ImlibLoaderCtx     *lc;
+    ImlibImageFileInfo *fi;
+    ImlibLoaderCtx *lc;
 
-   int                 w, h;
-   uint32_t           *data;
-   char                has_alpha;
-   char                rsvd[3];
+    int             w, h;
+    uint32_t       *data;
+    char            has_alpha;
+    char            rsvd[3];
 
-   int                 frame;
+    int             frame;
 
-   /* vvv Private vvv */
-   ImlibLoader        *loader;
-   ImlibImage         *next;
+    /* vvv Private vvv */
+    ImlibLoader    *loader;
+    ImlibImage     *next;
 
-   char               *file;
-   char               *key;
-   uint64_t            moddate;
-   unsigned int        flags;
-   int                 references;
-   char               *format;
+    char           *file;
+    char           *key;
+    uint64_t        moddate;
+    unsigned int    flags;
+    int             references;
+    char           *format;
 
-   ImlibBorder         border;
-   ImlibImageTag      *tags;
-   ImlibImageDataMemoryFunction data_memory_func;
+    ImlibBorder     border;
+    ImlibImageTag  *tags;
+    ImlibImageDataMemoryFunction data_memory_func;
 
-   ImlibImageFrame    *pframe;
-   /* ^^^ Private ^^^ */
+    ImlibImageFrame *pframe;
+    /* ^^^ Private ^^^ */
 };
 
 typedef struct {
-   FILE               *fp;
-   const void         *fdata;
-   size_t              fsize;
-   ImlibProgressFunction pfunc;
-   int                 pgran;
-   char                immed;
-   char                nocache;
-   int                 err;
-   int                 frame;
+    FILE           *fp;
+    const void     *fdata;
+    size_t          fsize;
+    ImlibProgressFunction pfunc;
+    int             pgran;
+    char            immed;
+    char            nocache;
+    int             err;
+    int             frame;
 } ImlibLoadArgs;
 
-ImlibLoader        *__imlib_FindBestLoader(const char *file, const char *format,
-                                           int for_save);
+ImlibLoader    *__imlib_FindBestLoader(const char *file, const char *format,
+                                       int for_save);
 
-ImlibImage         *__imlib_CreateImage(int w, int h, uint32_t * data,
-                                        int zero);
-ImlibImage         *__imlib_LoadImage(const char *file, ImlibLoadArgs * ila);
-int                 __imlib_LoadEmbedded(ImlibLoader * l, ImlibImage * im,
-                                         int load_data, const char *file);
-int                 __imlib_LoadEmbeddedMem(ImlibLoader * l, ImlibImage * im,
-                                            int load_data, const void *fdata,
-                                            unsigned int fsize);
-int                 __imlib_LoadImageData(ImlibImage * im);
-void                __imlib_DirtyImage(ImlibImage * im);
-void                __imlib_FreeImage(ImlibImage * im);
-void                __imlib_SaveImage(ImlibImage * im, const char *file,
-                                      ImlibLoadArgs * ila);
+ImlibImage     *__imlib_CreateImage(int w, int h, uint32_t * data, int zero);
+ImlibImage     *__imlib_LoadImage(const char *file, ImlibLoadArgs * ila);
+int             __imlib_LoadEmbedded(ImlibLoader * l, ImlibImage * im,
+                                     int load_data, const char *file);
+int             __imlib_LoadEmbeddedMem(ImlibLoader * l, ImlibImage * im,
+                                        int load_data, const void *fdata,
+                                        unsigned int fsize);
+int             __imlib_LoadImageData(ImlibImage * im);
+void            __imlib_DirtyImage(ImlibImage * im);
+void            __imlib_FreeImage(ImlibImage * im);
+void            __imlib_SaveImage(ImlibImage * im, const char *file,
+                                  ImlibLoadArgs * ila);
 
-uint32_t           *__imlib_AllocateData(ImlibImage * im);
-void                __imlib_FreeData(ImlibImage * im);
-void                __imlib_ReplaceData(ImlibImage * im, uint32_t * new_data);
+uint32_t       *__imlib_AllocateData(ImlibImage * im);
+void            __imlib_FreeData(ImlibImage * im);
+void            __imlib_ReplaceData(ImlibImage * im, uint32_t * new_data);
 
-void                __imlib_LoadProgressSetPass(ImlibImage * im,
-                                                int pass, int n_pass);
-int                 __imlib_LoadProgress(ImlibImage * im,
-                                         int x, int y, int w, int h);
-int                 __imlib_LoadProgressRows(ImlibImage * im,
-                                             int row, int nrows);
+void            __imlib_LoadProgressSetPass(ImlibImage * im,
+                                            int pass, int n_pass);
+int             __imlib_LoadProgress(ImlibImage * im,
+                                     int x, int y, int w, int h);
+int             __imlib_LoadProgressRows(ImlibImage * im, int row, int nrows);
 
-const char         *__imlib_GetKey(const ImlibImage * im);
+const char     *__imlib_GetKey(const ImlibImage * im);
 
-void                __imlib_AttachTag(ImlibImage * im, const char *key,
-                                      int val, void *data,
-                                      ImlibDataDestructorFunction destructor);
-ImlibImageTag      *__imlib_GetTag(const ImlibImage * im, const char *key);
-ImlibImageTag      *__imlib_RemoveTag(ImlibImage * im, const char *key);
-void                __imlib_FreeTag(ImlibImage * im, ImlibImageTag * t);
-void                __imlib_FreeAllTags(ImlibImage * im);
+void            __imlib_AttachTag(ImlibImage * im, const char *key,
+                                  int val, void *data,
+                                  ImlibDataDestructorFunction destructor);
+ImlibImageTag  *__imlib_GetTag(const ImlibImage * im, const char *key);
+ImlibImageTag  *__imlib_RemoveTag(ImlibImage * im, const char *key);
+void            __imlib_FreeTag(ImlibImage * im, ImlibImageTag * t);
+void            __imlib_FreeAllTags(ImlibImage * im);
 
-ImlibImageFrame    *__imlib_GetFrame(ImlibImage * im);
+ImlibImageFrame *__imlib_GetFrame(ImlibImage * im);
 
-void                __imlib_SetCacheSize(int size);
-int                 __imlib_DecacheFile(const char *file);
-int                 __imlib_GetCacheSize(void);
-int                 __imlib_CurrentCacheSize(void);
+void            __imlib_SetCacheSize(int size);
+int             __imlib_DecacheFile(const char *file);
+int             __imlib_GetCacheSize(void);
+int             __imlib_CurrentCacheSize(void);
 
 #define IM_FLAG_SET(im, f)      ((im)->flags |= (f))
 #define IM_FLAG_CLR(im, f)      ((im)->flags &= ~(f))

@@ -6,10 +6,10 @@
 #define D(fmt...)     if (__imlib_debug)     __imlib_printf(DBG_PFX, fmt)
 #define DC(M, fmt...) if (__imlib_debug & M) __imlib_printf(DBG_PFX, fmt)
 
-#define DBG_FILE	0x0001
-#define DBG_LOAD	0x0002
-#define DBG_LDR 	0x0004
-#define DBG_LDR2	0x0008
+#define DBG_FILE    0x0001
+#define DBG_LOAD    0x0002
+#define DBG_LDR     0x0004
+#define DBG_LDR2    0x0008
 
 #if __LOADER_COMMON_H
 #undef D
@@ -19,9 +19,9 @@
 
 extern unsigned int __imlib_debug;
 
-__PRINTF_2__ void   __imlib_printf(const char *pfx, const char *fmt, ...);
+__PRINTF_2__ void __imlib_printf(const char *pfx, const char *fmt, ...);
 
-unsigned int        __imlib_time_us(void);
+unsigned int    __imlib_time_us(void);
 
 #else
 
@@ -31,8 +31,8 @@ unsigned int        __imlib_time_us(void);
 #define DL(fmt...)
 #endif
 
-#endif /* IMLIB2_DEBUG */
+#endif                          /* IMLIB2_DEBUG */
 
-__PRINTF_2__ void   __imlib_perror(const char *pfx, const char *fmt, ...);
+__PRINTF_2__ void __imlib_perror(const char *pfx, const char *fmt, ...);
 
-#endif /* IMLIB2_DEDUG_H */
+#endif                          /* IMLIB2_DEDUG_H */

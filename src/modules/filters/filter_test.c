@@ -7,41 +7,41 @@
 #include "filter_common.h"
 
 void
-init(ImlibFilterInfo * info)
+init(ImlibFilterInfo *info)
 {
-   static const char  *const filters[] = { "tint", "cool_text", "gradient" };
-   int                 i = 0;
+    static const char *const filters[] = { "tint", "cool_text", "gradient" };
+    int             i = 0;
 
-   info->name = strdup("Test Filter");
-   info->author = strdup("Chris Ross - Boris - chris@darkrock.co.uk");
-   info->description =
-      strdup
-      ("This filter is used to show that the imlib2 filter system works!");
-   info->num_filters = 3;
-   info->filters = malloc(sizeof(char *) * 3);
-   for (i = 0; i < info->num_filters; i++)
-      info->filters[i] = strdup(filters[i]);
+    info->name = strdup("Test Filter");
+    info->author = strdup("Chris Ross - Boris - chris@darkrock.co.uk");
+    info->description =
+        strdup
+        ("This filter is used to show that the imlib2 filter system works!");
+    info->num_filters = 3;
+    info->filters = malloc(sizeof(char *) * 3);
+    for (i = 0; i < info->num_filters; i++)
+        info->filters[i] = strdup(filters[i]);
 }
 
 void
 deinit(void)
 {
-   return;
+    return;
 }
 
-void               *
-exec(char *filter, void *im, IFunctionParam * params)
+void           *
+exec(char *filter, void *im, IFunctionParam *params)
 {
-   Imlib_Image         imge = im;
-   Imlib_Image         anoim;
-   IFunctionParam     *ptr;
+    Imlib_Image     imge = im;
+    Imlib_Image     anoim;
+    IFunctionParam *ptr;
 
-   if (strcmp(filter, "tint") == 0)
-     {
+    if (strcmp(filter, "tint") == 0)
+    {
         Imlib_Color_Modifier cm;
-        uint8_t             atab[256];
-        int                 x = 0, y = 0, w = 0, h = 0;
-        uint8_t             r = 255, b = 255, g = 255, a = 255;
+        uint8_t         atab[256];
+        int             x = 0, y = 0, w = 0, h = 0;
+        uint8_t         r = 255, b = 255, g = 255, a = 255;
 
 /*     
       printf( "filter_test.c: tint called\n" );
@@ -52,16 +52,16 @@ exec(char *filter, void *im, IFunctionParam * params)
         h = imlib_image_get_height();
 
         for (ptr = params; ptr; ptr = ptr->next)
-          {
-             ASSIGN_DATA8("red", r);
-             ASSIGN_DATA8("blue", b);
-             ASSIGN_DATA8("green", g);
-             ASSIGN_INT("x", x);
-             ASSIGN_INT("y", y);
-             ASSIGN_INT("w", w);
-             ASSIGN_INT("h", h);
-             ASSIGN_DATA8("alpha", a);
-          }
+        {
+            ASSIGN_DATA8("red", r);
+            ASSIGN_DATA8("blue", b);
+            ASSIGN_DATA8("green", g);
+            ASSIGN_INT("x", x);
+            ASSIGN_INT("y", y);
+            ASSIGN_INT("w", w);
+            ASSIGN_INT("h", h);
+            ASSIGN_DATA8("alpha", a);
+        }
 /*
       printf( "Using values red=%d,blue=%d,green=%d,x=%d,y=%d,height=%d,width=%d,alpha=%d\n", r,b,g,x,y,w,h,a );
  */
@@ -88,25 +88,25 @@ exec(char *filter, void *im, IFunctionParam * params)
         imlib_context_set_image(imge);
 
         return imge;
-     }
+    }
 
 #if 0                           /* Nothing useful here */
-   if (strcmp(filter, "cool_text") == 0)
-     {
+    if (strcmp(filter, "cool_text") == 0)
+    {
         return imge;
-     }
+    }
 
-   if (strcmp(filter, "gradient") == 0)
-     {
-        int                 angle = 0;
+    if (strcmp(filter, "gradient") == 0)
+    {
+        int             angle = 0;
 
         for (ptr = params; ptr; ptr = ptr->next)
-          {
-             ASSIGN_INT("angle", angle);
-          }
+        {
+            ASSIGN_INT("angle", angle);
+        }
         return imge;
-     }
+    }
 #endif
 
-   return imge;
+    return imge;
 }

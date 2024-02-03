@@ -10,11 +10,11 @@
 #endif
 
 #define FN_(sym) \
-	.global PR_(sym); \
-	HIDDEN_(sym); \
-	.type PR_(sym),@function;
+    .global PR_(sym); \
+    HIDDEN_(sym); \
+    .type PR_(sym),@function;
 #define SIZE(sym) \
-	.size PR_(sym),.-PR_(sym); \
-	.align 8;
+    .size PR_(sym),.-PR_(sym); \
+    .align 8;
 
-#endif /* __ASM_H */
+#endif                          /* __ASM_H */

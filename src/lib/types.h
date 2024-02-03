@@ -8,10 +8,10 @@ typedef struct _ImlibLoader ImlibLoader;
 
 typedef struct _ImlibImage ImlibImage;
 
-typedef int         ImlibOp;
+typedef int     ImlibOp;
 
 typedef struct _ImlibColorModifier ImlibColorModifier;
 
 typedef struct _ImlibUpdate ImlibUpdate;
 
-#endif /* TYPES_H */
+#endif                          /* TYPES_H */

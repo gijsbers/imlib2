@@ -1,3 +1,31 @@
+v1.12.2 - 2024-02-03
+--------------------
+Chema Gonzalez (3):
+      Y4M loader: fix support for unexpected framerates
+      Y4M loader: fix C option analysis
+      Y4M loader: add error messages on parsing errors
+
+Kim Woelders (15):
+      test_save: Update crcs for jxl saver (libjxl 0.8.0)
+      x11_grab: Remove some obsolete code
+      Y4M loader: Guard some debug code properly
+      Consistently use #if IMLIB2_DEBUG (not #ifdef)
+      test_load_2: Check some more y4m files
+      Y4M loader: Avoid use of sscanf() in frame rate parsing
+      ANI loader: Avoid debug line when image does not have proper signature
+      PNG loader: Properly suppress messages from libpng
+      Y4M loader: Fix warning in non-debug build
+      Change formatting style
+      PNG saver: Avoid potential issues around setjmp/longjmp
+      JPG saver: Fix error path
+      TIFF loader: Properly suppress messages from libtiff
+      savers: Fix error returns
+      v1.12.2
+
+NRK (2):
+      PNG saver: avoid double-free on write errors
+      Y4M loader: don't fail on newline
+
 v1.12.1 - 2023-09-21
 --------------------
 Kim Woelders (12):

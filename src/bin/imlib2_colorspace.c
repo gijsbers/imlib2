@@ -11,65 +11,65 @@
 int
 main(int argc, char **argv)
 {
-   Window              win;
-   int                 w, h;
-   Imlib_Image         im_bg = NULL;
-   XEvent              ev;
-   KeySym              keysym;
-   Imlib_Color_Range   range;
+    Window          win;
+    int             w, h;
+    Imlib_Image     im_bg = NULL;
+    XEvent          ev;
+    KeySym          keysym;
+    Imlib_Color_Range range;
 
 #if ENABLE_TEXT
-   Imlib_Font          font;
-   int                 tw, th;
+    Imlib_Font      font;
+    int             tw, th;
 #endif
 
-   prog_x11_init();
+    prog_x11_init();
 
-   win = prog_x11_create_window("imlib2_colorspace", 100, 100);
+    win = prog_x11_create_window("imlib2_colorspace", 100, 100);
 
    /**
     * Start rendering
     */
 #if ENABLE_TEXT
-   imlib_set_font_cache_size(512 * 1024);
-   imlib_add_path_to_font_path(PACKAGE_DATA_DIR "/data/fonts");
+    imlib_set_font_cache_size(512 * 1024);
+    imlib_add_path_to_font_path(PACKAGE_DATA_DIR "/data/fonts");
 #endif
-   imlib_context_set_drawable(win);
-   imlib_context_set_blend(0);
-   imlib_context_set_color_modifier(NULL);
-   imlib_context_set_blend(0);
+    imlib_context_set_drawable(win);
+    imlib_context_set_blend(0);
+    imlib_context_set_color_modifier(NULL);
+    imlib_context_set_blend(0);
 
-   im_bg = imlib_create_image(600, 400);
-   imlib_context_set_image(im_bg);
-   w = imlib_image_get_width();
-   h = imlib_image_get_height();
-   imlib_context_set_color(128, 128, 255, 255);
-   imlib_image_fill_rectangle(0, 0, w, h);
+    im_bg = imlib_create_image(600, 400);
+    imlib_context_set_image(im_bg);
+    w = imlib_image_get_width();
+    h = imlib_image_get_height();
+    imlib_context_set_color(128, 128, 255, 255);
+    imlib_image_fill_rectangle(0, 0, w, h);
 
-   XResizeWindow(disp, win, w, h);
-   XMapWindow(disp, win);
-   XSync(disp, False);
+    XResizeWindow(disp, win, w, h);
+    XMapWindow(disp, win);
+    XSync(disp, False);
 
-   while (1)
-     {
+    while (1)
+    {
         do
-          {
-             XNextEvent(disp, &ev);
-             switch (ev.type)
-               {
-               default:
-                  if (prog_x11_event(&ev))
-                     goto quit;
-                  break;
-               case KeyPress:
-                  keysym = XLookupKeysym(&ev.xkey, 0);
-                  if (keysym == XK_q || keysym == XK_Escape)
-                     goto quit;
-                  break;
-               case ButtonRelease:
-                  goto quit;
-               }
-          }
+        {
+            XNextEvent(disp, &ev);
+            switch (ev.type)
+            {
+            default:
+                if (prog_x11_event(&ev))
+                    goto quit;
+                break;
+            case KeyPress:
+                keysym = XLookupKeysym(&ev.xkey, 0);
+                if (keysym == XK_q || keysym == XK_Escape)
+                    goto quit;
+                break;
+            case ButtonRelease:
+                goto quit;
+            }
+        }
         while (XPending(disp));
 
         imlib_context_set_image(im_bg);
@@ -81,19 +81,19 @@ main(int argc, char **argv)
 #if ENABLE_TEXT
         font = imlib_load_font("notepad/15");
         if (font)
-          {
-             char                text[4096];
+        {
+            char            text[4096];
 
-             imlib_context_set_font(font);
-             imlib_context_set_color(0, 0, 0, 255);
-             sprintf(text, "RGBA range, 2 points, from red to magenta");
-             imlib_get_text_size(text, &tw, &th);
-             imlib_text_draw(300 - tw / 2, 180 - th / 2, text);
-             sprintf(text, "HSVA range, 2 points, from red to magenta");
-             imlib_get_text_size(text, &tw, &th);
-             imlib_text_draw(300 - tw / 2, 380 - th / 2, text);
-             imlib_free_font();
-          }
+            imlib_context_set_font(font);
+            imlib_context_set_color(0, 0, 0, 255);
+            sprintf(text, "RGBA range, 2 points, from red to magenta");
+            imlib_get_text_size(text, &tw, &th);
+            imlib_text_draw(300 - tw / 2, 180 - th / 2, text);
+            sprintf(text, "HSVA range, 2 points, from red to magenta");
+            imlib_get_text_size(text, &tw, &th);
+            imlib_text_draw(300 - tw / 2, 380 - th / 2, text);
+            imlib_free_font();
+        }
 #endif
 
         /* Draw rectangle w/ RGBA gradient */
@@ -117,8 +117,8 @@ main(int argc, char **argv)
         imlib_free_color_range();
 
         imlib_render_image_on_drawable(0, 0);
-     }
+    }
 
- quit:
-   return 0;
+  quit:
+    return 0;
 }

@@ -266,7 +266,7 @@ nc = (tmp | (-(tmp >> 8))) & (~(tmp >> 9));
 tmp = (cc) + (((c) - 127) << 1); \
 nc = (tmp | (-(tmp >> 8))) & (~(tmp >> 9));
 
-extern uint8_t      pow_lut[256][256];
+extern uint8_t  pow_lut[256][256];
 
 #define BLEND_DST_ALPHA(r1, g1, b1, a1, dest) \
 { uint8_t _aa; \
@@ -298,36 +298,36 @@ RESHADE_COLOR_WITH_ALPHA(a1, G_VAL(dest), g1, G_VAL(dest)); \
 RESHADE_COLOR_WITH_ALPHA(a1, B_VAL(dest), b1, B_VAL(dest));
 
 enum _imlibop {
-   OP_COPY,
-   OP_ADD,
-   OP_SUBTRACT,
-   OP_RESHADE
+    OP_COPY,
+    OP_ADD,
+    OP_SUBTRACT,
+    OP_RESHADE
 };
 
-typedef void        (*ImlibBlendFunction)(uint32_t *, int, uint32_t *, int, int,
-                                          int, ImlibColorModifier *);
+typedef void    (*ImlibBlendFunction)(uint32_t *, int, uint32_t *, int, int,
+                                      int, ImlibColorModifier *);
 
-ImlibBlendFunction  __imlib_GetBlendFunction(ImlibOp op, char merge_alpha,
-                                             char blend, char rgb_src,
-                                             ImlibColorModifier * cm);
-void                __imlib_BlendImageToImage(ImlibImage * im_src,
-                                              ImlibImage * im_dst, char aa,
-                                              char blend, char merge_alpha,
-                                              int ssx, int ssy,
-                                              int ssw, int ssh,
-                                              int ddx, int ddy,
-                                              int ddw, int ddh,
-                                              ImlibColorModifier * cm,
-                                              ImlibOp op, int clx, int cly,
-                                              int clw, int clh);
-void                __imlib_BlendRGBAToData(uint32_t * src, int src_w,
-                                            int src_h, uint32_t * dst,
-                                            int dst_w, int dst_h, int sx,
-                                            int sy, int dx, int dy, int w,
-                                            int h, char blend, char merge_alpha,
-                                            ImlibColorModifier * cm, ImlibOp op,
-                                            char rgb_src);
-void                __imlib_build_pow_lut(void);
+ImlibBlendFunction __imlib_GetBlendFunction(ImlibOp op, char merge_alpha,
+                                            char blend, char rgb_src,
+                                            ImlibColorModifier * cm);
+void            __imlib_BlendImageToImage(ImlibImage * im_src,
+                                          ImlibImage * im_dst, char aa,
+                                          char blend, char merge_alpha,
+                                          int ssx, int ssy,
+                                          int ssw, int ssh,
+                                          int ddx, int ddy,
+                                          int ddw, int ddh,
+                                          ImlibColorModifier * cm,
+                                          ImlibOp op, int clx, int cly,
+                                          int clw, int clh);
+void            __imlib_BlendRGBAToData(uint32_t * src, int src_w,
+                                        int src_h, uint32_t * dst,
+                                        int dst_w, int dst_h, int sx,
+                                        int sy, int dx, int dy, int w,
+                                        int h, char blend, char merge_alpha,
+                                        ImlibColorModifier * cm, ImlibOp op,
+                                        char rgb_src);
+void            __imlib_build_pow_lut(void);
 
 /* *INDENT-OFF* */
 #ifdef DO_MMX_ASM

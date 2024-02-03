@@ -11,11 +11,10 @@
 #define ORIENT_LEFTBOT   8
 
 typedef struct {
-   unsigned char       orientation;
-   char                swap_wh;
+    unsigned char   orientation;
+    char            swap_wh;
 } ExifInfo;
 
-int                 exif_parse(const void *data, unsigned int len,
-                               ExifInfo * ei);
+int             exif_parse(const void *data, unsigned int len, ExifInfo * ei);
 
-#endif /* EXIF_PARSE_H */
+#endif                          /* EXIF_PARSE_H */
