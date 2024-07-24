@@ -1,9 +1,7 @@
 #include <config.h>
 #include "asm.h"
 
-#ifdef DO_MMX_ASM
-
-/*\ 
+/*\
 |*| MMX assembly scaling routine for Imlib2
 |*| Written by Willem Monsuwe <willem@stack.nl>
 \*/
@@ -293,7 +291,7 @@ PR_(imlib_Scale_mmx_AARGBA):
 	punpcklbw %mm7, %mm0
 	psllw $6, %mm0
 	pmulhw %mm5, %mm0
-	
+
 	/*\ i = 0x4000 - My \*/
 	movl $0x4000, %ebx
 	subl My, %ebx
@@ -307,18 +305,18 @@ PR_(imlib_Scale_mmx_AARGBA):
 	psllw $6, %mm1
 	pmulhw %mm4, %mm1
 	paddw %mm1, %mm0
-	
+
 	/*\ i -= Cy; while (i > Cy) \*/
 	subl Cy, %ebx
 2:
 	cmpl Cy, %ebx
 	jg 1b
-	
+
 	/*\ mm6 = i \*/
 	movd %ebx, %mm6
 	punpcklwd %mm6, %mm6
 	punpckldq %mm6, %mm6
-	
+
 	/*\ p += sow; v += (*p * i) >> 10 \*/
 	addl sow_4, %eax
 	movd (%eax), %mm1
@@ -336,7 +334,7 @@ PR_(imlib_Scale_mmx_AARGBA):
 	movd %eax, %mm3
 	punpcklwd %mm3, %mm3
 	punpckldq %mm3, %mm3
-	
+
 	/*\ p + 1 \*/
 	movl %esi, %eax
 	addl $4, %eax
@@ -345,7 +343,7 @@ PR_(imlib_Scale_mmx_AARGBA):
 	punpcklbw %mm7, %mm2
 	psllw $6, %mm2
 	pmulhw %mm5, %mm2
-	
+
 	/*\ i = 0x4000 - My \*/
 	movl $0x4000, %ebx
 	subl My, %ebx
@@ -359,13 +357,13 @@ PR_(imlib_Scale_mmx_AARGBA):
 	psllw $6, %mm1
 	pmulhw %mm4, %mm1
 	paddw %mm1, %mm2
-	
+
 	/*\ i -= Cy; while (i > Cy) \*/
 	subl Cy, %ebx
 2:
 	cmpl Cy, %ebx
 	jg 1b
-	
+
 	/*\ p += sow; v += (*p * i) >> 10 \*/
 	addl sow_4, %eax
 	movd (%eax), %mm1
@@ -425,7 +423,7 @@ PR_(imlib_Scale_mmx_AARGBA):
 	movd %eax, %mm3
 	punpcklwd %mm3, %mm3
 	punpckldq %mm3, %mm3
-	
+
 	/*\ x = -dw \*/
 	movl dw, %ecx
 	negl %ecx
@@ -459,7 +457,7 @@ PR_(imlib_Scale_mmx_AARGBA):
 	punpcklbw %mm7, %mm0
 	psllw $6, %mm0
 	pmulhw %mm5, %mm0
-	
+
 	/*\ i = 0x4000 - Mx \*/
 	movl $0x4000, %ebx
 	subl Mx, %ebx
@@ -473,18 +471,18 @@ PR_(imlib_Scale_mmx_AARGBA):
 	psllw $6, %mm1
 	pmulhw %mm4, %mm1
 	paddw %mm1, %mm0
-	
+
 	/*\ i -= Cx; while (i > Cx) \*/
 	subl Cx, %ebx
 2:
 	cmpl Cx, %ebx
 	jg 1b
-	
+
 	/*\ mm6 = i \*/
 	movd %ebx, %mm6
 	punpcklwd %mm6, %mm6
 	punpckldq %mm6, %mm6
-	
+
 	/*\ p += sow; v += (*p * i) >> 10 \*/
 	addl $4, %eax
 	movd (%eax), %mm1
@@ -504,7 +502,7 @@ PR_(imlib_Scale_mmx_AARGBA):
 	punpcklbw %mm7, %mm2
 	psllw $6, %mm2
 	pmulhw %mm5, %mm2
-	
+
 	/*\ i = 0x4000 - Mx \*/
 	movl $0x4000, %ebx
 	subl Mx, %ebx
@@ -518,13 +516,13 @@ PR_(imlib_Scale_mmx_AARGBA):
 	psllw $6, %mm1
 	pmulhw %mm4, %mm1
 	paddw %mm1, %mm2
-	
+
 	/*\ i -= Cx; while (i > Cx) \*/
 	subl Cx, %ebx
 2:
 	cmpl Cx, %ebx
 	jg 1b
-	
+
 	/*\ p += sow; v += (*p * i) >> 10 \*/
 	addl $4, %eax
 	movd (%eax), %mm1
@@ -604,14 +602,14 @@ PR_(imlib_Scale_mmx_AARGBA):
 	movd %ebx, %mm5
 	punpcklwd %mm5, %mm5
 	punpckldq %mm5, %mm5
-	
+
 	/*\ p = sptr; v = (*p * Mx) >> 9 \*/
 	movl %esi, %eax
 	movd (%eax), %mm0
 	punpcklbw %mm7, %mm0
 	psllw $7, %mm0
 	pmulhw %mm5, %mm0
-	
+
 	/*\ i = 0x4000 - Mx \*/
 	movl $0x4000, %ebx
 	subl Mx, %ebx
@@ -625,18 +623,18 @@ PR_(imlib_Scale_mmx_AARGBA):
 	psllw $7, %mm1
 	pmulhw %mm3, %mm1
 	paddw %mm1, %mm0
-	
+
 	/*\ i -= Cx; while (i > Cx) \*/
 	subl Cx, %ebx
 2:
 	cmpl Cx, %ebx
 	jg 1b
-	
+
 	/*\ mm6 = i \*/
 	movd %ebx, %mm6
 	punpcklwd %mm6, %mm6
 	punpckldq %mm6, %mm6
-	
+
 	/*\ v += (*++p * i) >> 9 \*/
 	addl $4, %eax
 	movd (%eax), %mm1
@@ -651,7 +649,7 @@ PR_(imlib_Scale_mmx_AARGBA):
 	punpckldq %mm4, %mm4
 	psllw $2, %mm0
 	pmulhw %mm4, %mm0
-	
+
 	/*\ j = 0x4000 - My \*/
 	movl $0x4000, %edx
 	subl My, %edx
@@ -666,7 +664,7 @@ PR_(imlib_Scale_mmx_AARGBA):
 	punpcklbw %mm7, %mm1
 	psllw $7, %mm1
 	pmulhw %mm5, %mm1
-	
+
 	/*\ i = 0x4000 - Mx \*/
 	movl $0x4000, %ebx
 	subl Mx, %ebx
@@ -680,13 +678,13 @@ PR_(imlib_Scale_mmx_AARGBA):
 	psllw $7, %mm2
 	pmulhw %mm3, %mm2
 	paddw %mm2, %mm1
-	
+
 	/*\ i -= Cx; while (i > Cx) \*/
 	subl Cx, %ebx
 2:
 	cmpl Cx, %ebx
 	jg 1b
-	
+
 	/*\ vx += (*++p * i) >> 9 \*/
 	addl $4, %eax
 	movd (%eax), %mm2
@@ -702,13 +700,13 @@ PR_(imlib_Scale_mmx_AARGBA):
 	psllw $2, %mm1
 	pmulhw %mm4, %mm1
 	paddw %mm1, %mm0
-	
+
 	/*\ j -= Cy; while (j > Cy) \*/
 	subl Cy, %edx
 4:
 	cmpl Cy, %edx
 	jg 3b
-	
+
 	/*\ sptr += sow; p = sptr \*/
 	addl sow_4, %esi
 	movl %esi, %eax
@@ -717,7 +715,7 @@ PR_(imlib_Scale_mmx_AARGBA):
 	punpcklbw %mm7, %mm1
 	psllw $7, %mm1
 	pmulhw %mm5, %mm1
-	
+
 	/*\ i = 0x4000 - Mx \*/
 	movl $0x4000, %ebx
 	subl Mx, %ebx
@@ -731,13 +729,13 @@ PR_(imlib_Scale_mmx_AARGBA):
 	psllw $7, %mm2
 	pmulhw %mm3, %mm2
 	paddw %mm2, %mm1
-	
+
 	/*\ i -= Cx; while (i > Cx) \*/
 	subl Cx, %ebx
 2:
 	cmpl Cx, %ebx
 	jg 1b
-	
+
 	/*\ vx += (*++p * i) >> 9 \*/
 	addl $4, %eax
 	movd (%eax), %mm2
@@ -787,8 +785,6 @@ PR_(imlib_Scale_mmx_AARGBA):
 	ret
 
 SIZE(imlib_Scale_mmx_AARGBA)
-
-#endif
 
 #ifdef __ELF__
 .section .note.GNU-stack,"",@progbits

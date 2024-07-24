@@ -17,4 +17,15 @@
     .size PR_(sym),.-PR_(sym); \
     .align 8;
 
+#define ENDBR_
+#ifdef __CET__
+#ifdef __has_include
+#if __has_include(<cet.h>)
+#include <cet.h>
+#undef  ENDBR_
+#define ENDBR_ _CET_ENDBR
+#endif
+#endif
+#endif
+
 #endif                          /* __ASM_H */

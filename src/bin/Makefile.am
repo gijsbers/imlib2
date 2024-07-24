@@ -23,7 +23,7 @@ imlib2_conv_SOURCES = imlib2_conv.c $(SRCS_UTIL)
 imlib2_conv_LDADD   = $(top_builddir)/src/lib/libImlib2.la
 
 imlib2_load_SOURCES = imlib2_load.c $(SRCS_UTIL)
-imlib2_load_LDADD   = $(top_builddir)/src/lib/libImlib2.la $(CLOCK_LIBS)
+imlib2_load_LDADD   = $(top_builddir)/src/lib/libImlib2.la -lz $(CLOCK_LIBS)
 
 imlib2_show_SOURCES = imlib2_show.c $(SRCS_X11)
 imlib2_show_LDADD   = $(top_builddir)/src/lib/libImlib2.la -lX11 -lm

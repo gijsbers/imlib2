@@ -1,9 +1,7 @@
 #include <config.h>
 #include "asm.h"
 
-#ifdef DO_AMD64_ASM
-
-/*\ 
+/*\
 |*| AMD64 SSE2 assembly blending routines for Imlib2
 |*| Written by John Slaten <zartheenumerator@comcast.net>
 |*| Based on MMX routines written by Willem Monsuwe <willem@stack.nl>
@@ -87,7 +85,7 @@ FN_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod)
 FN_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod)
 
 .extern pow_lut
-	
+
 /*\ SSE register use:
 |*| %xmm1 = Source value
 |*| %xmm2 = Destination value
@@ -104,16 +102,10 @@ FN_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod)
 |*| %r10d = sw
 |*| %r11d = dw
 \*/
-	
-
-
-
-
-
-
 
 
 #define ENTER		\
+	ENDBR_		; \
 	pushq %rbp	; \
 	movq %rsp, %rbp	; \
 	pushq %rbx	; \
@@ -130,7 +122,7 @@ FN_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod)
 	jz 9f		; \
 	testq %r9, %r9	; \
 	jz 9f
-	
+
 #define LEAVE		\
 	popq %r14	; \
 	popq %r13	; \
@@ -147,20 +139,20 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	movdqa c1(%rip), %xmm5
 	movdqa m00XXXXXX(%rip), %xmm6
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -168,7 +160,7 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -213,13 +205,13 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -242,10 +234,10 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -286,13 +278,13 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -315,10 +307,10 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -359,13 +351,13 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -388,10 +380,10 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -432,13 +424,13 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -461,10 +453,10 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -505,13 +497,13 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -534,10 +526,10 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -578,13 +570,13 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -607,10 +599,10 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -651,13 +643,13 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -680,10 +672,10 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -724,13 +716,13 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -753,10 +745,10 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -781,13 +773,13 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -809,10 +801,10 @@ PR_(imlib_amd64_blend_rgba_to_rgb_cmod):
 	/* Repack new pixels */
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -827,20 +819,20 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	movdqa mX000X000X000X000(%rip), %xmm6
 	movq pow_lut@GOTPCREL(%rip), %r13
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -848,7 +840,7 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -916,7 +908,7 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -934,10 +926,10 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -1001,7 +993,7 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1019,10 +1011,10 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -1086,7 +1078,7 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1104,10 +1096,10 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -1171,7 +1163,7 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1189,10 +1181,10 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -1256,7 +1248,7 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1274,10 +1266,10 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -1341,7 +1333,7 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1359,10 +1351,10 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -1426,7 +1418,7 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1444,10 +1436,10 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -1511,7 +1503,7 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1529,10 +1521,10 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -1568,7 +1560,7 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1585,10 +1577,10 @@ PR_(imlib_amd64_blend_rgba_to_rgba_cmod):
 	/* repack new pixels */
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -1603,20 +1595,20 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	movdqa mX000X000X000X000(%rip), %xmm6
 	movq pow_lut@GOTPCREL(%rip), %r13
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -1624,7 +1616,7 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -1690,7 +1682,7 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1708,10 +1700,10 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -1773,7 +1765,7 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1791,10 +1783,10 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -1856,7 +1848,7 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1874,10 +1866,10 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -1939,7 +1931,7 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -1957,10 +1949,10 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2022,7 +2014,7 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -2040,10 +2032,10 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2105,7 +2097,7 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -2123,10 +2115,10 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2188,7 +2180,7 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -2206,10 +2198,10 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2271,7 +2263,7 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -2289,10 +2281,10 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -2327,7 +2319,7 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* unpack source and dest */
@@ -2344,10 +2336,10 @@ PR_(imlib_amd64_blend_rgb_to_rgba_cmod):
 	/* repack new pixels */
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -2360,20 +2352,20 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	movdqa c1(%rip), %xmm5
 	movdqa m00XXXXXX(%rip), %xmm6
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -2381,7 +2373,7 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -2424,13 +2416,13 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -2453,10 +2445,10 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2495,13 +2487,13 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -2524,10 +2516,10 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2566,13 +2558,13 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -2595,10 +2587,10 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2637,13 +2629,13 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -2666,10 +2658,10 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2708,13 +2700,13 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -2737,10 +2729,10 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2779,13 +2771,13 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -2808,10 +2800,10 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2850,13 +2842,13 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -2879,10 +2871,10 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -2921,13 +2913,13 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -2950,10 +2942,10 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -2972,18 +2964,18 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	movb %al, %bl
 	movb 0x200(%r14, %rbx), %dl
 	movd %edx, %xmm1
-	movd (%rdi, %rcx, 4), %xmm2 
+	movd (%rdi, %rcx, 4), %xmm2
 	/* Get alpha from source and unpack to words
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -3005,10 +2997,10 @@ PR_(imlib_amd64_blend_rgb_to_rgb_cmod):
 	/* Repack new pixels */
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -3019,20 +3011,20 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 
 	movq mX000X000X000X000(%rip), %r13
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -3040,7 +3032,7 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -3076,10 +3068,10 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 	orq %rax, %rdx
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = 0 */
 	movq (%rsi, %rcx, 4), %rax
@@ -3111,10 +3103,10 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 	orq %rax, %rdx
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = 0 */
 	movq (%rsi, %rcx, 4), %rax
@@ -3146,10 +3138,10 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 	orq %rax, %rdx
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = 0 */
 	movq (%rsi, %rcx, 4), %rax
@@ -3181,10 +3173,10 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 	orq %rax, %rdx
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = 0 */
 	movq (%rsi, %rcx, 4), %rax
@@ -3216,10 +3208,10 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 	orq %rax, %rdx
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = 0 */
 	movq (%rsi, %rcx, 4), %rax
@@ -3251,10 +3243,10 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 	orq %rax, %rdx
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = 0 */
 	movq (%rsi, %rcx, 4), %rax
@@ -3286,10 +3278,10 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 	orq %rax, %rdx
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = 0 */
 	movq (%rsi, %rcx, 4), %rax
@@ -3321,10 +3313,10 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 	orq %rax, %rdx
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = 0 */
 	movl (%rsi, %rcx, 4), %eax
@@ -3343,10 +3335,10 @@ PR_(imlib_amd64_copy_rgba_to_rgb_cmod):
 	andq %r13, %rax
 	orq %rax, %rdx
 	movl %edx, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -3356,20 +3348,20 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	ENTER
 
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -3377,7 +3369,7 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -3418,10 +3410,10 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -3458,10 +3450,10 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -3498,10 +3490,10 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -3538,10 +3530,10 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -3578,10 +3570,10 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -3618,10 +3610,10 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -3658,10 +3650,10 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -3698,10 +3690,10 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -3721,10 +3713,10 @@ PR_(imlib_amd64_copy_rgba_to_rgba_cmod):
 	movb %al, %bl
 	movb 0x200(%r14, %rbx), %dl
 	movl %edx, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -3734,20 +3726,20 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	ENTER
 
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -3755,7 +3747,7 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -3794,10 +3786,10 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -3832,10 +3824,10 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -3870,10 +3862,10 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -3908,10 +3900,10 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -3946,10 +3938,10 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -3984,10 +3976,10 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -4022,10 +4014,10 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -4060,10 +4052,10 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	movb 0x200(%r14, %rbx), %dl
 	movq %rdx, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -4082,10 +4074,10 @@ PR_(imlib_amd64_copy_rgb_to_rgba_cmod):
 	movb %al, %bl
 	movb 0x200(%r14, %rbx), %dl
 	movl %edx, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -4097,20 +4089,20 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	pxor %xmm4, %xmm4
 	movdqa m00XXXXXX(%rip), %xmm6
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -4118,7 +4110,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -4163,13 +4155,13 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -4190,10 +4182,10 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -4234,13 +4226,13 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -4261,10 +4253,10 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -4305,13 +4297,13 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -4332,10 +4324,10 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -4376,13 +4368,13 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -4403,10 +4395,10 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -4447,13 +4439,13 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -4474,10 +4466,10 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -4518,13 +4510,13 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -4545,10 +4537,10 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -4589,13 +4581,13 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -4616,10 +4608,10 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -4660,13 +4652,13 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -4687,10 +4679,10 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -4715,13 +4707,13 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -4741,10 +4733,10 @@ PR_(imlib_amd64_add_blend_rgba_to_rgb_cmod):
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
  	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -4760,20 +4752,20 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	movdqa mX000X000X000X000(%rip), %xmm6
 	movq pow_lut@GOTPCREL(%rip), %r13
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -4781,7 +4773,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -4846,7 +4838,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -4863,15 +4855,15 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -4932,7 +4924,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -4949,15 +4941,15 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -5018,7 +5010,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5035,15 +5027,15 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -5104,7 +5096,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5121,15 +5113,15 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -5190,7 +5182,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5207,15 +5199,15 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -5276,7 +5268,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5293,15 +5285,15 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -5362,7 +5354,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5379,15 +5371,15 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -5448,7 +5440,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5465,15 +5457,15 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -5506,7 +5498,7 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5523,14 +5515,14 @@ PR_(imlib_amd64_add_blend_rgba_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -5546,20 +5538,20 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	movdqa mX000X000X000X000(%rip), %xmm6
 	movq pow_lut@GOTPCREL(%rip), %r13
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -5567,7 +5559,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -5630,7 +5622,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5647,15 +5639,15 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -5714,7 +5706,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5731,15 +5723,15 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -5798,7 +5790,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5815,15 +5807,15 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -5882,7 +5874,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5899,15 +5891,15 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -5966,7 +5958,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -5983,15 +5975,15 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -6050,7 +6042,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -6067,15 +6059,15 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -6134,7 +6126,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -6151,15 +6143,15 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -6218,7 +6210,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -6235,15 +6227,15 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -6275,7 +6267,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -6292,14 +6284,14 @@ PR_(imlib_amd64_add_blend_rgb_to_rgba_cmod):
 	psllw $1, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -6312,20 +6304,20 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	pxor %xmm4, %xmm4
 	movdqa m00XXXXXX(%rip), %xmm6
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -6333,7 +6325,7 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -6376,13 +6368,13 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -6403,10 +6395,10 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -6445,13 +6437,13 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -6472,10 +6464,10 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -6514,13 +6506,13 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -6541,10 +6533,10 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -6583,13 +6575,13 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -6610,10 +6602,10 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -6652,13 +6644,13 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -6679,10 +6671,10 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -6721,13 +6713,13 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -6748,10 +6740,10 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -6790,13 +6782,13 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -6817,10 +6809,10 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -6859,13 +6851,13 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -6886,10 +6878,10 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -6913,13 +6905,13 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -6939,10 +6931,10 @@ PR_(imlib_amd64_add_blend_rgb_to_rgb_cmod):
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
  	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -6954,20 +6946,20 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 
 	movdqa m0XXX0XXX0XXX0XXX(%rip), %xmm5
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -6975,7 +6967,7 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -7021,10 +7013,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7066,10 +7058,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7111,10 +7103,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7156,10 +7148,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7201,10 +7193,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7246,10 +7238,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7291,10 +7283,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7336,10 +7328,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -7364,10 +7356,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgb_cmod):
 	pand %xmm5, %xmm1
 	paddusb %xmm1, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -7379,20 +7371,20 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 
 	movdqa m0XXX0XXX0XXX0XXX(%rip), %xmm5
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -7400,7 +7392,7 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -7446,10 +7438,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7491,10 +7483,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7536,10 +7528,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7581,10 +7573,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7626,10 +7618,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7671,10 +7663,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7716,10 +7708,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -7761,10 +7753,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -7789,10 +7781,10 @@ PR_(imlib_amd64_add_copy_rgba_to_rgba_cmod):
 	pand %xmm5, %xmm2
 	paddusb %xmm1, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -7804,20 +7796,20 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 
 	movdqa m0XXX0XXX0XXX0XXX(%rip), %xmm5
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -7825,7 +7817,7 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -7868,10 +7860,10 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -7910,10 +7902,10 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -7952,10 +7944,10 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -7994,10 +7986,10 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -8036,10 +8028,10 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -8078,10 +8070,10 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -8120,10 +8112,10 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -8162,10 +8154,10 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 	paddusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -8188,10 +8180,10 @@ PR_(imlib_amd64_add_copy_rgb_to_rgba_cmod):
 	pand %xmm5, %xmm2
 	paddusb %xmm1, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -8204,20 +8196,20 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	pxor %xmm4, %xmm4
 	movdqa m00XXXXXX(%rip), %xmm6
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -8225,7 +8217,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -8270,13 +8262,13 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -8297,10 +8289,10 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -8341,13 +8333,13 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -8368,10 +8360,10 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -8412,13 +8404,13 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -8439,10 +8431,10 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -8483,13 +8475,13 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -8510,10 +8502,10 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -8554,13 +8546,13 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -8581,10 +8573,10 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -8625,13 +8617,13 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -8652,10 +8644,10 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -8696,13 +8688,13 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -8723,10 +8715,10 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -8767,13 +8759,13 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -8794,10 +8786,10 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -8822,13 +8814,13 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -8848,10 +8840,10 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgb_cmod):
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -8867,20 +8859,20 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	movdqa mX000X000(%rip), %xmm7
 	xorq %rax, %rax
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -8888,7 +8880,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -8953,7 +8945,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -8971,15 +8963,15 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -9040,7 +9032,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9058,15 +9050,15 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -9127,7 +9119,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9145,15 +9137,15 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -9214,7 +9206,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9232,15 +9224,15 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -9301,7 +9293,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9319,15 +9311,15 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -9388,7 +9380,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9406,15 +9398,15 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -9475,7 +9467,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9493,15 +9485,15 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -9562,7 +9554,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9580,15 +9572,15 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -9621,7 +9613,7 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9639,14 +9631,14 @@ PR_(imlib_amd64_subtract_blend_rgba_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -9662,20 +9654,20 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	movdqa mX000X000(%rip), %xmm7
 	xorq %rax, %rax
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -9683,7 +9675,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -9746,7 +9738,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9764,15 +9756,15 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -9831,7 +9823,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9849,15 +9841,15 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -9916,7 +9908,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -9934,15 +9926,15 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10001,7 +9993,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -10019,15 +10011,15 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10086,7 +10078,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -10104,15 +10096,15 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10171,7 +10163,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -10189,15 +10181,15 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10256,7 +10248,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -10274,15 +10266,15 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10341,7 +10333,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -10359,15 +10351,15 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -10399,7 +10391,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	/* unpack alpha to src alpha, combined alpha x 3 */
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* src alpha = 255 - dst alpha */
@@ -10417,14 +10409,14 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgba_cmod):
 	pmulhw %xmm3, %xmm1
 	pxor %xmm7, %xmm1
 	psubsw %xmm1, %xmm2
-	
+
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -10436,20 +10428,20 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	pxor %xmm4, %xmm4
 	movdqa m00XXXXXX(%rip), %xmm6
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -10457,7 +10449,7 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -10500,13 +10492,13 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -10527,10 +10519,10 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10569,13 +10561,13 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -10596,10 +10588,10 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10638,13 +10630,13 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -10665,10 +10657,10 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10707,13 +10699,13 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -10734,10 +10726,10 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10776,13 +10768,13 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -10803,10 +10795,10 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10845,13 +10837,13 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -10872,10 +10864,10 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10914,13 +10906,13 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -10941,10 +10933,10 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -10983,13 +10975,13 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -11010,10 +11002,10 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -11037,13 +11029,13 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	 * Result ranges is [0, 0x7fff], and is mapped to
 	 *  point values in [0.0, 1.0) by using the high word
 	 *  of the 32 bit multiplication result.
-	 * Because we want the unsigned value, we shift right one 
+	 * Because we want the unsigned value, we shift right one
 	 *  here and also shift left the other factors to compensate.
 	 */
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero out the alpha channel of the source to leave the
@@ -11063,10 +11055,10 @@ PR_(imlib_amd64_subtract_blend_rgb_to_rgb_cmod):
 	/* pack new pixels */
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -11077,20 +11069,20 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 
 	movdqa m0XXX0XXX0XXX0XXX(%rip), %xmm5
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -11098,7 +11090,7 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -11144,10 +11136,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 	psubusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11189,10 +11181,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 	psubusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11234,10 +11226,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 	psubusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11279,10 +11271,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 	psubusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11324,10 +11316,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 	psubusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11369,10 +11361,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 	psubusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11414,10 +11406,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 	psubusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11459,10 +11451,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 	psubusb %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -11487,10 +11479,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgb_cmod):
 	pand %xmm5, %xmm1
 	psubusb %xmm1, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -11502,20 +11494,20 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	movdqa m0XXX0XXX0XXX0XXX(%rip), %xmm5
 	movdqa mX000X000X000X000(%rip), %xmm6
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -11523,7 +11515,7 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -11571,10 +11563,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11618,10 +11610,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11665,10 +11657,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11712,10 +11704,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11759,10 +11751,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11806,10 +11798,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11853,10 +11845,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -11900,10 +11892,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -11930,10 +11922,10 @@ PR_(imlib_amd64_subtract_copy_rgba_to_rgba_cmod):
 	pand %xmm5, %xmm2
 	por %xmm1, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -11945,20 +11937,20 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	movdqa m0XXX0XXX0XXX0XXX(%rip), %xmm5
 	movdqa mX000X000X000X000(%rip), %xmm6
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -11966,7 +11958,7 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -12014,10 +12006,10 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -12061,10 +12053,10 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -12108,10 +12100,10 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -12155,10 +12147,10 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -12202,10 +12194,10 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -12249,10 +12241,10 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -12296,10 +12288,10 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -12343,10 +12335,10 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	por %xmm1, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -12374,10 +12366,10 @@ PR_(imlib_amd64_subtract_copy_rgb_to_rgba_cmod):
 	pand %xmm6, %xmm1
 	por %xmm1, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -12390,20 +12382,20 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	movdqa m000V0V0V000V0V0V(%rip), %xmm6
 	movdqa m00XXXXXX(%rip), %xmm7
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -12411,7 +12403,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -12456,7 +12448,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -12476,10 +12468,10 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -12520,7 +12512,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -12540,10 +12532,10 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -12584,7 +12576,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -12604,10 +12596,10 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -12648,7 +12640,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -12668,10 +12660,10 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -12712,7 +12704,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -12732,10 +12724,10 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -12776,7 +12768,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -12796,10 +12788,10 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -12840,7 +12832,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -12860,10 +12852,10 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -12904,7 +12896,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -12924,10 +12916,10 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -12952,7 +12944,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -12971,10 +12963,10 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgb_cmod):
 	/* Repack new pixels */
 	packuswb %xmm4, %xmm2
  	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -12992,20 +12984,20 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	movdqa m000V0V0V000V0V0V(%rip), %xmm8
 	xorq %rax, %rax
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -13013,7 +13005,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -13080,7 +13072,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -13095,14 +13087,14 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -13165,7 +13157,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -13180,14 +13172,14 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -13250,7 +13242,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -13265,14 +13257,14 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -13335,7 +13327,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -13350,14 +13342,14 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -13420,7 +13412,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -13435,14 +13427,14 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -13505,7 +13497,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -13520,14 +13512,14 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -13590,7 +13582,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -13605,14 +13597,14 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -13675,7 +13667,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -13690,14 +13682,14 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -13731,7 +13723,7 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	movd %eax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -13746,13 +13738,13 @@ PR_(imlib_amd64_reshade_blend_rgba_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -13766,20 +13758,20 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	movdqa m000V0V0V000V0V0V(%rip), %xmm6
 	movdqa m00XXXXXX(%rip), %xmm7
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -13787,7 +13779,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -13830,7 +13822,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -13850,10 +13842,10 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -13892,7 +13884,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -13912,10 +13904,10 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -13954,7 +13946,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -13974,10 +13966,10 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14016,7 +14008,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -14036,10 +14028,10 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14078,7 +14070,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -14098,10 +14090,10 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14140,7 +14132,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -14160,10 +14152,10 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14202,7 +14194,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -14222,10 +14214,10 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14264,7 +14256,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -14284,10 +14276,10 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -14311,7 +14303,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	movq %xmm1, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0xFF, %xmm3, %xmm3
-	pshuflw $0xFF, %xmm3, %xmm3 
+	pshuflw $0xFF, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	/* Zero blending alpha */
@@ -14330,10 +14322,10 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgb_cmod):
 	/* Repack new pixels */
 	packuswb %xmm4, %xmm2
  	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -14351,20 +14343,20 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	movdqa m000V0V0V000V0V0V(%rip), %xmm8
 	xorq %rax, %rax
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -14372,7 +14364,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -14437,7 +14429,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -14452,14 +14444,14 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14520,7 +14512,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -14535,14 +14527,14 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14603,7 +14595,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -14618,14 +14610,14 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14686,7 +14678,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -14701,14 +14693,14 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14769,7 +14761,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -14784,14 +14776,14 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14852,7 +14844,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -14867,14 +14859,14 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -14935,7 +14927,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -14950,14 +14942,14 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -15018,7 +15010,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	movd %rax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -15033,14 +15025,14 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -15073,7 +15065,7 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	movd %eax, %xmm3
 	punpcklbw %xmm3, %xmm3
 	pshufhw $0x40, %xmm3, %xmm3
-	pshuflw $0x40, %xmm3, %xmm3	
+	pshuflw $0x40, %xmm3, %xmm3
 	psrlw $1, %xmm3
 
 	movdqa %xmm2, %xmm0
@@ -15088,13 +15080,13 @@ PR_(imlib_amd64_reshade_blend_rgb_to_rgba_cmod):
 	psllw $2, %xmm1
 	pmulhw %xmm3, %xmm1
 	paddsw %xmm1, %xmm2
-	
+
 	packuswb %xmm4, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -15107,20 +15099,20 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	movdqa m0XXX0XXX0XXX0XXX(%rip), %xmm5
 	movdqa m0VVV0VVV0VVV0VVV(%rip), %xmm6
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -15128,7 +15120,7 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -15192,10 +15184,10 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	psubusb %xmm3, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -15255,10 +15247,10 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	psubusb %xmm3, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -15318,10 +15310,10 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	psubusb %xmm3, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -15381,10 +15373,10 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	psubusb %xmm3, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -15444,10 +15436,10 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	psubusb %xmm3, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -15507,10 +15499,10 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	psubusb %xmm3, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -15570,10 +15562,10 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	psubusb %xmm3, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -15633,10 +15625,10 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	psubusb %xmm3, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -15679,10 +15671,10 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgb_cmod):
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -15696,20 +15688,20 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	movdqu m0VVV0VVV0VVV0VVV(%rip), %xmm6
 	movdqu mX000X000X000X000(%rip), %xmm7
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -15717,7 +15709,7 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -15770,17 +15762,17 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -15829,17 +15821,17 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -15888,17 +15880,17 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -15947,17 +15939,17 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -16006,17 +15998,17 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -16065,17 +16057,17 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -16124,17 +16116,17 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod */
 	movq (%rsi, %rcx, 4), %rax
@@ -16183,17 +16175,17 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod */
 	movl (%rsi, %rcx, 4), %eax
@@ -16226,16 +16218,16 @@ PR_(imlib_amd64_reshade_copy_rgba_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
@@ -16249,20 +16241,20 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	movdqu m0VVV0VVV0VVV0VVV(%rip), %xmm6
 	movdqu mX000X000X000X000(%rip), %xmm7
 
-	/* Move right to left across each line, */ 
-	/* processing in two pixel chunks */ 
-	leaq (%rsi, %r8, 4), %rsi	
-	leaq (%rdi, %r8, 4), %rdi	
-					
-	/* Last instruction is %rcx = 0 */ 
-	subq $4, %rsi			
-	subq $4, %rdi			
-					
-	negq %r8			
-0:					
-	movq %r8, %rcx			
-					
-	incq %rcx			
+	/* Move right to left across each line, */
+	/* processing in two pixel chunks */
+	leaq (%rsi, %r8, 4), %rsi
+	leaq (%rdi, %r8, 4), %rdi
+
+	/* Last instruction is %rcx = 0 */
+	subq $4, %rsi
+	subq $4, %rdi
+
+	negq %r8
+0:
+	movq %r8, %rcx
+
+	incq %rcx
 
 	/* prefetch a couple cache lines ahead */
 	prefetchnta (%rsi, %rcx, 4)
@@ -16270,7 +16262,7 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	prefetchnta 64(%rsi, %rcx, 4)
 	prefetcht0 64(%rdi, %rcx, 4)
 
-	jz 2f /* one pixel line */	
+	jz 2f /* one pixel line */
 1:
 	/* main loop, unrolled to work on 64 byte chunks */
 	prefetchnta 128(%rsi, %rcx, 4)
@@ -16321,17 +16313,17 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -16378,17 +16370,17 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -16435,17 +16427,17 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -16492,17 +16484,17 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -16549,17 +16541,17 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -16606,17 +16598,17 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -16663,17 +16655,17 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
+	incq %rcx
+	incq %rcx
 	jz 2f
-	jns 3f				
+	jns 3f
 
 	/* Grab 2 pixels from src, with colormod, with a = amod[255] */
 	movq (%rsi, %rcx, 4), %rax
@@ -16720,17 +16712,17 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movq %xmm2, (%rdi, %rcx, 4)
 
-	incq %rcx			
-	incq %rcx			
-	js 1b				
-	jnz 3f				
+	incq %rcx
+	incq %rcx
+	js 1b
+	jnz 3f
 2:
 	/* Grab 1 pixel from src, with colormod, with a = amod[255] */
 	movl (%rsi, %rcx, 4), %eax
@@ -16762,23 +16754,21 @@ PR_(imlib_amd64_reshade_copy_rgb_to_rgba_cmod):
 	/* d = d + s1 - s2, unsigned saturation */
 	paddusb %xmm1, %xmm2
 	psubusb %xmm3, %xmm2
-	
+
 	/* d alpha = s alpha */
 	pand %xmm5, %xmm2
 	pand %xmm7, %xmm0
 	por %xmm0, %xmm2
 	movd %xmm2, (%rdi, %rcx, 4)
-3:					
-	leaq (%rsi, %r10, 4), %rsi	
-	leaq (%rdi, %r11, 4), %rdi	
-	decq %r9			
+3:
+	leaq (%rsi, %r10, 4), %rsi
+	leaq (%rdi, %r11, 4), %rdi
+	decq %r9
 	jnz 0b
 
 9:
 	LEAVE
 SIZE(imlib_amd64_reshade_copy_rgb_to_rgba_cmod)
-
-#endif
 
 #ifdef __ELF__
 .section .note.GNU-stack,"",@progbits

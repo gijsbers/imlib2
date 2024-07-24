@@ -3,6 +3,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +15,16 @@
 
 #define MIN(a, b) ((a < b) ? a : b)
 #define MAX(a, b) ((a > b) ? a : b)
+
+#define PIXEL_ARGB(a, r, g, b)  ((uint32_t)(a) << 24) | ((r) << 16) | ((g) << 8) | (b)
+
+#define PIXEL_A(argb)  (((argb) >> 24) & 0xff)
+#define PIXEL_R(argb)  (((argb) >> 16) & 0xff)
+#define PIXEL_G(argb)  (((argb) >>  8) & 0xff)
+#define PIXEL_B(argb)  (((argb)      ) & 0xff)
+
+#define RGBA_VALUES(argb) \
+    PIXEL_R(argb), PIXEL_G(argb), PIXEL_B(argb), PIXEL_A(argb)
 
 typedef struct {
     int             x, y;       /* Origin */
@@ -30,18 +41,22 @@ static Imlib_Image bg_im = NULL;
 static Imlib_Image bg_im_clean = NULL;
 static Imlib_Image fg_im = NULL;        /* The animated image */
 static Imlib_Image im_curr = NULL;      /* The current image */
+static Imlib_Border border;
 
 static bool     opt_cache = false;
 static bool     opt_progr = true;       /* Render through progress callback */
 static bool     opt_scale = false;
-static double   opt_scale_x = 1.;
-static double   opt_scale_y = 1.;
-static double   opt_sgrab_x = 1.;
-static double   opt_sgrab_y = 1.;
+static bool     opt_aa_final = true;    /* Do final anti-aliased rendering */
+static double   opt_sc_inp_x = 1.;
+static double   opt_sc_inp_y = 1.;
+static double   opt_sc_out_x = 1.;
+static double   opt_sc_out_y = 1.;
 static int      opt_cbfs = 8;   /* Background checkerboard field size */
 static char     opt_progress_granularity = 10;
 static char     opt_progress_print = 0;
 static int      opt_progress_delay = 0;
+static unsigned int bg_cb_col_a = PIXEL_ARGB(255, 144, 144, 144);
+static unsigned int bg_cb_col_b = PIXEL_ARGB(255, 100, 100, 100);
 
 static Imlib_Frame_Info finfo;
 static bool     multiframe = false;     /* Image has multiple frames     */
@@ -56,22 +71,27 @@ static int      animloop = 0;   /* Animation loop count          */
 
 #define MAX_DIM 32767
 
-#define SCALE_X(x) (int)(scale_x * (x) + .5)
-#define SCALE_Y(x) (int)(scale_y * (x) + .5)
+#define SC_INP_X(x) (int)(opt_sc_inp_x * (x) + .5)
+#define SC_INP_Y(x) (int)(opt_sc_inp_y * (x) + .5)
+#define SC_OUT_X(x) (int)(scale_x * (x) + .5)
+#define SC_OUT_Y(x) (int)(scale_y * (x) + .5)
 
 #define HELP \
    "Usage:\n" \
    "  imlib2_view [OPTIONS] {FILE | XID}...\n" \
    "OPTIONS:\n" \
+   "  -a         : Disable final anti-aliased rendering\n" \
+   "  -b L,R,T,B : Set border\n" \
    "  -c         : Enable image caching (implies -e)\n" \
    "  -d         : Enable debug\n" \
    "  -e         : Do rendering explicitly (not via progress callback)\n" \
    "  -g N       : Set progress granularity to N%% (default 10(%%))\n" \
    "  -l N       : Introduce N ms delay in progress callback (default 0)\n" \
    "  -p         : Print info in progress callback (default no)\n" \
-   "  -s Sx[,Sy] : Set render x/y scaling factors to Sx,Sy (default 1.0)\n" \
-   "  -S Sx[,Sy] : Set grab x/y scaling factors to Sx,Sy (default 1.0)\n" \
+   "  -s Sx[,Sy] : Set output x/y scaling factors to Sx,Sy (default 1.0)\n" \
+   "  -S Sx[,Sy] : Set input x/y scaling factors to Sx,Sy (default 1.0)\n" \
    "  -t N       : Set background checkerboard field size (default 8)\n" \
+   "  -T CA,CB   : Set background checkerboard colors (0xRRGGBB,0xRRGGBB)\n" \
    "  -v         : Increase verbosity\n"
 
 static void
@@ -94,20 +114,19 @@ bg_im_init(int w, int h)
     bg_im = imlib_create_image(w, h);
 
     imlib_context_set_image(bg_im);
+    imlib_context_set_blend(0);
+
     for (y = 0; y < h; y += opt_cbfs)
     {
         onoff = (y / opt_cbfs) & 0x1;
         for (x = 0; x < w; x += opt_cbfs)
         {
             if (onoff)
-                imlib_context_set_color(144, 144, 144, 255);
+                imlib_context_set_color(RGBA_VALUES(bg_cb_col_a));
             else
-                imlib_context_set_color(100, 100, 100, 255);
-            imlib_context_set_blend(0);
+                imlib_context_set_color(RGBA_VALUES(bg_cb_col_b));
             imlib_image_fill_rectangle(x, y, opt_cbfs, opt_cbfs);
-            onoff++;
-            if (onoff == 2)
-                onoff = 0;
+            onoff ^= 0x1;
         }
     }
 }
@@ -306,6 +325,7 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
 {
     static double   scale_x = 0., scale_y = 0.;
     int             up_wx, up_wy, up_ww, up_wh;
+    int             up2_wx, up2_wy, up2_ww, up2_wh;
     rect_t          r_up, r_out;
 
     if (opt_progress_print)
@@ -348,8 +368,10 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
     /* first time it's called */
     if (image_width == 0)
     {
-        scale_x = opt_scale_x;
-        scale_y = opt_scale_y;
+        imlib_image_set_border(&border);
+
+        scale_x = opt_sc_out_x;
+        scale_y = opt_sc_out_y;
 
         window_width = DisplayWidth(disp, DefaultScreen(disp));
         window_height = DisplayHeight(disp, DefaultScreen(disp));
@@ -357,15 +379,17 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
         window_height -= 32;
         Dprintf(" Screen WxH=%dx%d\n", window_width, window_height);
 
-        image_width = fixedframe ? finfo.frame_w : finfo.canvas_w;
-        image_height = fixedframe ? finfo.frame_h : finfo.canvas_h;
+        up_ww = fixedframe ? finfo.frame_w : finfo.canvas_w;
+        up_wh = fixedframe ? finfo.frame_h : finfo.canvas_h;
+        image_width = SC_INP_X(up_ww);
+        image_height = SC_INP_X(up_wh);
 
         if (!opt_scale &&
             (image_width > window_width || image_height > window_height))
         {
             scale_x = scale_y = 1.;
-            while (window_width < SCALE_X(image_width) ||
-                   window_height < SCALE_Y(image_height))
+            while (window_width < SC_OUT_X(image_width) ||
+                   window_height < SC_OUT_Y(image_height))
             {
                 scale_x *= .5;
                 scale_y = scale_x;
@@ -373,8 +397,8 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
             }
         }
 
-        window_width = SCALE_X(image_width);
-        window_height = SCALE_Y(image_height);
+        window_width = SC_OUT_X(image_width);
+        window_height = SC_OUT_Y(image_height);
         if (window_width > MAX_DIM)
         {
             window_width = MAX_DIM;
@@ -388,7 +412,7 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
         Dprintf(" Window WxH=%dx%d\n", window_width, window_height);
 
         V2printf(" Image  WxH=%dx%d fmt='%s'\n",
-                 image_width, image_height, imlib_image_format());
+                 up_ww, up_wh, imlib_image_format());
 
         /* Initialize checkered background image */
         bg_im_init(image_width, image_height);
@@ -436,27 +460,31 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
     }
 
     /* Render image on background image */
-    Dprintf(" Update %d,%d %dx%d\n", r_out.x, r_out.y, r_out.w, r_out.h);
     imlib_context_set_image(bg_im);
     imlib_context_set_blend(1);
+    up_wx = SC_INP_X(r_out.x);
+    up_wy = SC_INP_Y(r_out.y);
+    up_ww = SC_INP_X(r_out.w);
+    up_wh = SC_INP_Y(r_out.h);
+    Dprintf(" Update  %d,%d %dx%d -> %d,%d %dx%d \n",
+            r_out.x, r_out.y, r_out.w, r_out.h, up_wx, up_wy, up_ww, up_wh);
     imlib_blend_image_onto_image(im, 1,
                                  r_out.x, r_out.y, r_out.w, r_out.h,
-                                 r_out.x, r_out.y, r_out.w, r_out.h);
+                                 up_wx, up_wy, up_ww, up_wh);
 
     /* Render image (part) (or updated canvas) on window background pixmap */
-    up_wx = SCALE_X(r_out.x);
-    up_wy = SCALE_Y(r_out.y);
-    up_ww = SCALE_X(r_out.w);
-    up_wh = SCALE_Y(r_out.h);
-    Dprintf(" Paint  %d,%d %dx%d\n", up_wx, up_wy, up_ww, up_wh);
+    up2_wx = SC_OUT_X(up_wx);
+    up2_wy = SC_OUT_Y(up_wy);
+    up2_ww = SC_OUT_X(up_ww);
+    up2_wh = SC_OUT_Y(up_wh);
+    Dprintf(" Paint  %d,%d %dx%d\n", up2_wx, up2_wy, up2_ww, up2_wh);
     imlib_context_set_blend(0);
     imlib_context_set_drawable(bg_pm);
-    imlib_render_image_part_on_drawable_at_size(r_out.x, r_out.y, r_out.w,
-                                                r_out.h, up_wx, up_wy, up_ww,
-                                                up_wh);
+    imlib_render_image_part_on_drawable_at_size(up_wx, up_wy, up_ww, up_wh,
+                                                up2_wx, up2_wy, up2_ww, up2_wh);
 
     /* Update window */
-    XClearArea(disp, win, up_wx, up_wy, up_ww, up_wh, False);
+    XClearArea(disp, win, up2_wx, up2_wy, up2_ww, up2_wh, False);
     XFlush(disp);
 
     if (opt_progress_delay > 0)
@@ -539,8 +567,8 @@ load_image(int no, const char *name)
         Vprintf("Drawable: %#lx: x,y: %d,%d  wxh=%ux%u  bw=%u  depth=%u\n",
                 draw, x, y, w, h, bw, depth);
 
-        wo = w * opt_sgrab_x;
-        ho = h * opt_sgrab_y;
+        wo = SC_INP_X(w);
+        ho = SC_INP_Y(h);
         im = imlib_create_scaled_image_from_drawable(None, 0, 0, w, h, wo, ho,
                                                      1, (get_alpha) ? 1 : 0);
         if (!im)
@@ -595,13 +623,24 @@ main(int argc, char **argv)
 {
     int             opt, err;
     int             no, inc;
+    unsigned int    va, vb;
+    static int      nfds;
+    static struct pollfd afds[1];
 
     verbose = 0;
 
-    while ((opt = getopt(argc, argv, "cdeg:l:ps:S:t:v")) != -1)
+    while ((opt = getopt(argc, argv, "ab:cdeg:l:ps:S:t:T:v")) != -1)
     {
         switch (opt)
         {
+        case 'a':
+            opt_aa_final = false;
+            break;
+        case 'b':
+            border.left = border.right = border.top = border.bottom = 0;
+            sscanf(optarg, "%d,%d,%d,%d",
+                   &border.left, &border.right, &border.top, &border.bottom);
+            break;
         case 'c':
             opt_cache = true;
             opt_progr = false;  /* Cached images won't give progress callbacks */
@@ -621,23 +660,31 @@ main(int argc, char **argv)
         case 'p':
             opt_progress_print = 1;
             break;
-        case 's':              /* Scale (window size wrt. image size) */
+        case 's':              /* Scale output (window size wrt. image size) */
             opt_scale = true;
-            opt_scale_y = 0.f;
-            sscanf(optarg, "%lf,%lf", &opt_scale_x, &opt_scale_y);
-            if (opt_scale_y == 0.f)
-                opt_scale_y = opt_scale_x;
+            opt_sc_out_y = 0.f;
+            sscanf(optarg, "%lf,%lf", &opt_sc_out_x, &opt_sc_out_y);
+            if (opt_sc_out_y == 0.f)
+                opt_sc_out_y = opt_sc_out_x;
             break;
-        case 'S':              /* Scale on grab */
-            opt_sgrab_y = 0.f;
-            sscanf(optarg, "%lf,%lf", &opt_sgrab_x, &opt_sgrab_y);
-            if (opt_sgrab_y == 0.f)
-                opt_sgrab_y = opt_sgrab_x;
+        case 'S':              /* Scale input (input imgage, grab) */
+            opt_sc_inp_y = 0.f;
+            sscanf(optarg, "%lf,%lf", &opt_sc_inp_x, &opt_sc_inp_y);
+            if (opt_sc_inp_y == 0.f)
+                opt_sc_inp_y = opt_sc_inp_x;
             break;
         case 't':
             no = atoi(optarg);
             if (no > 0)
                 opt_cbfs = no;
+            break;
+        case 'T':
+            va = vb = 1;
+            sscanf(optarg, "%x,%x", &va, &vb);
+            bg_cb_col_a =
+                va != 1 ? va | 0xff000000 : PIXEL_ARGB(255, 255, 0, 0);
+            bg_cb_col_b =
+                vb != 1 ? vb | 0xff000000 : PIXEL_ARGB(255, 0, 255, 0);
             break;
         case 'v':
             verbose += 1;
@@ -684,14 +731,15 @@ main(int argc, char **argv)
         exit(0);
     }
 
+    nfds = 0;
+    afds[nfds++].fd = ConnectionNumber(disp);
+
     for (;;)
     {
-        int             x, y, b, count, fdsize, xfd, timeout;
+        int             x, y, b, count, timeout;
         XEvent          ev;
         static int      zoom_mode = 0, zx, zy;
         static double   zoom = 1.0;
-        struct timeval  tval;
-        fd_set          fdset;
         KeySym          key;
         int             no2;
 
@@ -848,21 +896,7 @@ main(int argc, char **argv)
         if (multiframe)
             continue;
 
-        xfd = ConnectionNumber(disp);
-        fdsize = xfd + 1;
-        FD_ZERO(&fdset);
-        FD_SET(xfd, &fdset);
-
-        if (timeout > 0)
-        {
-            tval.tv_sec = timeout / 1000000;
-            tval.tv_usec = timeout - tval.tv_sec * 1000000;
-            count = select(fdsize, &fdset, NULL, NULL, &tval);
-        }
-        else
-        {
-            count = select(fdsize, &fdset, NULL, NULL, NULL);
-        }
+        count = poll(afds, nfds, timeout);
 
         if (count < 0)
         {
@@ -871,8 +905,11 @@ main(int argc, char **argv)
         }
         else if (count == 0)
         {
-            /* "Final" (delayed) re-rendering with AA */
-            bg_pm_redraw(zx, zy, zoom, 1);
+            if (opt_aa_final)
+            {
+                /* "Final" (delayed) re-rendering with AA */
+                bg_pm_redraw(zx, zy, zoom, 1);
+            }
         }
     }
 

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <zlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 
@@ -34,6 +35,7 @@ static FILE    *fout;
    "Usage:\n" \
    "  imlib2_load [OPTIONS] FILE...\n" \
    "OPTIONS:\n" \
+   "  -C  : Print CRC32 of image data\n" \
    "  -c  : Enable image caching\n" \
    "  -e  : Break on error\n" \
    "  -f  : Load with imlib_load_image_fd()\n" \
@@ -49,6 +51,21 @@ static void
 usage(void)
 {
     printf(HELP);
+}
+
+static unsigned int
+image_get_crc32(Imlib_Image im)
+{
+    const unsigned char *data;
+    unsigned int    crc, w, h;
+
+    imlib_context_set_image(im);
+    w = imlib_image_get_width();
+    h = imlib_image_get_height();
+    data = (const unsigned char *)imlib_image_get_data_for_reading_only();
+    crc = crc32(0, data, w * h * sizeof(uint32_t));
+
+    return crc;
 }
 
 static Imlib_Image *
@@ -144,6 +161,7 @@ main(int argc, char **argv)
     int             load_cnt, cnt;
     int             load_mode;
     bool            opt_cache;
+    bool            show_crc;
 
     fout = stdout;
     verbose = 0;
@@ -153,11 +171,15 @@ main(int argc, char **argv)
     load_cnt = 1;
     load_mode = LOAD_DEFER;
     opt_cache = false;
+    show_crc = false;
 
-    while ((opt = getopt(argc, argv, "cefijmn:pvx")) != -1)
+    while ((opt = getopt(argc, argv, "Ccefijmn:pvx")) != -1)
     {
         switch (opt)
         {
+        case 'C':
+            show_crc = true;
+            break;
         case 'c':
             opt_cache = true;
             break;
@@ -277,6 +299,9 @@ main(int argc, char **argv)
                             err, imlib_strerror(err), argv[0]);
                 }
             }
+
+            if (cnt == 0 && show_crc)
+                printf("%08x %s\n", image_get_crc32(im), argv[0]);
 
             if (opt_cache)
                 imlib_free_image();

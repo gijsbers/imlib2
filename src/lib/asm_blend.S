@@ -1,9 +1,7 @@
 #include <config.h>
 #include "asm.h"
 
-#ifdef DO_MMX_ASM
-
-/*\ 
+/*\
 |*| MMX assembly blending routines for Imlib2
 |*| Written by Willem Monsuwe <willem@stack.nl>
 |*|
@@ -51,7 +49,7 @@ FN_(imlib_mmx_reshade_copy_rgb_to_rgba)
 
 #include "asm_loadimmq.S"
 
-	
+
 /*\ MMX register use:
 |*| %mm1 = Source value
 |*| %mm2 = Destination value
@@ -63,6 +61,7 @@ FN_(imlib_mmx_reshade_copy_rgb_to_rgba)
 /*\ Common code \*/
 /*\ Set MMX mode, save registers, load common parameters \*/
 #define ENTER				\
+	ENDBR_				;\
 	pushl %ebp			;\
 	movl  %esp, %ebp		;\
 	pushl %ebx			;\
@@ -94,7 +93,6 @@ FN_(imlib_mmx_reshade_copy_rgb_to_rgba)
 	leal (%edi, %ecx, 4), %edi	;\
 	decl %edx			;\
 	jns 8b
-
 
 /*\ Unset MMX mode, reset registers, return \*/
 #define LEAVE			\
@@ -281,7 +279,7 @@ PR_(imlib_mmx_copy_rgba_to_rgba):
 	/*\ Load source, save destination \*/
 	movq (%esi, %ecx, 4), %mm1
 	movq %mm1, (%edi, %ecx, 4)
-	
+
 	addl $2, %ecx
 	js 1b
 	jnz 3f
@@ -358,7 +356,7 @@ PR_(imlib_mmx_add_blend_rgba_to_rgb):
 	/*\ Pack into lower 4 bytes and save \*/
 	packuswb %mm4, %mm2
 	movd %mm2, (%edi, %ecx, 4)
-	
+
 	incl %ecx
 	js 1b
 
@@ -408,7 +406,7 @@ PR_(imlib_mmx_add_blend_rgba_to_rgba):
 	/*\ Pack into lower 4 bytes and save \*/
 	packuswb %mm4, %mm2
 	movd %mm2, (%edi, %ecx, 4)
-	
+
 	incl %ecx
 	js 1b
 
@@ -440,7 +438,7 @@ PR_(imlib_mmx_add_copy_rgba_to_rgb):
 	/*\ d = d + s, unsigned saturation, and save \*/
 	paddusb %mm1, %mm2
 	movq %mm2, (%edi, %ecx, 4)
-	
+
 	addl $2, %ecx
 	js 1b
 	jnz 3f
@@ -473,7 +471,7 @@ PR_(imlib_mmx_add_copy_rgba_to_rgba):
 	/*\ d = d + s, unsigned saturation, and save \*/
 	paddusb %mm1, %mm2
 	movq %mm2, (%edi, %ecx, 4)
-	
+
 	addl $2, %ecx
 	js 1b
 	jnz 3f
@@ -511,7 +509,7 @@ PR_(imlib_mmx_add_copy_rgb_to_rgba):
 	/*\ Make result alpha 0xff \*/
 	por %mm5, %mm2
 	movq %mm2, (%edi, %ecx, 4)
-	
+
 	addl $2, %ecx
 	js 1b
 	jnz 3f
@@ -559,7 +557,7 @@ PR_(imlib_mmx_subtract_blend_rgba_to_rgb):
 	/*\ Pack into lower 4 bytes and save \*/
 	packuswb %mm4, %mm2
 	movd %mm2, (%edi, %ecx, 4)
-	
+
 	incl %ecx
 	js 1b
 
@@ -609,7 +607,7 @@ PR_(imlib_mmx_subtract_blend_rgba_to_rgba):
 	/*\ Pack into lower 4 bytes and save \*/
 	packuswb %mm4, %mm2
 	movd %mm2, (%edi, %ecx, 4)
-	
+
 	incl %ecx
 	js 1b
 
@@ -641,7 +639,7 @@ PR_(imlib_mmx_subtract_copy_rgba_to_rgb):
 	/*\ d = d - s, unsigned saturation, and save \*/
 	psubusb %mm1, %mm2
 	movq %mm2, (%edi, %ecx, 4)
-	
+
 	addl $2, %ecx
 	js 1b
 	jnz 3f
@@ -683,7 +681,7 @@ PR_(imlib_mmx_subtract_copy_rgba_to_rgba):
 	/*\ Negate result alphas \*/
 	pxor %mm5, %mm2
 	movq %mm2, (%edi, %ecx, 4)
-	
+
 	addl $2, %ecx
 	js 1b
 	jnz 3f
@@ -723,7 +721,7 @@ PR_(imlib_mmx_subtract_copy_rgb_to_rgba):
 	/*\ Make result alpha 0xff \*/
 	por %mm5, %mm2
 	movq %mm2, (%edi, %ecx, 4)
-	
+
 	addl $2, %ecx
 	js 1b
 	jnz 3f
@@ -774,7 +772,7 @@ PR_(imlib_mmx_reshade_blend_rgba_to_rgb):
 	/*\ Pack into lower 4 bytes and save \*/
 	packuswb %mm4, %mm2
 	movd %mm2, (%edi, %ecx, 4)
-	
+
 	incl %ecx
 	js 1b
 
@@ -827,7 +825,7 @@ PR_(imlib_mmx_reshade_blend_rgba_to_rgba):
 	/*\ Pack into lower 4 bytes and save \*/
 	packuswb %mm4, %mm2
 	movd %mm2, (%edi, %ecx, 4)
-	
+
 	incl %ecx
 	js 1b
 
@@ -877,7 +875,7 @@ PR_(imlib_mmx_reshade_copy_rgba_to_rgb):
 	paddusb %mm1, %mm2
 	psubusb %mm3, %mm2
 	movq %mm2, (%edi, %ecx, 4)
-	
+
 	addl $2, %ecx
 	js 1b
 	jnz 3f
@@ -942,7 +940,7 @@ PR_(imlib_mmx_reshade_copy_rgba_to_rgba):
 	paddusb %mm1, %mm2
 	psubusb %mm3, %mm2
 	movq %mm2, (%edi, %ecx, 4)
-	
+
 	addl $2, %ecx
 	js 1b
 	jnz 3f
@@ -1001,7 +999,7 @@ PR_(imlib_mmx_reshade_copy_rgb_to_rgba):
 	/*\ Make result alpha 0xff \*/
 	por %mm7, %mm2
 	movq %mm2, (%edi, %ecx, 4)
-	
+
 	addl $2, %ecx
 	js 1b
 	jnz 3f
@@ -1023,8 +1021,6 @@ PR_(imlib_mmx_reshade_copy_rgb_to_rgba):
 	LEAVE
 
 SIZE(imlib_mmx_reshade_copy_rgb_to_rgba)
-
-#endif
 
 #ifdef __ELF__
 .section .note.GNU-stack,"",@progbits

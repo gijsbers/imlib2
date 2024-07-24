@@ -1,9 +1,7 @@
 #include <config.h>
 #include "asm.h"
 
-#ifdef DO_MMX_ASM
-
-/*\ 
+/*\
 |*| MMX assembly rotation routine for Imlib2
 |*| Written by Willem Monsuwe <willem@stack.nl>
 \*/
@@ -197,7 +195,7 @@ PR_(imlib_mmx_RotateAA):
 	paddw %mm3, %mm5
 	packuswb %mm5, %mm5
 	movd %mm5, (%edi, %ecx, 4)
-	
+
 	paddd dxh, %mm6
 
 	incl %ecx
@@ -220,7 +218,7 @@ PR_(imlib_mmx_RotateAA):
 	decl %eax
 	sall $12, %eax
 	movl %eax, sht
-	
+
 	movl sow, %ebx
 	movl src, %edx
 .outside_loop_y:
@@ -421,7 +419,7 @@ PR_(imlib_mmx_RotateAA):
 .outside_il_0:
 	movl $0, %eax
 	movl %eax, (%edi, %ecx, 4)
-	
+
 .outside_il_end:
 	paddd dxh, %mm6
 
@@ -446,8 +444,6 @@ PR_(imlib_mmx_RotateAA):
 	ret
 
 SIZE(imlib_mmx_RotateAA)
-
-#endif
 
 #ifdef __ELF__
 .section .note.GNU-stack,"",@progbits

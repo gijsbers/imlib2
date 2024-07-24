@@ -1,3 +1,31 @@
+v1.12.3 - 2024-07-13
+--------------------
+Chema Gonzalez (2):
+      Y4M loader: add support for full range color
+      Y4M loader: add support for 10-bit 4:2:0
+
+Kim Woelders (20):
+      XPM loader: Fix potential segv on malformed file
+      imlib2_load: Add crc32 printout
+      test: Corrections for for libjxl-0.10
+      XPM loader: Fix some color table parsing errors
+      XPM loader: Major overhaul
+      test_load_2: Add full range color y4m image
+      test_load_2: Add some more y4m test images
+      Some cleanups in asm code
+      Add endbr32/64 instruction at the start of asm functions
+      Add missing CET (Control-flow Enforcement Technology) bits in asm code
+      imlib2_view: Use poll(), not select()
+      imlib2_view: Minor cleanup
+      imlib2_view: Enable an alternate background color set (red/green)
+      imlib2_view: Optionally disable final anti-aliased rendering
+      imlib2_view: Rename scaling variables
+      imlib2_view: Optionally scale on input
+      imlib2_view: Enable specifying border
+      Y4M loader: Fix frame size calculation for 10-bit 4:2:0 format
+      imlib2_view: Enable specifying background checkerboard colors
+      v1.12.3
+
 v1.12.2 - 2024-02-03
 --------------------
 Chema Gonzalez (3):

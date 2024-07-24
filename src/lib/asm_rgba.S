@@ -1,9 +1,7 @@
 #include <config.h>
 #include "asm.h"
 
-#ifdef DO_MMX_ASM
-
-/*\ 
+/*\
 |*| MMX assembly rgba rendering routines for Imlib2
 |*| Written by Willem Monsuwe <willem@stack.nl>
 |*|
@@ -38,6 +36,7 @@ FN_(imlib_get_cpuid)
 /*\ Common code \*/
 /*\ Save registers, load common parameters \*/
 #define ENTER			\
+	ENDBR_;			\
 	pushl %ebp;		\
 	movl  %esp, %ebp;	\
 	pushl %ebx;		\
@@ -79,7 +78,6 @@ FN_(imlib_get_cpuid)
 	movl %ebp, %esp;	\
 	popl %ebp;		\
 	ret
-
 
 
 PR_(imlib_mmx_bgr565_fast):
@@ -272,8 +270,6 @@ PR_(imlib_get_cpuid):
 	ret
 
 SIZE(imlib_get_cpuid)
-
-#endif
 
 #ifdef __ELF__
 .section .note.GNU-stack,"",@progbits
