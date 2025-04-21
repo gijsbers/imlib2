@@ -1,4 +1,4 @@
-AC_INIT([imlib2],[1.12.4],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.12.5],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -21,7 +21,7 @@ define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
 VERSION_CUR=13
-VERSION_REV=4
+VERSION_REV=5
 VERSION_AGE=12
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
@@ -226,6 +226,17 @@ loader_check_gif() {
   fi
 }
 
+loader_check_y4m() {
+  AC_CHECK_LIB(yuv, J420ToARGB, y4m_libs="-lyuv" y4m_ok=yes, y4m_ok=no)
+  if test "$y4m_ok" = yes; then
+    AC_CHECK_HEADER([libyuv.h], , y4m_ok=no)
+    if test "$y4m_ok" = yes; then
+      Y4M_LIBS=$y4m_libs
+      AC_SUBST(Y4M_LIBS)
+    fi
+  fi
+}
+
 EC_LOADER_CHECK(AVIF, auto, libavif)
 EC_LOADER_CHECK(GIF,  auto, , loader_check_gif)
 EC_LOADER_CHECK(HEIF, auto, libheif)
@@ -238,7 +249,7 @@ EC_LOADER_CHECK(RAW,  auto, libraw)
 EC_LOADER_CHECK(SVG,  auto, librsvg-2.0 >= 2.46)
 EC_LOADER_CHECK(TIFF, auto, libtiff-4)
 EC_LOADER_CHECK(WEBP, auto, libwebpdemux)
-EC_LOADER_CHECK(Y4M,  auto, libyuv)
+EC_LOADER_CHECK(Y4M,  auto, libyuv, loader_check_y4m)
 
 # Decompressors
 loader_check_bz2() {
@@ -275,6 +286,18 @@ AC_ARG_ENABLE([doc-build],
   [AS_HELP_STRING([--enable-doc-build], [Enable building documentation (not installed) @<:@default=no@:>@])]
 )
 AM_CONDITIONAL(BUILD_DOC, test "$enable_doc_build" = "yes")
+
+# If libImlib2 is loaded with RTLD_LOCAL, modules must be linked with libimlib2
+AC_ARG_ENABLE([rtld-local-support],
+  [AS_HELP_STRING([--enable-rtld-local-support], [Link modules with libImlib2 @<:@default=yes@:>@])],,
+  [
+    case "$host_os" in
+    *android* | cygwin*) enable_rtld_local_support="yes" ;;
+    *) enable_rtld_local_support="yes" ;;
+    esac
+  ]
+)
+AM_CONDITIONAL(ENABLE_RTLD_LOCAL_SUPPORT, test "$enable_rtld_local_support" = "yes")
 
 EC_C_WARNINGS()
 EC_C_VISIBILITY(yes)
@@ -355,6 +378,7 @@ echo "Include filters...........: $enable_filters"
 echo "Include text functions....: $enable_text"
 echo "Use visibility hiding.....: $enable_visibility_hiding"
 echo "Use struct packing........: $enable_packing"
+echo "Enable RTLD_LOCAL support.: $enable_rtld_local_support"
 echo
 echo "Build demo programs.......: $enable_progs"
 echo

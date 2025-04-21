@@ -1852,10 +1852,12 @@ __imlib_BlendImageToImage(const ImlibImage *im_src, ImlibImage *im_dst,
     {
         ImlibScaleInfo *scaleinfo;
         uint32_t       *buf;
-        int             dwabs, dhabs, dxx, dyy, y2, x2;
+        int             dwabs, dhabs, dxx, dyy, y2, x2, sw_org, sh_org;
         int             psx, psy, psw, psh;
         int             y, h, hh;
 
+        sw_org = sw;
+        sh_org = sh;
         dwabs = abs(dw);
         dhabs = abs(dh);
 
@@ -1868,9 +1870,9 @@ __imlib_BlendImageToImage(const ImlibImage *im_src, ImlibImage *im_dst,
         if (sw <= 0 || sh <= 0)
             return;
         if (psx != sx)
-            dx += ((sx - psx) * dwabs) / sw;
+            dx += ((sx - psx) * dwabs) / psw;
         if (psy != sy)
-            dy += ((sy - psy) * dhabs) / sh;
+            dy += ((sy - psy) * dhabs) / psh;
         if (psw != sw)
             dwabs = (dwabs * sw) / psw;
         if (psh != sh)
@@ -1900,8 +1902,8 @@ __imlib_BlendImageToImage(const ImlibImage *im_src, ImlibImage *im_dst,
             sh = (sh * dhabs) / psh;
         dxx = dx - psx;
         dyy = dy - psy;
-        dxx += (x2 * abs(dw)) / sw;
-        dyy += (y2 * abs(dh)) / sh;
+        dxx += (x2 * dwabs) / sw_org;
+        dyy += (y2 * dhabs) / sh_org;
 
         if (sw == 0)
             sw = 1;
@@ -1913,7 +1915,7 @@ __imlib_BlendImageToImage(const ImlibImage *im_src, ImlibImage *im_dst,
         if (sw <= 0 || sh <= 0)
             return;
 
-        scaleinfo = __imlib_CalcScaleInfo(im_src, sw, sh, dw, dh, aa);
+        scaleinfo = __imlib_CalcScaleInfo(im_src, sw_org, sh_org, dw, dh, aa);
         if (!scaleinfo)
             return;
         /* if we are scaling the image at all make a scaling buffer */

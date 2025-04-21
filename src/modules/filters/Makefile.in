@@ -133,30 +133,28 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkgdir)"
 LTLIBRARIES = $(pkg_LTLIBRARIES)
-bumpmap_la_DEPENDENCIES =
-am_bumpmap_la_OBJECTS = bumpmap_la-filter_bumpmap.lo
+bumpmap_la_DEPENDENCIES = $(IMLIB2_LIBS)
+am_bumpmap_la_OBJECTS = filter_bumpmap.lo
 bumpmap_la_OBJECTS = $(am_bumpmap_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-bumpmap_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(bumpmap_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(bumpmap_la_LDFLAGS) $(LDFLAGS) -o $@
-colormod_la_LIBADD =
-am_colormod_la_OBJECTS = colormod_la-filter_colormod.lo
+bumpmap_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(bumpmap_la_LDFLAGS) $(LDFLAGS) -o $@
+colormod_la_DEPENDENCIES = $(IMLIB2_LIBS)
+am_colormod_la_OBJECTS = filter_colormod.lo
 colormod_la_OBJECTS = $(am_colormod_la_OBJECTS)
-colormod_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(colormod_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
-	$(CCLD) $(AM_CFLAGS) $(CFLAGS) $(colormod_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
-testfilter_la_LIBADD =
-am_testfilter_la_OBJECTS = testfilter_la-filter_test.lo
+colormod_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(colormod_la_LDFLAGS) $(LDFLAGS) -o $@
+testfilter_la_DEPENDENCIES = $(IMLIB2_LIBS)
+am_testfilter_la_OBJECTS = filter_test.lo
 testfilter_la_OBJECTS = $(am_testfilter_la_OBJECTS)
-testfilter_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(testfilter_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
-	$(CCLD) $(AM_CFLAGS) $(CFLAGS) $(testfilter_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
+testfilter_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(testfilter_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -172,9 +170,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/bumpmap_la-filter_bumpmap.Plo \
-	./$(DEPDIR)/colormod_la-filter_colormod.Plo \
-	./$(DEPDIR)/testfilter_la-filter_test.Plo
+am__depfiles_remade = ./$(DEPDIR)/filter_bumpmap.Plo \
+	./$(DEPDIR)/filter_colormod.Plo ./$(DEPDIR)/filter_test.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -410,16 +407,17 @@ AM_CPPFLAGS = -I$(top_builddir) -I$(top_builddir)/src/lib -I$(top_srcdir)/src/li
 pkgdir = $(libdir)/imlib2/filters
 pkg_LTLIBRARIES = testfilter.la bumpmap.la colormod.la
 EXTRA_DIST = filter_common.h
+@ENABLE_RTLD_LOCAL_SUPPORT_TRUE@IMLIB2_LIBS = $(top_builddir)/src/lib/libImlib2.la
+LIBTOOLFLAGS = --tag=disable-static
 testfilter_la_SOURCES = filter_test.c
 testfilter_la_LDFLAGS = -module -avoid-version
-testfilter_la_LIBTOOLFLAGS = --tag=disable-static
+testfilter_la_LIBADD = $(IMLIB2_LIBS)
 bumpmap_la_SOURCES = filter_bumpmap.c
 bumpmap_la_LDFLAGS = -module -avoid-version
-bumpmap_la_LIBADD = -lm
-bumpmap_la_LIBTOOLFLAGS = --tag=disable-static
+bumpmap_la_LIBADD = $(IMLIB2_LIBS) -lm
 colormod_la_SOURCES = filter_colormod.c
 colormod_la_LDFLAGS = -module -avoid-version
-colormod_la_LIBTOOLFLAGS = --tag=disable-static
+colormod_la_LIBADD = $(IMLIB2_LIBS)
 all: all-am
 
 .SUFFIXES:
@@ -433,9 +431,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/modules/filters/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/modules/filters/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/modules/filters/Makefile
+	  $(AUTOMAKE) --foreign src/modules/filters/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -504,9 +502,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bumpmap_la-filter_bumpmap.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/colormod_la-filter_colormod.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testfilter_la-filter_test.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_bumpmap.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_colormod.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter_test.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -534,27 +532,6 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-bumpmap_la-filter_bumpmap.lo: filter_bumpmap.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(bumpmap_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT bumpmap_la-filter_bumpmap.lo -MD -MP -MF $(DEPDIR)/bumpmap_la-filter_bumpmap.Tpo -c -o bumpmap_la-filter_bumpmap.lo `test -f 'filter_bumpmap.c' || echo '$(srcdir)/'`filter_bumpmap.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/bumpmap_la-filter_bumpmap.Tpo $(DEPDIR)/bumpmap_la-filter_bumpmap.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='filter_bumpmap.c' object='bumpmap_la-filter_bumpmap.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(bumpmap_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o bumpmap_la-filter_bumpmap.lo `test -f 'filter_bumpmap.c' || echo '$(srcdir)/'`filter_bumpmap.c
-
-colormod_la-filter_colormod.lo: filter_colormod.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(colormod_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT colormod_la-filter_colormod.lo -MD -MP -MF $(DEPDIR)/colormod_la-filter_colormod.Tpo -c -o colormod_la-filter_colormod.lo `test -f 'filter_colormod.c' || echo '$(srcdir)/'`filter_colormod.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/colormod_la-filter_colormod.Tpo $(DEPDIR)/colormod_la-filter_colormod.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='filter_colormod.c' object='colormod_la-filter_colormod.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(colormod_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o colormod_la-filter_colormod.lo `test -f 'filter_colormod.c' || echo '$(srcdir)/'`filter_colormod.c
-
-testfilter_la-filter_test.lo: filter_test.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(testfilter_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT testfilter_la-filter_test.lo -MD -MP -MF $(DEPDIR)/testfilter_la-filter_test.Tpo -c -o testfilter_la-filter_test.lo `test -f 'filter_test.c' || echo '$(srcdir)/'`filter_test.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/testfilter_la-filter_test.Tpo $(DEPDIR)/testfilter_la-filter_test.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='filter_test.c' object='testfilter_la-filter_test.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(testfilter_la_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o testfilter_la-filter_test.lo `test -f 'filter_test.c' || echo '$(srcdir)/'`filter_test.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -689,9 +666,9 @@ clean-am: clean-generic clean-libtool clean-pkgLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/bumpmap_la-filter_bumpmap.Plo
-	-rm -f ./$(DEPDIR)/colormod_la-filter_colormod.Plo
-	-rm -f ./$(DEPDIR)/testfilter_la-filter_test.Plo
+		-rm -f ./$(DEPDIR)/filter_bumpmap.Plo
+	-rm -f ./$(DEPDIR)/filter_colormod.Plo
+	-rm -f ./$(DEPDIR)/filter_test.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -737,9 +714,9 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/bumpmap_la-filter_bumpmap.Plo
-	-rm -f ./$(DEPDIR)/colormod_la-filter_colormod.Plo
-	-rm -f ./$(DEPDIR)/testfilter_la-filter_test.Plo
+		-rm -f ./$(DEPDIR)/filter_bumpmap.Plo
+	-rm -f ./$(DEPDIR)/filter_colormod.Plo
+	-rm -f ./$(DEPDIR)/filter_test.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

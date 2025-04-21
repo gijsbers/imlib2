@@ -119,7 +119,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am__objects_1 = prog_x11.$(OBJEXT)
 am_imlib2_bumpmap_OBJECTS = imlib2_bumpmap.$(OBJEXT) $(am__objects_1)
 imlib2_bumpmap_OBJECTS = $(am_imlib2_bumpmap_OBJECTS)
-imlib2_bumpmap_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+imlib2_bumpmap_DEPENDENCIES = $(IMLIB2_LIBS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -127,36 +127,35 @@ am__v_lt_1 =
 am_imlib2_colorspace_OBJECTS = imlib2_colorspace.$(OBJEXT) \
 	$(am__objects_1)
 imlib2_colorspace_OBJECTS = $(am_imlib2_colorspace_OBJECTS)
-imlib2_colorspace_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+imlib2_colorspace_DEPENDENCIES = $(IMLIB2_LIBS)
 am__objects_2 = prog_util.$(OBJEXT)
 am_imlib2_conv_OBJECTS = imlib2_conv.$(OBJEXT) $(am__objects_2)
 imlib2_conv_OBJECTS = $(am_imlib2_conv_OBJECTS)
-imlib2_conv_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+imlib2_conv_DEPENDENCIES = $(IMLIB2_LIBS)
 am_imlib2_grab_OBJECTS = imlib2_grab.$(OBJEXT) $(am__objects_1)
 imlib2_grab_OBJECTS = $(am_imlib2_grab_OBJECTS)
-imlib2_grab_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+imlib2_grab_DEPENDENCIES = $(IMLIB2_LIBS)
 am__objects_3 = imlib2_load-prog_util.$(OBJEXT)
 am_imlib2_load_OBJECTS = imlib2_load-imlib2_load.$(OBJEXT) \
 	$(am__objects_3)
 imlib2_load_OBJECTS = $(am_imlib2_load_OBJECTS)
 am__DEPENDENCIES_1 =
-imlib2_load_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+imlib2_load_DEPENDENCIES = $(IMLIB2_LIBS) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_imlib2_poly_OBJECTS = imlib2_poly.$(OBJEXT) $(am__objects_1)
 imlib2_poly_OBJECTS = $(am_imlib2_poly_OBJECTS)
-imlib2_poly_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+imlib2_poly_DEPENDENCIES = $(IMLIB2_LIBS)
 am_imlib2_show_OBJECTS = imlib2_show.$(OBJEXT) $(am__objects_1)
 imlib2_show_OBJECTS = $(am_imlib2_show_OBJECTS)
-imlib2_show_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+imlib2_show_DEPENDENCIES = $(IMLIB2_LIBS)
 am_imlib2_test_OBJECTS = imlib2_test.$(OBJEXT) $(am__objects_1)
 imlib2_test_OBJECTS = $(am_imlib2_test_OBJECTS)
-imlib2_test_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+imlib2_test_DEPENDENCIES = $(IMLIB2_LIBS)
 am__objects_4 = imlib2_view-prog_x11.$(OBJEXT)
 am_imlib2_view_OBJECTS = imlib2_view-imlib2_view.$(OBJEXT) \
 	$(am__objects_4)
 imlib2_view_OBJECTS = $(am_imlib2_view_OBJECTS)
-imlib2_view_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la \
-	$(am__DEPENDENCIES_1)
+imlib2_view_DEPENDENCIES = $(IMLIB2_LIBS) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -427,28 +426,29 @@ $(X_CFLAGS)
 @BUILD_X11_TRUE@X_BASED_PROGS = imlib2_show imlib2_test imlib2_poly \
 @BUILD_X11_TRUE@	imlib2_colorspace imlib2_view imlib2_grab \
 @BUILD_X11_TRUE@	$(am__append_1)
+IMLIB2_LIBS = $(top_builddir)/src/lib/libImlib2.la
 SRCS_X11 = prog_x11.c  prog_x11.h
 SRCS_UTIL = prog_util.c prog_util.h
 imlib2_conv_SOURCES = imlib2_conv.c $(SRCS_UTIL)
-imlib2_conv_LDADD = $(top_builddir)/src/lib/libImlib2.la
+imlib2_conv_LDADD = $(IMLIB2_LIBS)
 imlib2_load_SOURCES = imlib2_load.c $(SRCS_UTIL)
 imlib2_load_CPPFLAGS = $(AM_CPPFLAGS) $(ZLIB_CFLAGS)
-imlib2_load_LDADD = $(top_builddir)/src/lib/libImlib2.la $(ZLIB_LIBS) $(CLOCK_LIBS)
+imlib2_load_LDADD = $(IMLIB2_LIBS) $(ZLIB_LIBS) $(CLOCK_LIBS)
 imlib2_show_SOURCES = imlib2_show.c $(SRCS_X11)
-imlib2_show_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11 -lm
+imlib2_show_LDADD = $(IMLIB2_LIBS) -lX11 -lm
 imlib2_test_SOURCES = imlib2_test.c $(SRCS_X11)
-imlib2_test_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
+imlib2_test_LDADD = $(IMLIB2_LIBS) -lX11
 imlib2_bumpmap_SOURCES = imlib2_bumpmap.c $(SRCS_X11)
-imlib2_bumpmap_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
+imlib2_bumpmap_LDADD = $(IMLIB2_LIBS) -lX11
 imlib2_poly_SOURCES = imlib2_poly.c $(SRCS_X11)
-imlib2_poly_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
+imlib2_poly_LDADD = $(IMLIB2_LIBS) -lX11
 imlib2_colorspace_SOURCES = imlib2_colorspace.c $(SRCS_X11)
-imlib2_colorspace_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
+imlib2_colorspace_LDADD = $(IMLIB2_LIBS) -lX11
 imlib2_view_SOURCES = imlib2_view.c $(SRCS_X11)
 imlib2_view_CPPFLAGS = $(AM_CPPFLAGS) $(ZLIB_CFLAGS)
-imlib2_view_LDADD = $(top_builddir)/src/lib/libImlib2.la $(ZLIB_LIBS) -lX11
+imlib2_view_LDADD = $(IMLIB2_LIBS) $(ZLIB_LIBS) -lX11
 imlib2_grab_SOURCES = imlib2_grab.c $(SRCS_X11)
-imlib2_grab_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
+imlib2_grab_LDADD = $(IMLIB2_LIBS) -lX11
 all: all-am
 
 .SUFFIXES:
@@ -462,9 +462,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/bin/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/bin/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu src/bin/Makefile
+	  $(AUTOMAKE) --foreign src/bin/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \

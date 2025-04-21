@@ -1,3 +1,18 @@
+v1.12.5 - 2025-04-06
+--------------------
+Kim Woelders (8):
+      autofoo: Optionally link modules with libImlib2.la
+      autofoo: Some defaults for RTLD_LOCAL support
+      blend: Fixup after "blend: Rename some variables for clarity"
+      test: Add test_scale_2
+      autofoo: Use pkg-config for libyuv if available
+      autofoo: Cosmetics
+      autofoo: Enable RTLD_LOCAL support by default
+      v1.12.5
+
+NRK (1):
+      autofoo: fix libyuv detection
+
 v1.12.4 - 2025-03-15
 --------------------
 Chema Gonzalez (1):
