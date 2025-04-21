@@ -1510,7 +1510,7 @@ __imlib_ReCopyRGBToRGBACmod(uint32_t *src, int srcw, uint32_t *dst, int dstw,
 
 ImlibBlendFunction
 __imlib_GetBlendFunction(ImlibOp op, char blend, char merge_alpha, char rgb_src,
-                         ImlibColorModifier *cm)
+                         const ImlibColorModifier *cm)
 {
     /*\ [ mmx ][ operation ][ cmod ][ merge_alpha ][ rgb_src ][ blend ] \ */
     static const ImlibBlendFunction ibfuncs[][4][2][2][2][2] = {
@@ -1746,10 +1746,11 @@ __imlib_GetBlendFunction(ImlibOp op, char blend, char merge_alpha, char rgb_src,
 }
 
 void
-__imlib_BlendRGBAToData(uint32_t *src, int src_w, int src_h, uint32_t *dst,
-                        int dst_w, int dst_h, int sx, int sy, int dx, int dy,
-                        int w, int h, char blend, char merge_alpha,
-                        ImlibColorModifier *cm, ImlibOp op, char rgb_src)
+__imlib_BlendRGBAToData(const uint32_t *src, int src_w, int src_h,
+                        uint32_t *dst, int dst_w, int dst_h,
+                        int sx, int sy, int dx, int dy, int w, int h,
+                        char blend, char merge_alpha,
+                        const ImlibColorModifier *cm, ImlibOp op, char rgb_src)
 {
     ImlibBlendFunction blender;
 
@@ -1793,18 +1794,19 @@ __imlib_BlendRGBAToData(uint32_t *src, int src_w, int src_h, uint32_t *dst,
     __imlib_build_pow_lut();
     blender = __imlib_GetBlendFunction(op, blend, merge_alpha, rgb_src, cm);
     if (blender)
-        blender(src + (sy * src_w) + sx, src_w,
-                dst + (dy * dst_w) + dx, dst_w, w, h, cm);
+        blender((uint32_t *) src + (sy * src_w) + sx, src_w,
+                dst + (dy * dst_w) + dx, dst_w, w, h,
+                (ImlibColorModifier *) cm);
 }
 
 #define LINESIZE 16
 
 void
-__imlib_BlendImageToImage(ImlibImage *im_src, ImlibImage *im_dst,
+__imlib_BlendImageToImage(const ImlibImage *im_src, ImlibImage *im_dst,
                           char aa, char blend, char merge_alpha,
-                          int ssx, int ssy, int ssw, int ssh,
-                          int ddx, int ddy, int ddw, int ddh,
-                          ImlibColorModifier *cm, ImlibOp op,
+                          int sx, int sy, int sw, int sh,
+                          int dx, int dy, int dw, int dh,
+                          const ImlibColorModifier *cm, ImlibOp op,
                           int clx, int cly, int clw, int clh)
 {
     char            rgb_src = 0;
@@ -1815,10 +1817,10 @@ __imlib_BlendImageToImage(ImlibImage *im_src, ImlibImage *im_dst,
 
     /* don't do anything if we have a 0 width or height image to render */
     /* if the input rect size < 0 don't render either */
-    if (ssw <= 0 || ssh <= 0 || ddw == 0 || ddh == 0)
+    if (sw <= 0 || sh <= 0 || dw == 0 || dh == 0)
         return;
 
-    if ((ssw == ddw) && (ssh == ddh))
+    if ((sw == dw) && (sh == dh))
     {
         if (!im_dst->has_alpha)
             merge_alpha = 0;
@@ -1830,41 +1832,32 @@ __imlib_BlendImageToImage(ImlibImage *im_src, ImlibImage *im_dst,
         }
         if (clw)
         {
-            int             px, py;
+            int             pdx, pdy;
 
-            px = ddx;
-            py = ddy;
-            CLIP(ddx, ddy, ddw, ddh, clx, cly, clw, clh);
-            if (ddw <= 0 || ddh <= 0)
+            pdx = dx;
+            pdy = dy;
+            CLIP(dx, dy, dw, dh, clx, cly, clw, clh);
+            if (dw <= 0 || dh <= 0)
                 return;
-            px = ddx - px;
-            py = ddy - py;
-            ssx += px;
-            ssy += py;
+            sx += dx - pdx;
+            sy += dy - pdy;
         }
 
         __imlib_BlendRGBAToData(im_src->data, im_src->w, im_src->h,
                                 im_dst->data, im_dst->w, im_dst->h,
-                                ssx, ssy,
-                                ddx, ddy,
-                                ddw, ddh, blend, merge_alpha, cm, op, rgb_src);
+                                sx, sy, dx, dy, dw, dh,
+                                blend, merge_alpha, cm, op, rgb_src);
     }
     else
     {
-        ImlibScaleInfo *scaleinfo = NULL;
-        uint32_t       *buf = NULL;
-        int             sx, sy, sw, sh, dx, dy, dw, dh, dxx, dyy, y2, x2;
+        ImlibScaleInfo *scaleinfo;
+        uint32_t       *buf;
+        int             dwabs, dhabs, dxx, dyy, y2, x2;
         int             psx, psy, psw, psh;
         int             y, h, hh;
 
-        sx = ssx;
-        sy = ssy;
-        sw = ssw;
-        sh = ssh;
-        dx = ddx;
-        dy = ddy;
-        dw = abs(ddw);
-        dh = abs(ddh);
+        dwabs = abs(dw);
+        dhabs = abs(dh);
 
         /* clip the source rect to be within the actual image */
         psx = sx;
@@ -1875,40 +1868,40 @@ __imlib_BlendImageToImage(ImlibImage *im_src, ImlibImage *im_dst,
         if (sw <= 0 || sh <= 0)
             return;
         if (psx != sx)
-            dx += ((sx - psx) * abs(ddw)) / ssw;
+            dx += ((sx - psx) * dwabs) / sw;
         if (psy != sy)
-            dy += ((sy - psy) * abs(ddh)) / ssh;
+            dy += ((sy - psy) * dhabs) / sh;
         if (psw != sw)
-            dw = (dw * sw) / psw;
+            dwabs = (dwabs * sw) / psw;
         if (psh != sh)
-            dh = (dh * sh) / psh;
-        if (dw <= 0 || dh <= 0)
+            dhabs = (dhabs * sh) / psh;
+        if (dwabs <= 0 || dhabs <= 0)
             return;
 
         /* clip output coords to clipped input coords */
         psx = dx;
         psy = dy;
-        psw = dw;
-        psh = dh;
+        psw = dwabs;
+        psh = dhabs;
         x2 = sx;
         y2 = sy;
-        CLIP(dx, dy, dw, dh, 0, 0, im_dst->w, im_dst->h);
-        if (dw <= 0 || dh <= 0)
+        CLIP(dx, dy, dwabs, dhabs, 0, 0, im_dst->w, im_dst->h);
+        if (dwabs <= 0 || dhabs <= 0)
             return;
         if (clw)
         {
-            CLIP(dx, dy, dw, dh, clx, cly, clw, clh);
-            if (dw <= 0 || dh <= 0)
+            CLIP(dx, dy, dwabs, dhabs, clx, cly, clw, clh);
+            if (dwabs <= 0 || dhabs <= 0)
                 return;
         }
-        if (psw != dw)
-            sw = (sw * dw) / psw;
-        if (psh != dh)
-            sh = (sh * dh) / psh;
+        if (psw != dwabs)
+            sw = (sw * dwabs) / psw;
+        if (psh != dhabs)
+            sh = (sh * dhabs) / psh;
         dxx = dx - psx;
         dyy = dy - psy;
-        dxx += (x2 * abs(ddw)) / ssw;
-        dyy += (y2 * abs(ddh)) / ssh;
+        dxx += (x2 * abs(dw)) / sw;
+        dyy += (y2 * abs(dh)) / sh;
 
         if (sw == 0)
             sw = 1;
@@ -1920,12 +1913,12 @@ __imlib_BlendImageToImage(ImlibImage *im_src, ImlibImage *im_dst,
         if (sw <= 0 || sh <= 0)
             return;
 
-        scaleinfo = __imlib_CalcScaleInfo(im_src, ssw, ssh, ddw, ddh, aa);
+        scaleinfo = __imlib_CalcScaleInfo(im_src, sw, sh, dw, dh, aa);
         if (!scaleinfo)
             return;
         /* if we are scaling the image at all make a scaling buffer */
         /* allocate a buffer to render scaled RGBA data into */
-        buf = malloc(dw * LINESIZE * sizeof(uint32_t));
+        buf = malloc(dwabs * LINESIZE * sizeof(uint32_t));
         if (!buf)
         {
             __imlib_FreeScaleInfo(scaleinfo);
@@ -1933,7 +1926,7 @@ __imlib_BlendImageToImage(ImlibImage *im_src, ImlibImage *im_dst,
         }
 
         /* setup h */
-        h = dh;
+        h = dhabs;
         if (!im_dst->has_alpha)
             merge_alpha = 0;
         if (!im_src->has_alpha)
@@ -1944,7 +1937,7 @@ __imlib_BlendImageToImage(ImlibImage *im_src, ImlibImage *im_dst,
         }
 
         /* scale in LINESIZE Y chunks and convert to depth */
-        for (y = 0; y < dh; y += LINESIZE, h -= LINESIZE)
+        for (y = 0; y < dhabs; y += LINESIZE, h -= LINESIZE)
         {
             hh = LINESIZE;
             if (h < LINESIZE)
@@ -1953,12 +1946,11 @@ __imlib_BlendImageToImage(ImlibImage *im_src, ImlibImage *im_dst,
             /* scale the imagedata for this LINESIZE lines chunk of image */
             __imlib_Scale(scaleinfo, aa, im_src->has_alpha,
                           im_src->data, buf, dxx, dyy + y,
-                          0, 0, dw, hh, dw, im_src->w);
+                          0, 0, dwabs, hh, dwabs, im_src->w);
 
-            __imlib_BlendRGBAToData(buf, dw, hh,
-                                    im_dst->data, im_dst->w,
-                                    im_dst->h,
-                                    0, 0, dx, dy + y, dw, dh,
+            __imlib_BlendRGBAToData(buf, dwabs, hh,
+                                    im_dst->data, im_dst->w, im_dst->h,
+                                    0, 0, dx, dy + y, dwabs, dhabs,
                                     blend, merge_alpha, cm, op, rgb_src);
         }
         /* free up our buffers and point tables */

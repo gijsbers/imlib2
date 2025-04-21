@@ -1,3 +1,67 @@
+v1.12.4 - 2025-03-15
+--------------------
+Chema Gonzalez (1):
+      Y4M loader: add support for images with no framerate info
+
+Kim Woelders (49):
+      imlib2_view: Toggle anti-alias flag on 'a'
+      test_load_2: Add another y4m test image
+      scaling: Fix potential crash when scaling large images
+      test_grab: Work around linewidth=0 bug
+      test: Enable skipping tests for specific files
+      test: By default skip CRC checks on jxl images
+      test: Colorize Skip message
+      SVG loader: Suppress warning
+      test: Enable skipping loader flushing
+      test: Correct CFLAGS when building with alternative library packages
+      test_load_2: Adjustment for libheif-1.19.x
+      imlib2_load/view: Show image alpha status too
+      imlib2_load/view: Add -h option for help
+      imlib2_conv: Optionally produce scaled image
+      imlib2_conv: Optionally render image on background before saving
+      test: Change test images
+      savers: Add common save parameter handler
+      HEIF saver: Add one
+      scale: Rearrange some variable declarations
+      scale/blend: Add some missing consts
+      blend: Some mostly cosmetic changes
+      blend: Rename some variables for clarity
+      loaders: Fix gcc15 warnings
+      test: Make top-level clean clean test too
+      SVG loader: Handle .svgz too
+      test: Fix top-level distclean
+      PNG loader: Debug printout tweaks
+      image: Trivial simplification
+      image: Add optional alpha check requested by loaders
+      SVG loader: Check alpha in pixel data
+      imlib2_view: Optionally show crc32 of image data
+      test: Some trivial ouput tweaks
+      test: Change many no-alpha test images to not have alpha data
+      test: Corrections after no-alpha update
+      GIF loader: Fix minor issue when loading transparent gifs
+      test: Add transparent gif check
+      Y4M Loader: Trivial simplification
+      autofoo: Make building demo programs optional (default enabled)
+      autofoo: No longer link modules with libImlib2.la
+      test_save: Add qoi
+      specs: Optionally build split rpms
+      XBM loader: Debug printout tweaks
+      AVIF loader: Indent
+      AVIF saver: Add one
+      HEIF loader: Demote avif support if regular avif loader is built
+      test: Add basic avif test
+      test: test_grab needs -lX11
+      test: Avoid warnings from _FORTIFY_SOURCE
+      v1.12.4
+
+NRK (6):
+      AVIF loader: add new loader based on libavif
+      Y4M Loader: replace fps_{den,num} with frametime_us
+      Y4M Loader: provide the pixel aspect ratio directly
+      autofoo: don't hardcode zlib flags
+      QOI Loader: sync with upstream
+      QOI Saver: add one
+
 v1.12.3 - 2024-07-13
 --------------------
 Chema Gonzalez (2):

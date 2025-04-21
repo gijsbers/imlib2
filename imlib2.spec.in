@@ -23,6 +23,8 @@ Requires: %{name} = %{version}
 %description devel
 Headers, static libraries and documentation for Imlib2.
 
+%{!?split_rpm: %define split_rpm 0}
+
 %prep
 %setup -q
 
@@ -59,8 +61,19 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/%{name}/filters
 %dir %{_libdir}/%{name}/loaders
 %{_libdir}/lib*.so.*
+%if %{split_rpm}
+# Include ones not requiring external libraries
+%define ldrs_int1 ani,argb,bmp,ff,ico,lbm,pnm,qoi,tga,xbm,xpm
+# Include gz, xz compression which presumably are used everywhere
+%define ldrs_int2 lzma,zlib
+# Include png needed by freetype anyway
+%define ldrs_int3 png
+%define ldrs_int %{ldrs_int1},%{ldrs_int2},%{ldrs_int3}
+%{_libdir}/%{name}/loaders/{%{ldrs_int}}.so
+%else
 %{_libdir}/%{name}/filters/*.so
 %{_libdir}/%{name}/loaders/*.so
+%endif
 %dir %{_datadir}/%{name}
 %{_datadir}/%{name}/rgb.txt
 
@@ -71,5 +84,286 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/*
 %{_datadir}/%{name}/*/*
 %{_bindir}/imlib2_*
+
+%if %{split_rpm}
+
+%package filters
+Summary: Imlib2 basic plugin filters set
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+%description filters
+Basic set of plugin filters that come with Imlib2
+%files filters
+%attr(755,root,root) %{_libdir}/imlib2/filters/*.so
+
+%dnl %package loader_ani
+%dnl Summary: Imlib2 ANI loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_ani
+%dnl ANI image loader/saver for Imlib2
+%dnl %files loader_ani
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/ani.so
+
+%dnl %package loader_argb
+%dnl Summary: Imlib2 ARGB loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_argb
+%dnl ARGB image loader/saver for Imlib2
+%dnl %files loader_argb
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/argb.so
+
+%package loader_avif
+Summary: Imlib2 AVIF loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: libavif-devel
+%description loader_avif
+AVIF image loader/saver for Imlib2
+%files loader_avif
+%attr(755,root,root) %{_libdir}/imlib2/loaders/avif.so
+
+%dnl %package loader_bmp
+%dnl Summary: Imlib2 BMP loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_bmp
+%dnl BMP image loader/saver for Imlib2
+%dnl %files loader_bmp
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/bmp.so
+
+%dnl %package loader_ff
+%dnl Summary: Imlib2 Farbfeld loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_ff
+%dnl Farbfeld image loader/saver for Imlib2
+%dnl %files loader_ff
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/ff.so
+
+%package loader_gif
+Summary: Imlib2 GIF loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: giflib-devel
+%description loader_gif
+GIF image loader for Imlib2
+%files loader_gif
+%attr(755,root,root) %{_libdir}/imlib2/loaders/gif.so
+
+%package loader_heif
+Summary: Imlib2 HEIF loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: libheif-devel
+%description loader_heif
+HEIF image loader for Imlib2
+%files loader_heif
+%attr(755,root,root) %{_libdir}/imlib2/loaders/heif.so
+
+%dnl %package loader_ico
+%dnl Summary: Imlib2 ICO loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_ico
+%dnl ICO image loader for Imlib2
+%dnl %files loader_ico
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/ico.so
+
+%package loader_jpeg
+Summary: Imlib2 JPEG loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: libjpeg-devel
+%description loader_jpeg
+JPEG image loader/saver for Imlib2
+%files loader_jpeg
+%attr(755,root,root) %{_libdir}/imlib2/loaders/jpeg.so
+
+%package loader_jxl
+Summary: Imlib2 JPEG-XL loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: libjxl-devel
+%description loader_jxl
+JPEG-XL image loader/saver for Imlib2
+%files loader_jxl
+%attr(755,root,root) %{_libdir}/imlib2/loaders/jxl.so
+
+%package loader_j2k
+Summary: Imlib2 JPEG 2000 loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: openjpeg-devel
+%description loader_j2k
+JPEG 2000 image loader/saver for Imlib2
+%files loader_j2k
+%attr(755,root,root) %{_libdir}/imlib2/loaders/j2k.so
+
+%dnl %package loader_lbm
+%dnl Summary: Imlib2 LBM loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_lbm
+%dnl LBM image loader/saver for Imlib2
+%dnl %files loader_lbm
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/lbm.so
+
+%package loader_png
+Summary: Imlib2 PNG loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: libpng-devel
+BuildRequires: zlib-devel
+%description loader_png
+PNG image loader/saver for Imlib2
+%dnl %files loader_png
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/png.so
+
+%dnl %package loader_pnm
+%dnl Summary: Imlib2 PNM loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_pnm
+%dnl PNM image loader/saver for Imlib2
+%dnl %files loader_pnm
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/pnm.so
+
+%package loader_ps
+Summary: Imlib2 PostScript loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: libspectre-devel
+%description loader_ps
+PostScript image loader/saver for Imlib2
+%files loader_ps
+%attr(755,root,root) %{_libdir}/imlib2/loaders/ps.so
+
+%dnl %package loader_qoi
+%dnl Summary: Imlib2 QOI loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_qoi
+%dnl QOI image loader/saver for Imlib2
+%dnl %files loader_qoi
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/qoi.so
+
+%package loader_raw
+Summary: Imlib2 RAW loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: LibRaw-devel
+%description loader_raw
+RAW image loader/saver for Imlib2
+%files loader_raw
+%attr(755,root,root) %{_libdir}/imlib2/loaders/raw.so
+
+%package loader_svg
+Summary: Imlib2 SVG loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: librsvg2-devel
+%description loader_svg
+SVG image loader/saver for Imlib2
+%files loader_svg
+%attr(755,root,root) %{_libdir}/imlib2/loaders/svg.so
+
+%dnl %package loader_tga
+%dnl Summary: Imlib2 TGA loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_tga
+%dnl TGA image loader/saver for Imlib2
+%dnl %files loader_tga
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/tga.so
+
+%package loader_tiff
+Summary: Imlib2 TIFF loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: libtiff-devel
+%description loader_tiff
+TIFF image loader/saver for Imlib2
+%files loader_tiff
+%attr(755,root,root) %{_libdir}/imlib2/loaders/tiff.so
+
+%package loader_webp
+Summary: Imlib2 WebP loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: libwebp-devel
+%description loader_webp
+WebP image loader/saver for Imlib2
+%files loader_webp
+%attr(755,root,root) %{_libdir}/imlib2/loaders/webp.so
+
+%dnl %package loader_xbm
+%dnl Summary: Imlib2 XBM loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_xbm
+%dnl XBM image loader/saver for Imlib2
+%dnl %files loader_xbm
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/xbm.so
+
+%dnl %package loader_xpm
+%dnl Summary: Imlib2 XPM loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_xpm
+%dnl XPM image loader/saver for Imlib2
+%dnl %files loader_xpm
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/xpm.so
+
+%package loader_y4m
+Summary: Imlib2 Y4M loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: libyuv-devel
+%description loader_y4m
+Y4M image loader/saver for Imlib2
+%files loader_y4m
+%attr(755,root,root) %{_libdir}/imlib2/loaders/y4m.so
+
+%package loader_bz2
+Summary: Imlib2 .bz2 loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+BuildRequires: bzip2-devel
+%description loader_bz2
+Bzip2 compressed image loader/saver for Imlib2
+%files loader_bz2
+%attr(755,root,root) %{_libdir}/imlib2/loaders/bz2.so
+
+%dnl %package loader_lzma
+%dnl Summary: Imlib2 .xz loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl BuildRequires: xz-devel
+%dnl %description loader_lzma
+%dnl %xz compressed image loader/saver for Imlib2
+%dnl %files loader_lzma
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/lzma.so
+
+%dnl %package loader_gz
+%dnl Summary: Imlib2 .gz loader
+%dnl Group: System Environment/Libraries
+%dnl Requires: %{name} = %{version}
+%dnl %description loader_gz
+%dnl %gz compressed image loader/saver for Imlib2
+%dnl %files loader_gz
+%dnl %attr(755,root,root) %{_libdir}/imlib2/loaders/zlib.so
+
+%package loader_id3
+Summary: Imlib2 .id3 loader
+Group: System Environment/Libraries
+Requires: %{name} = %{version}
+%description loader_id3
+id3 tag image loader/saver for Imlib2
+%files loader_id3
+%attr(755,root,root) %{_libdir}/imlib2/loaders/id3.so
+
+%endif
 
 %changelog

@@ -25,14 +25,21 @@ typedef struct {
 
 static const char *const ext_ani[] = { "ani", NULL };
 static const char *const ext_argb[] = { "argb", NULL };
+#ifdef BUILD_AVIF_LOADER
+static const char *const ext_avif[] = { "avif", "avifs", NULL };
+#endif
 static const char *const ext_bmp[] = { "bmp", NULL };
 static const char *const ext_ff[] = { "ff", NULL };
 #ifdef BUILD_GIF_LOADER
 static const char *const ext_gif[] = { "gif", NULL };
 #endif
 #ifdef BUILD_HEIF_LOADER
-static const char *const ext_heif[] =
-    { "heif", "heifs", "heic", "heics", "avci", "avcs", "avif", "avifs", NULL };
+static const char *const ext_heif[] = { "heif", "heifs", "heic", "heics",
+#ifndef BUILD_AVIF_LOADER
+    "avci", "avcs", "avif", "avifs",
+#endif
+    NULL
+};
 #endif
 static const char *const ext_ico[] = { "ico", NULL };
 #ifdef BUILD_JPEG_LOADER
@@ -60,7 +67,7 @@ static const char *const ext_raw[] = { "raw",
 };
 #endif
 #ifdef BUILD_SVG_LOADER
-static const char *const ext_svg[] = { "svg", NULL };
+static const char *const ext_svg[] = { "svg", "svgz", NULL };
 #endif
 static const char *const ext_tga[] = { "tga", NULL };
 #ifdef BUILD_TIFF_LOADER
@@ -92,6 +99,9 @@ static const char *const ext_id3[] = { "mp3", NULL };
 static const KnownLoader loaders_known[] = {
     { "ani", ext_ani },
     { "argb", ext_argb },
+#ifdef BUILD_AVIF_LOADER
+    { "avif", ext_avif },
+#endif
     { "bmp", ext_bmp },
     { "ff", ext_ff },
 #ifdef BUILD_GIF_LOADER

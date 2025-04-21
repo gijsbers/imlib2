@@ -4,6 +4,7 @@
 #include <jpeglib.h>
 #include <setjmp.h>
 #include "exif.h"
+#include "ldrs_util.h"
 
 #define DBG_PFX "LDR-jpg"
 
@@ -258,11 +259,11 @@ _save(ImlibImage *im)
     struct jpeg_compress_struct jcs;
     ImLib_JPEG_data jdata;
     FILE           *f = im->fi->fp;
+    ImlibSaverParam imsp;
     uint8_t        *buf;
     const uint32_t *imdata;
     JSAMPROW       *jbuf;
-    int             y, quality, compression;
-    ImlibImageTag  *tag;
+    int             y;
     int             i, j;
 
     /* allocate a small buffer to convert image data */
@@ -289,35 +290,14 @@ _save(ImlibImage *im)
     /* settigns etc. - this is the "api" to hint for extra information for */
     /* saver modules */
 
-    /* compression */
-    compression = 2;
-    tag = __imlib_GetTag(im, "compression");
-    if (tag)
-    {
-        compression = tag->val;
-        if (compression < 0)
-            compression = 0;
-        if (compression > 9)
-            compression = 9;
-    }
-    /* convert to quality */
-    quality = (9 - compression) * 10;
-    quality = quality * 10 / 9;
-    /* quality */
-    tag = __imlib_GetTag(im, "quality");
-    if (tag)
-        quality = tag->val;
-    if (quality < 1)
-        quality = 1;
-    if (quality > 100)
-        quality = 100;
+    get_saver_params(im, &imsp);
 
     /* set up jepg compression parameters */
     jpeg_set_defaults(&jcs);
-    jpeg_set_quality(&jcs, quality, TRUE);
+    jpeg_set_quality(&jcs, imsp.quality, TRUE);
 
     /* progressive */
-    if ((tag = __imlib_GetTag(im, "interlacing")) && tag->val)
+    if (imsp.interlacing)
         jpeg_simple_progression(&jcs);
 
     jpeg_start_compress(&jcs, TRUE);

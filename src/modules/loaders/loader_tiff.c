@@ -1,5 +1,6 @@
 #include "config.h"
 #include "Imlib2_Loader.h"
+#include "ldrs_util.h"
 
 #include <setjmp.h>
 #include <tiffio.h>
@@ -481,7 +482,7 @@ _save(ImlibImage *im)
     int             has_alpha = im->has_alpha;
     int             compression_type;
     int             i;
-    ImlibImageTag  *tag;
+    ImlibSaverParam imsp;
 
     TIFFSetErrorHandler(_tiff_error);
     TIFFSetWarningHandler(_tiff_error);
@@ -506,12 +507,13 @@ _save(ImlibImage *im)
     /* settings etc. - this is the "api" to hint for extra information for */
     /* saver modules */
 
+    get_saver_params(im, &imsp);
+
     /* compression */
     compression_type = COMPRESSION_ADOBE_DEFLATE;
-    tag = __imlib_GetTag(im, "compression_type");
-    if (tag)
+    if (imsp.compr_type >= 0)
     {
-        switch (tag->val)
+        switch (imsp.compr_type)
         {
         default:
             break;
@@ -538,7 +540,7 @@ _save(ImlibImage *im)
         case COMPRESSION_JBIG:
         case COMPRESSION_SGILOG:
         case COMPRESSION_SGILOG24:
-            compression_type = tag->val;
+            compression_type = imsp.compr_type;
             break;
         }
     }

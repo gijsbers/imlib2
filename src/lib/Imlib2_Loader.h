@@ -171,6 +171,10 @@ struct _ImlibImage {
     int             frame;
 };
 
+#define LDR_ALPHA_NO            0       /* No alpha */
+#define LDR_ALPHA_YES           1       /* Has alpha */
+#define LDR_ALPHA_CHECK         2       /* May have alpa pixels */
+
 /* Must match the ones in Imlib2.h.in */
 #define FF_IMAGE_ANIMATED       (1 << 0)        /* Frames are an animated sequence    */
 #define FF_FRAME_BLEND          (1 << 1)        /* Blend current onto previous frame  */

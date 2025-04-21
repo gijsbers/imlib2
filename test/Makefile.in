@@ -87,7 +87,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-subdir = /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.12.3/test
+subdir = /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.12.4/test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ec_asan.m4 \
 	$(top_srcdir)/m4/ec_packing.m4 \
@@ -132,6 +132,8 @@ AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
+AVIF_CFLAGS = @AVIF_CFLAGS@
+AVIF_LIBS = @AVIF_LIBS@
 AWK = @AWK@
 BZ2_CFLAGS = @BZ2_CFLAGS@
 BZ2_LIBS = @BZ2_LIBS@
@@ -318,9 +320,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.12.3/test/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.12.4/test/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.12.3/test/Makefile
+	  $(AUTOMAKE) --foreign /local/stuff/src/E/git/legacy/imlib2/build/default/imlib2-1.12.4/test/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \

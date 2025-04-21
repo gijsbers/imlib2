@@ -1,5 +1,6 @@
 #include "config.h"
 #include "Imlib2_Loader.h"
+#include "ldrs_util.h"
 
 #define MAX_RUNNERS 4           /* Maybe set to Ncpu/2? */
 
@@ -230,7 +231,8 @@ _save(ImlibImage *im)
         .data_type = JXL_TYPE_UINT8,
         .endianness = JXL_NATIVE_ENDIAN,
     };
-    ImlibImageTag  *tag;
+    ImlibSaverParam imsp;
+    float           distance;
     const uint32_t *imdata;
     uint8_t        *buffer = NULL, *buf_ptr;
     size_t          buf_len, i, npix;
@@ -277,38 +279,25 @@ _save(ImlibImage *im)
     if (!opts)
         goto quit;
 
-    tag = __imlib_GetTag(im, "quality");
-    if (tag)
-    {
-        int             quality;
-        float           distance;
+    get_saver_params(im, &imsp);
 
-        quality = (tag->val) >= 0 ? tag->val : 0;
-        if (quality >= 100)
-        {
-            D("Quality=%d: Lossless\n", quality);
-            JxlEncoderSetFrameDistance(opts, 0.f);
-            JxlEncoderSetFrameLossless(opts, JXL_TRUE);
-        }
-        else
-        {
-            distance = 15.f * (1.f - .01 * quality);    // 0 - 100 -> 15 - 0
-            D("Quality=%d: Distance=%.1f\n", quality, distance);
-            JxlEncoderSetFrameLossless(opts, JXL_FALSE);
-            JxlEncoderSetFrameDistance(opts, distance);
-        }
+    if (imsp.quality == 100)
+    {
+        D("Quality=%d: Lossless\n", imsp.quality);
+        JxlEncoderSetFrameDistance(opts, 0.f);
+        JxlEncoderSetFrameLossless(opts, JXL_TRUE);
+    }
+    else
+    {
+        distance = 15.f * (1.f - .01 * imsp.quality);   // 0 - 100 -> 15 - 0
+        D("Quality=%d: Distance=%.1f\n", imsp.quality, distance);
+        JxlEncoderSetFrameLossless(opts, JXL_FALSE);
+        JxlEncoderSetFrameDistance(opts, distance);
     }
 
-    tag = __imlib_GetTag(im, "compression");
-    if (tag)
-    {
-        int             compression;
-
-        compression = (tag->val < 1) ? 1 : (tag->val > 9) ? 9 : tag->val;
-        D("Compression=%d\n", compression);
-        JxlEncoderFrameSettingsSetOption(opts, JXL_ENC_FRAME_SETTING_EFFORT,
-                                         compression);
-    }
+    D("Compression=%d\n", imsp.compression);
+    JxlEncoderFrameSettingsSetOption(opts, JXL_ENC_FRAME_SETTING_EFFORT,
+                                     imsp.compression);
 
     // Create buffer for format conversion and output
     pbuf_fmt.num_channels = (im->has_alpha) ? 4 : 3;

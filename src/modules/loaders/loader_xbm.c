@@ -114,7 +114,7 @@ _load(ImlibImage *im, int load_data)
         if (!s)
             break;
 
-        D(">>>%s\n", buf);
+        DL(">>>%s\n", buf);
 
         if (header)
         {
@@ -122,7 +122,7 @@ _load(ImlibImage *im, int load_data)
             tok1[0] = tok2[0] = '\0';
             val = -1;
             sscanf(buf, " %1023s %1023s %d", tok1, tok2, &val);
-            D("'%s': '%s': %d\n", tok1, tok2, val);
+            DL("'%s': '%s': %d\n", tok1, tok2, val);
             if (strcmp(tok1, "#define") == 0)
             {
                 if (tok2[0] == '\0')
@@ -131,12 +131,12 @@ _load(ImlibImage *im, int load_data)
                 nlen = strlen(tok2);
                 if (nlen > 6 && strcmp(tok2 + nlen - 6, "_width") == 0)
                 {
-                    D("'%s' = %d\n", tok2, val);
+                    DL("'%s' = %d\n", tok2, val);
                     im->w = val;
                 }
                 else if (nlen > 7 && strcmp(tok2 + nlen - 7, "_height") == 0)
                 {
-                    D("'%s' = %d\n", tok2, val);
+                    DL("'%s' = %d\n", tok2, val);
                     im->h = val;
                 }
             }
@@ -171,7 +171,7 @@ _load(ImlibImage *im, int load_data)
             {
                 nlen = -1;
                 sscanf(s, "%i%n", &val, &nlen);
-                D("Data '%s': %02x (%d)\n", s, val, nlen);
+                DL("Data '%s': %02x (%d)\n", s, val, nlen);
                 if (nlen < 0)
                     break;
                 s += nlen;
@@ -183,7 +183,7 @@ _load(ImlibImage *im, int load_data)
                     bit = (val & (1 << i)) != 0;
                     pixel = _bitmap_color(bit);
                     *ptr++ = pixel;
-                    D("i, x, y: %2d %2d %2d: %08x\n", i, x, y, pixel);
+                    DL("i, x, y: %2d %2d %2d: %08x\n", i, x, y, pixel);
                 }
 
                 if (x >= im->w)

@@ -227,7 +227,7 @@ _load(ImlibImage *im, int load_data)
         }
         else if (rec == EXTENSION_RECORD_TYPE)
         {
-            int             ext_code, disp;
+            int             ext_code;
             GifByteType    *ext;
 
             ext = NULL;
@@ -237,20 +237,26 @@ _load(ImlibImage *im, int load_data)
                 DL(" EXTENSION_RECORD_TYPE(%d): ic=%d: ext_code=%02x: %02x %02x %02x %02x %02x\n",      //
                    rec, gif->ImageCount, ext_code,
                    ext[0], ext[1], ext[2], ext[3], ext[4]);
-                if (pf && ext_code == GRAPHICS_EXT_FUNC_CODE &&
+                if (ext_code == GRAPHICS_EXT_FUNC_CODE &&
                     gif->ImageCount == frame - 1)
                 {
+                    int             frame_delay, disp;
+
                     bits = ext[1];
-                    pf->frame_delay = 10 * (0x100 * ext[3] + ext[2]);
+                    frame_delay = 10 * (0x100 * ext[3] + ext[2]);
                     if (bits & 1)
                         transp = ext[4];
                     disp = (bits >> 2) & 0x7;
-                    if (disp == 2 || disp == 3)
-                        pf->frame_flags |= FF_FRAME_DISPOSE_CLEAR;
-                    pf->frame_flags |= FF_FRAME_BLEND;
                     D(" Frame %d: disp=%d ui=%d tr=%d, delay=%d transp = #%02x\n",      //
                       gif->ImageCount + 1, disp, (bits >> 1) & 1, bits & 1,
-                      pf->frame_delay, transp);
+                      frame_delay, transp);
+                    if (pf)
+                    {
+                        pf->frame_delay = frame_delay;
+                        if (disp == 2 || disp == 3)
+                            pf->frame_flags |= FF_FRAME_DISPOSE_CLEAR;
+                        pf->frame_flags |= FF_FRAME_BLEND;
+                    }
                 }
                 ext = NULL;
                 DGifGetExtensionNext(gif, &ext);

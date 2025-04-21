@@ -135,11 +135,13 @@ imlib2_conv_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_imlib2_grab_OBJECTS = imlib2_grab.$(OBJEXT) $(am__objects_1)
 imlib2_grab_OBJECTS = $(am_imlib2_grab_OBJECTS)
 imlib2_grab_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
-am_imlib2_load_OBJECTS = imlib2_load.$(OBJEXT) $(am__objects_2)
+am__objects_3 = imlib2_load-prog_util.$(OBJEXT)
+am_imlib2_load_OBJECTS = imlib2_load-imlib2_load.$(OBJEXT) \
+	$(am__objects_3)
 imlib2_load_OBJECTS = $(am_imlib2_load_OBJECTS)
 am__DEPENDENCIES_1 =
 imlib2_load_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_imlib2_poly_OBJECTS = imlib2_poly.$(OBJEXT) $(am__objects_1)
 imlib2_poly_OBJECTS = $(am_imlib2_poly_OBJECTS)
 imlib2_poly_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
@@ -149,9 +151,12 @@ imlib2_show_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
 am_imlib2_test_OBJECTS = imlib2_test.$(OBJEXT) $(am__objects_1)
 imlib2_test_OBJECTS = $(am_imlib2_test_OBJECTS)
 imlib2_test_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
-am_imlib2_view_OBJECTS = imlib2_view.$(OBJEXT) $(am__objects_1)
+am__objects_4 = imlib2_view-prog_x11.$(OBJEXT)
+am_imlib2_view_OBJECTS = imlib2_view-imlib2_view.$(OBJEXT) \
+	$(am__objects_4)
 imlib2_view_OBJECTS = $(am_imlib2_view_OBJECTS)
-imlib2_view_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la
+imlib2_view_DEPENDENCIES = $(top_builddir)/src/lib/libImlib2.la \
+	$(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -169,10 +174,14 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/imlib2_bumpmap.Po \
 	./$(DEPDIR)/imlib2_colorspace.Po ./$(DEPDIR)/imlib2_conv.Po \
-	./$(DEPDIR)/imlib2_grab.Po ./$(DEPDIR)/imlib2_load.Po \
+	./$(DEPDIR)/imlib2_grab.Po \
+	./$(DEPDIR)/imlib2_load-imlib2_load.Po \
+	./$(DEPDIR)/imlib2_load-prog_util.Po \
 	./$(DEPDIR)/imlib2_poly.Po ./$(DEPDIR)/imlib2_show.Po \
-	./$(DEPDIR)/imlib2_test.Po ./$(DEPDIR)/imlib2_view.Po \
-	./$(DEPDIR)/prog_util.Po ./$(DEPDIR)/prog_x11.Po
+	./$(DEPDIR)/imlib2_test.Po \
+	./$(DEPDIR)/imlib2_view-imlib2_view.Po \
+	./$(DEPDIR)/imlib2_view-prog_x11.Po ./$(DEPDIR)/prog_util.Po \
+	./$(DEPDIR)/prog_x11.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -233,6 +242,8 @@ AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
+AVIF_CFLAGS = @AVIF_CFLAGS@
+AVIF_LIBS = @AVIF_LIBS@
 AWK = @AWK@
 BZ2_CFLAGS = @BZ2_CFLAGS@
 BZ2_LIBS = @BZ2_LIBS@
@@ -421,7 +432,8 @@ SRCS_UTIL = prog_util.c prog_util.h
 imlib2_conv_SOURCES = imlib2_conv.c $(SRCS_UTIL)
 imlib2_conv_LDADD = $(top_builddir)/src/lib/libImlib2.la
 imlib2_load_SOURCES = imlib2_load.c $(SRCS_UTIL)
-imlib2_load_LDADD = $(top_builddir)/src/lib/libImlib2.la -lz $(CLOCK_LIBS)
+imlib2_load_CPPFLAGS = $(AM_CPPFLAGS) $(ZLIB_CFLAGS)
+imlib2_load_LDADD = $(top_builddir)/src/lib/libImlib2.la $(ZLIB_LIBS) $(CLOCK_LIBS)
 imlib2_show_SOURCES = imlib2_show.c $(SRCS_X11)
 imlib2_show_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11 -lm
 imlib2_test_SOURCES = imlib2_test.c $(SRCS_X11)
@@ -433,7 +445,8 @@ imlib2_poly_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
 imlib2_colorspace_SOURCES = imlib2_colorspace.c $(SRCS_X11)
 imlib2_colorspace_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
 imlib2_view_SOURCES = imlib2_view.c $(SRCS_X11)
-imlib2_view_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
+imlib2_view_CPPFLAGS = $(AM_CPPFLAGS) $(ZLIB_CFLAGS)
+imlib2_view_LDADD = $(top_builddir)/src/lib/libImlib2.la $(ZLIB_LIBS) -lX11
 imlib2_grab_SOURCES = imlib2_grab.c $(SRCS_X11)
 imlib2_grab_LDADD = $(top_builddir)/src/lib/libImlib2.la -lX11
 all: all-am
@@ -565,11 +578,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_colorspace.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_conv.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_grab.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_load.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_load-imlib2_load.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_load-prog_util.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_poly.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_show.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_test.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_view.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_view-imlib2_view.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/imlib2_view-prog_x11.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prog_util.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/prog_x11.Po@am__quote@ # am--include-marker
 
@@ -599,6 +614,62 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+imlib2_load-imlib2_load.o: imlib2_load.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_load_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT imlib2_load-imlib2_load.o -MD -MP -MF $(DEPDIR)/imlib2_load-imlib2_load.Tpo -c -o imlib2_load-imlib2_load.o `test -f 'imlib2_load.c' || echo '$(srcdir)/'`imlib2_load.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/imlib2_load-imlib2_load.Tpo $(DEPDIR)/imlib2_load-imlib2_load.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='imlib2_load.c' object='imlib2_load-imlib2_load.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_load_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o imlib2_load-imlib2_load.o `test -f 'imlib2_load.c' || echo '$(srcdir)/'`imlib2_load.c
+
+imlib2_load-imlib2_load.obj: imlib2_load.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_load_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT imlib2_load-imlib2_load.obj -MD -MP -MF $(DEPDIR)/imlib2_load-imlib2_load.Tpo -c -o imlib2_load-imlib2_load.obj `if test -f 'imlib2_load.c'; then $(CYGPATH_W) 'imlib2_load.c'; else $(CYGPATH_W) '$(srcdir)/imlib2_load.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/imlib2_load-imlib2_load.Tpo $(DEPDIR)/imlib2_load-imlib2_load.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='imlib2_load.c' object='imlib2_load-imlib2_load.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_load_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o imlib2_load-imlib2_load.obj `if test -f 'imlib2_load.c'; then $(CYGPATH_W) 'imlib2_load.c'; else $(CYGPATH_W) '$(srcdir)/imlib2_load.c'; fi`
+
+imlib2_load-prog_util.o: prog_util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_load_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT imlib2_load-prog_util.o -MD -MP -MF $(DEPDIR)/imlib2_load-prog_util.Tpo -c -o imlib2_load-prog_util.o `test -f 'prog_util.c' || echo '$(srcdir)/'`prog_util.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/imlib2_load-prog_util.Tpo $(DEPDIR)/imlib2_load-prog_util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='prog_util.c' object='imlib2_load-prog_util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_load_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o imlib2_load-prog_util.o `test -f 'prog_util.c' || echo '$(srcdir)/'`prog_util.c
+
+imlib2_load-prog_util.obj: prog_util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_load_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT imlib2_load-prog_util.obj -MD -MP -MF $(DEPDIR)/imlib2_load-prog_util.Tpo -c -o imlib2_load-prog_util.obj `if test -f 'prog_util.c'; then $(CYGPATH_W) 'prog_util.c'; else $(CYGPATH_W) '$(srcdir)/prog_util.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/imlib2_load-prog_util.Tpo $(DEPDIR)/imlib2_load-prog_util.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='prog_util.c' object='imlib2_load-prog_util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_load_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o imlib2_load-prog_util.obj `if test -f 'prog_util.c'; then $(CYGPATH_W) 'prog_util.c'; else $(CYGPATH_W) '$(srcdir)/prog_util.c'; fi`
+
+imlib2_view-imlib2_view.o: imlib2_view.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_view_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT imlib2_view-imlib2_view.o -MD -MP -MF $(DEPDIR)/imlib2_view-imlib2_view.Tpo -c -o imlib2_view-imlib2_view.o `test -f 'imlib2_view.c' || echo '$(srcdir)/'`imlib2_view.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/imlib2_view-imlib2_view.Tpo $(DEPDIR)/imlib2_view-imlib2_view.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='imlib2_view.c' object='imlib2_view-imlib2_view.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_view_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o imlib2_view-imlib2_view.o `test -f 'imlib2_view.c' || echo '$(srcdir)/'`imlib2_view.c
+
+imlib2_view-imlib2_view.obj: imlib2_view.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_view_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT imlib2_view-imlib2_view.obj -MD -MP -MF $(DEPDIR)/imlib2_view-imlib2_view.Tpo -c -o imlib2_view-imlib2_view.obj `if test -f 'imlib2_view.c'; then $(CYGPATH_W) 'imlib2_view.c'; else $(CYGPATH_W) '$(srcdir)/imlib2_view.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/imlib2_view-imlib2_view.Tpo $(DEPDIR)/imlib2_view-imlib2_view.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='imlib2_view.c' object='imlib2_view-imlib2_view.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_view_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o imlib2_view-imlib2_view.obj `if test -f 'imlib2_view.c'; then $(CYGPATH_W) 'imlib2_view.c'; else $(CYGPATH_W) '$(srcdir)/imlib2_view.c'; fi`
+
+imlib2_view-prog_x11.o: prog_x11.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_view_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT imlib2_view-prog_x11.o -MD -MP -MF $(DEPDIR)/imlib2_view-prog_x11.Tpo -c -o imlib2_view-prog_x11.o `test -f 'prog_x11.c' || echo '$(srcdir)/'`prog_x11.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/imlib2_view-prog_x11.Tpo $(DEPDIR)/imlib2_view-prog_x11.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='prog_x11.c' object='imlib2_view-prog_x11.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_view_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o imlib2_view-prog_x11.o `test -f 'prog_x11.c' || echo '$(srcdir)/'`prog_x11.c
+
+imlib2_view-prog_x11.obj: prog_x11.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_view_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT imlib2_view-prog_x11.obj -MD -MP -MF $(DEPDIR)/imlib2_view-prog_x11.Tpo -c -o imlib2_view-prog_x11.obj `if test -f 'prog_x11.c'; then $(CYGPATH_W) 'prog_x11.c'; else $(CYGPATH_W) '$(srcdir)/prog_x11.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/imlib2_view-prog_x11.Tpo $(DEPDIR)/imlib2_view-prog_x11.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='prog_x11.c' object='imlib2_view-prog_x11.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(imlib2_view_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o imlib2_view-prog_x11.obj `if test -f 'prog_x11.c'; then $(CYGPATH_W) 'prog_x11.c'; else $(CYGPATH_W) '$(srcdir)/prog_x11.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -736,11 +807,13 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/imlib2_colorspace.Po
 	-rm -f ./$(DEPDIR)/imlib2_conv.Po
 	-rm -f ./$(DEPDIR)/imlib2_grab.Po
-	-rm -f ./$(DEPDIR)/imlib2_load.Po
+	-rm -f ./$(DEPDIR)/imlib2_load-imlib2_load.Po
+	-rm -f ./$(DEPDIR)/imlib2_load-prog_util.Po
 	-rm -f ./$(DEPDIR)/imlib2_poly.Po
 	-rm -f ./$(DEPDIR)/imlib2_show.Po
 	-rm -f ./$(DEPDIR)/imlib2_test.Po
-	-rm -f ./$(DEPDIR)/imlib2_view.Po
+	-rm -f ./$(DEPDIR)/imlib2_view-imlib2_view.Po
+	-rm -f ./$(DEPDIR)/imlib2_view-prog_x11.Po
 	-rm -f ./$(DEPDIR)/prog_util.Po
 	-rm -f ./$(DEPDIR)/prog_x11.Po
 	-rm -f Makefile
@@ -792,11 +865,13 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/imlib2_colorspace.Po
 	-rm -f ./$(DEPDIR)/imlib2_conv.Po
 	-rm -f ./$(DEPDIR)/imlib2_grab.Po
-	-rm -f ./$(DEPDIR)/imlib2_load.Po
+	-rm -f ./$(DEPDIR)/imlib2_load-imlib2_load.Po
+	-rm -f ./$(DEPDIR)/imlib2_load-prog_util.Po
 	-rm -f ./$(DEPDIR)/imlib2_poly.Po
 	-rm -f ./$(DEPDIR)/imlib2_show.Po
 	-rm -f ./$(DEPDIR)/imlib2_test.Po
-	-rm -f ./$(DEPDIR)/imlib2_view.Po
+	-rm -f ./$(DEPDIR)/imlib2_view-imlib2_view.Po
+	-rm -f ./$(DEPDIR)/imlib2_view-prog_x11.Po
 	-rm -f ./$(DEPDIR)/prog_util.Po
 	-rm -f ./$(DEPDIR)/prog_x11.Po
 	-rm -f Makefile

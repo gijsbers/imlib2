@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <zlib.h>
 
 #include "prog_x11.h"
 
@@ -55,6 +56,7 @@ static int      opt_cbfs = 8;   /* Background checkerboard field size */
 static char     opt_progress_granularity = 10;
 static char     opt_progress_print = 0;
 static int      opt_progress_delay = 0;
+bool            opt_show_crc;
 static unsigned int bg_cb_col_a = PIXEL_ARGB(255, 144, 144, 144);
 static unsigned int bg_cb_col_b = PIXEL_ARGB(255, 100, 100, 100);
 
@@ -80,11 +82,13 @@ static int      animloop = 0;   /* Animation loop count          */
    "Usage:\n" \
    "  imlib2_view [OPTIONS] {FILE | XID}...\n" \
    "OPTIONS:\n" \
+   "  -C         : Print CRC32 of image data\n" \
    "  -a         : Disable final anti-aliased rendering\n" \
    "  -b L,R,T,B : Set border\n" \
    "  -c         : Enable image caching (implies -e)\n" \
    "  -d         : Enable debug\n" \
    "  -e         : Do rendering explicitly (not via progress callback)\n" \
+   "  -h         : Show help\n" \
    "  -g N       : Set progress granularity to N%% (default 10(%%))\n" \
    "  -l N       : Introduce N ms delay in progress callback (default 0)\n" \
    "  -p         : Print info in progress callback (default no)\n" \
@@ -98,6 +102,21 @@ static void
 usage(void)
 {
     printf(HELP);
+}
+
+static unsigned int
+image_get_crc32(Imlib_Image im)
+{
+    const unsigned char *data;
+    unsigned int    crc, w, h;
+
+    imlib_context_set_image(im);
+    w = imlib_image_get_width();
+    h = imlib_image_get_height();
+    data = (const unsigned char *)imlib_image_get_data_for_reading_only();
+    crc = crc32(0, data, w * h * sizeof(uint32_t));
+
+    return crc;
 }
 
 static void
@@ -411,8 +430,10 @@ progress(Imlib_Image im, char percent, int update_x, int update_y,
         }
         Dprintf(" Window WxH=%dx%d\n", window_width, window_height);
 
-        V2printf(" Image  WxH=%dx%d fmt='%s'\n",
-                 up_ww, up_wh, imlib_image_format());
+        V2printf("- Image: fmt=%s WxH=%dx%d alpha=%c\n",
+                 imlib_image_format(),
+                 imlib_image_get_width(), imlib_image_get_height(),
+                 imlib_image_has_alpha()? 'y' : 'n');
 
         /* Initialize checkered background image */
         bg_im_init(image_width, image_height);
@@ -605,6 +626,9 @@ load_image(int no, const char *name)
         memset(&finfo, 0, sizeof(finfo));
         im = load_image_frame(nbuf, frame, 0);
 
+        if (opt_show_crc)
+            printf("%08x %s\n", image_get_crc32(im), name);
+
         animate = animate && animated;
 
         if (!im)
@@ -628,11 +652,19 @@ main(int argc, char **argv)
     static struct pollfd afds[1];
 
     verbose = 0;
+    opt_show_crc = false;
 
-    while ((opt = getopt(argc, argv, "ab:cdeg:l:ps:S:t:T:v")) != -1)
+    while ((opt = getopt(argc, argv, "Cab:cdeg:hl:ps:S:t:T:v")) != -1)
     {
         switch (opt)
         {
+        default:
+        case 'h':
+            usage();
+            return 1;
+        case 'C':
+            opt_show_crc = true;
+            break;
         case 'a':
             opt_aa_final = false;
             break;
@@ -689,9 +721,6 @@ main(int argc, char **argv)
         case 'v':
             verbose += 1;
             break;
-        default:
-            usage();
-            return 1;
         }
     }
 
@@ -780,6 +809,9 @@ main(int argc, char **argv)
                 {
                 default:
                     break;
+                case XK_a:
+                    opt_aa_final = !opt_aa_final;
+                    goto show_cur;
                 case XK_q:
                 case XK_Escape:
                     goto quit;

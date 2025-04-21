@@ -1,13 +1,12 @@
 #include "config.h"
 #include "Imlib2_Loader.h"
+#include "ldrs_util.h"
 
 #include <webp/decode.h>
 #include <webp/demux.h>
 #include <webp/encode.h>
 
 #define DBG_PFX "LDR-webp"
-
-#define CLAMP(X, MIN, MAX)  ((X) < (MIN) ? (MIN) : ((X) > (MAX) ? (MAX) : (X)))
 
 static const char *const _formats[] = { "webp" };
 
@@ -129,11 +128,9 @@ _save(ImlibImage *im)
 {
     int             rc;
     FILE           *f = im->fi->fp;
-    ImlibImageTag  *quality_tag;
-    ImlibImageTag  *compression_tag;
+    ImlibSaverParam imsp;
     WebPConfig      conf;
     WebPPicture     pic;
-    int             compression;
     int             lossless;
     int             free_pic = 0;
 
@@ -142,25 +139,19 @@ _save(ImlibImage *im)
     if (!WebPConfigInit(&conf) || !WebPPictureInit(&pic))
         goto quit;
 
-    conf.quality = 75;
-    quality_tag = __imlib_GetTag(im, "quality");
-    if (quality_tag)
-        conf.quality = CLAMP(quality_tag->val, 0, 100);
+    get_saver_params(im, &imsp);
 
-    compression_tag = __imlib_GetTag(im, "compression");
     /* other savers seem to treat quality 100 as lossless, do the same here. */
-    lossless = conf.quality == 100;
+    lossless = imsp.quality == 100;
     if (lossless)
     {
-        compression = 9 - (conf.quality / 10);  /* convert to compression */
-        if (compression_tag)
-            compression = compression_tag->val;
-        WebPConfigLosslessPreset(&conf, CLAMP(compression, 0, 9));
+        /* Compression parameter is effort, gzip-like 0-9 */
+        WebPConfigLosslessPreset(&conf, imsp.compression);
     }
-    else if (compression_tag)   /* for lossly encoding, only change conf.method if compression_tag was set */
+    else
     {
-        conf.method = CLAMP(compression_tag->val, 0, 9);
-        conf.method *= 0.67;    /* convert from [0, 9] to [0, 6]. (6/9 == 0.67) */
+        conf.quality = imsp.quality;
+        conf.method = 0.67 * imsp.compression;  /* convert from [0, 9] to [0, 6]. (6/9 == 0.67) */
     }
 
     if (!WebPValidateConfig(&conf))

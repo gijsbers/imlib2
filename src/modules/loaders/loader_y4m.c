@@ -36,7 +36,7 @@ enum Y4mParseStatus {
 
 typedef struct {
     ptrdiff_t       w, h;
-    ptrdiff_t       fps_num, fps_den;
+    int64_t         frametime_us;       /* frametime in micro-seconds */
     enum {
         Y4M_PARSE_CS_UNSUPPORTED = -1,
         Y4M_PARSE_CS_420,       /* default picked from ffmpeg */
@@ -54,15 +54,7 @@ typedef struct {
         Y4M_PARSE_IL_BOTTOM,
         Y4M_PARSE_IL_MIXED,
     } interlacing;
-    enum {
-        Y4M_PARSE_ASPECT_DEFAULT,
-        Y4M_PARSE_ASPECT_UNKNOWN,
-        Y4M_PARSE_ASPECT_1_1,
-        Y4M_PARSE_ASPECT_4_3,
-        Y4M_PARSE_ASPECT_4_5,
-        Y4M_PARSE_ASPECT_32_27,
-        Y4M_PARSE_ASPECT_OTHER,
-    } aspect;
+    int             pixel_aspect_w, pixel_aspect_h;
     enum {
         Y4M_PARSE_RANGE_UNSPECIFIED,
         Y4M_PARSE_RANGE_LIMITED,
@@ -120,12 +112,15 @@ y4m__match(const char *match, ptrdiff_t mlen,
 static enum Y4mParseStatus
 y4m__parse_params(Y4mParse *res, const uint8_t **start, const uint8_t *end)
 {
+    ptrdiff_t       number_of_frames, seconds;
+    ptrdiff_t       tmp_w, tmp_h;
     const uint8_t  *p = *start;
     const uint8_t  *peek;
 
     // default values
     res->range = Y4M_PARSE_RANGE_UNSPECIFIED;
     res->depth = 8;
+    res->frametime_us = 1000000;        /* 1 fps */
 
     for (;;)
     {
@@ -142,8 +137,7 @@ y4m__parse_params(Y4mParse *res, const uint8_t **start, const uint8_t *end)
             break;
         case '\n':
             *start = p;
-            if (res->w <= 0 || res->h <= 0 ||
-                res->fps_num <= 0 || res->fps_den <= 0)
+            if (res->w <= 0 || res->h <= 0 || res->frametime_us <= 0)
                 return Y4M_PARSE_CORRUPTED;
             return Y4M_PARSE_OK;
         case 'W':
@@ -155,9 +149,10 @@ y4m__parse_params(Y4mParse *res, const uint8_t **start, const uint8_t *end)
                 return Y4M_PARSE_CORRUPTED;
             break;
         case 'F':
-            if (!y4m__int(&res->fps_num, &p, end) ||
+            if (!y4m__int(&number_of_frames, &p, end) ||
                 !y4m__match(":", 1, &p, end) ||
-                !y4m__int(&res->fps_den, &p, end))
+                !y4m__int(&seconds, &p, end) ||
+                number_of_frames == 0 || seconds == 0)
             {
 #if IMLIB2_DEBUG
                 char            str[1024];
@@ -166,6 +161,8 @@ y4m__parse_params(Y4mParse *res, const uint8_t **start, const uint8_t *end)
 #endif
                 return Y4M_PARSE_CORRUPTED;
             }
+            res->frametime_us =
+                ((int64_t) seconds * 1000000) / number_of_frames;
             break;
         case 'I':
             if (y4m__match("p", 1, &p, end))
@@ -244,22 +241,13 @@ y4m__parse_params(Y4mParse *res, const uint8_t **start, const uint8_t *end)
 
             break;
         case 'A':
-            if (y4m__match("0:0", 3, &p, end))
-                res->aspect = Y4M_PARSE_ASPECT_UNKNOWN;
-            else if (y4m__match("1:1", 3, &p, end))
-                res->aspect = Y4M_PARSE_ASPECT_1_1;
-            else if (y4m__match("4:3", 3, &p, end))
-                res->aspect = Y4M_PARSE_ASPECT_4_3;
-            else if (y4m__match("4:5", 3, &p, end))
-                res->aspect = Y4M_PARSE_ASPECT_4_5;
-            else if (y4m__match("32:27", 5, &p, end))
-                res->aspect = Y4M_PARSE_ASPECT_32_27;
-            else
+            if (!y4m__int(&tmp_w, &p, end) ||
+                !y4m__match(":", 1, &p, end) || !y4m__int(&tmp_h, &p, end))
             {
-                res->aspect = Y4M_PARSE_ASPECT_OTHER;
-                for (; p < end && *p != ' ' && *p != '\n'; ++p)
-                    ;
+                return Y4M_PARSE_CORRUPTED;
             }
+            res->pixel_aspect_w = (int)tmp_w;
+            res->pixel_aspect_h = (int)tmp_h;
             break;
         case 'X':
             if (y4m__match("COLORRANGE=LIMITED", 18, &p, end))
@@ -294,14 +282,14 @@ y4m__parse_params(Y4mParse *res, const uint8_t **start, const uint8_t *end)
 Y4M_PARSE_API enum Y4mParseStatus
 y4m_parse_init(Y4mParse *res, const void *buffer, ptrdiff_t size)
 {
-    const char      magic[10] = "YUV4MPEG2 ";
+    static const char magic[] = "YUV4MPEG2 ";
 
     memset(res, 0x0, sizeof(*res));
     res->w = res->h = -1;
     res->p = buffer;
     res->end = res->p + size;
 
-    if (!y4m__match(magic, sizeof(magic), &res->p, res->end))
+    if (!y4m__match(magic, sizeof(magic) - 1, &res->p, res->end))
     {
         return Y4M_PARSE_NOT_Y4M;
     }
@@ -459,6 +447,12 @@ _load(ImlibImage *im, int load_data)
     if (y4m.interlacing != Y4M_PARSE_IL_PROGRESSIVE)
         return LOAD_BADIMAGE;
 
+    if (y4m.pixel_aspect_w != y4m.pixel_aspect_h || y4m.pixel_aspect_w == 0)
+    {
+        DL("Non-square pixel aspect ratio: %d:%d\n",
+           y4m.pixel_aspect_w, y4m.pixel_aspect_h);
+    }
+
     im->w = y4m.w;
     im->h = y4m.h;
     im->has_alpha = 0;
@@ -500,7 +494,7 @@ _load(ImlibImage *im, int load_data)
     {
         pf->canvas_w = im->w;
         pf->canvas_h = im->h;
-        pf->frame_delay = (1000 * y4m.fps_den) / y4m.fps_num;
+        pf->frame_delay = (y4m.frametime_us + 500) / 1000;
     }
 
     if (!load_data)

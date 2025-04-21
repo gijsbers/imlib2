@@ -39,6 +39,7 @@ static FILE    *fout;
    "  -c  : Enable image caching\n" \
    "  -e  : Break on error\n" \
    "  -f  : Load with imlib_load_image_fd()\n" \
+   "  -h  : Show help\n" \
    "  -i  : Load image immediately (don't defer data loading)\n" \
    "  -j  : Load image header only\n" \
    "  -m  : Load with imlib_load_image_mem()\n" \
@@ -173,10 +174,14 @@ main(int argc, char **argv)
     opt_cache = false;
     show_crc = false;
 
-    while ((opt = getopt(argc, argv, "Ccefijmn:pvx")) != -1)
+    while ((opt = getopt(argc, argv, "Ccefhijmn:pvx")) != -1)
     {
         switch (opt)
         {
+        default:
+        case 'h':
+            usage();
+            return 1;
         case 'C':
             show_crc = true;
             break;
@@ -286,8 +291,10 @@ main(int argc, char **argv)
             }
 
             imlib_context_set_image(im);
-            V2printf("- Image: fmt=%s WxH=%dx%d\n", imlib_image_format(),
-                     imlib_image_get_width(), imlib_image_get_height());
+            V2printf("- Image: fmt=%s WxH=%dx%d alpha=%c\n",
+                     imlib_image_format(),
+                     imlib_image_get_width(), imlib_image_get_height(),
+                     imlib_image_has_alpha()? 'y' : 'n');
 
             if (load_mode == LOAD_DEFER)
             {

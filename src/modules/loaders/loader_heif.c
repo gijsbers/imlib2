@@ -6,14 +6,20 @@
  */
 #include "config.h"
 #include "Imlib2_Loader.h"
+#include "ldrs_util.h"
 
+#include <errno.h>
 #include <stdbool.h>
 #include <libheif/heif.h>
 
 #define DBG_PFX "LDR-heif"
 
-static const char *const _formats[] =
-    { "heif", "heifs", "heic", "heics", "avci", "avcs", "avif", "avifs" };
+static const char *const _formats[] = {
+    "heif", "heifs", "heic", "heics",
+#ifndef BUILD_AVIF_LOADER
+    "avci", "avcs", "avif", "avifs"
+#endif
+};
 
 #define HEIF_BYTES_TO_CHECK 12L
 #define HEIF_8BIT_TO_PIXEL_ARGB(plane, has_alpha) \
@@ -173,9 +179,139 @@ _load(ImlibImage *im, int load_data)
     return rc;
 }
 
+static struct heif_error
+_heif_writer(struct heif_context *ctx, const void *data, size_t size,
+             void *userdata)
+{
+    struct heif_error error = heif_error_success;
+    FILE           *fp = userdata;
+    size_t          nw;
+
+    nw = fwrite(data, 1, size, fp);
+    if (nw != size)
+    {
+        error.code = heif_error_Encoding_error;
+        error.subcode = errno;
+    }
+
+    return error;
+}
+
+static int
+_heif_write(struct heif_context *ctx, FILE *fp)
+{
+    struct heif_error error;
+    struct heif_writer writer;
+
+    writer.writer_api_version = 1;
+    writer.write = _heif_writer;
+
+    error = heif_context_write(ctx, &writer, fp);
+
+    return IS_ERROR(error) ? LOAD_FAIL : LOAD_SUCCESS;
+}
+
+static int
+_save(ImlibImage *im)
+{
+    int             rc = LOAD_FAIL;
+    ImlibSaverParam imsp;
+    int             compr_type;
+    bool            has_alpha;
+    struct heif_error error;
+    struct heif_context *ctx = NULL;
+    struct heif_encoder *encoder = NULL;
+    struct heif_image *image = NULL;
+    int             bit_depth, bypp, stride;
+    uint8_t        *img_plane;
+
+    ctx = heif_context_alloc();
+    if (!ctx)
+        goto quit;
+
+    compr_type = heif_compression_HEVC;
+    if (im->fi->name)
+    {
+        if (strstr(im->fi->name, ".avif"))
+            compr_type = heif_compression_AV1;
+        else if (strstr(im->fi->name, ".heic"))
+            compr_type = heif_compression_HEVC;
+    }
+
+    get_saver_params(im, &imsp);
+
+    if (imsp.compr_type >= 0)
+        compr_type = imsp.compr_type;
+
+    D("Compression type   : %d\n", compr_type);
+    D("Compression/quality: %d/%d\n", imsp.compression, imsp.quality);
+
+    error = heif_context_get_encoder_for_format(ctx, compr_type, &encoder);
+    if (IS_ERROR(error))
+        goto quit;
+
+    if (imsp.quality == 100)
+    {
+        heif_encoder_set_lossless(encoder, 1);
+    }
+    else
+    {
+        heif_encoder_set_lossless(encoder, 0);
+        heif_encoder_set_lossy_quality(encoder, imsp.quality);
+    }
+
+    has_alpha = im->has_alpha;
+
+    error = heif_image_create(im->w, im->h, heif_colorspace_RGB,
+                              has_alpha ?
+                              heif_chroma_interleaved_RGBA :
+                              heif_chroma_interleaved_RGB, &image);
+    if (IS_ERROR(error))
+        goto quit;
+
+    bit_depth = 8;
+    heif_image_add_plane(image, heif_channel_interleaved, im->w, im->h,
+                         bit_depth);
+
+    img_plane = heif_image_get_plane(image, heif_channel_interleaved, &stride);
+    if (!img_plane)
+        goto quit;
+
+    bypp = has_alpha ? 4 : 3;
+
+    for (int y = 0; y < im->h; y++)
+    {
+        const uint8_t  *pi;
+        uint8_t        *po;
+
+        pi = (const uint8_t *)(im->data + y * im->w);
+        po = img_plane + y * stride;
+
+        for (int x = 0; x < im->w; x++, pi += 4, po += bypp)
+        {
+            po[0] = pi[2];
+            po[1] = pi[1];
+            po[2] = pi[0];
+            if (has_alpha)
+                po[3] = pi[3];
+        }
+    }
+
+    heif_context_encode_image(ctx, image, encoder, NULL, NULL);
+
+    rc = _heif_write(ctx, im->fi->fp);
+
+  quit:
+    heif_image_release(image);
+    heif_encoder_release(encoder);
+    heif_context_free(ctx);
+
+    return rc;
+}
+
 #if !LIBHEIF_HAVE_VERSION(1, 13, 0)
 
-IMLIB_LOADER_KEEP(_formats, _load, NULL);
+IMLIB_LOADER_KEEP(_formats, _load, _save);
 
 #else
 
@@ -188,6 +324,6 @@ _inex(int init)
         heif_deinit();
 }
 
-IMLIB_LOADER_INEX(_formats, _load, NULL, _inex);
+IMLIB_LOADER_INEX(_formats, _load, _save, _inex);
 
 #endif

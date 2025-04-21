@@ -309,24 +309,22 @@ typedef void    (*ImlibBlendFunction)(uint32_t *, int, uint32_t *, int, int,
 
 ImlibBlendFunction __imlib_GetBlendFunction(ImlibOp op, char merge_alpha,
                                             char blend, char rgb_src,
-                                            ImlibColorModifier * cm);
-void            __imlib_BlendImageToImage(ImlibImage * im_src,
+                                            const ImlibColorModifier * cm);
+void            __imlib_BlendImageToImage(const ImlibImage * im_src,
                                           ImlibImage * im_dst, char aa,
                                           char blend, char merge_alpha,
-                                          int ssx, int ssy,
-                                          int ssw, int ssh,
-                                          int ddx, int ddy,
-                                          int ddw, int ddh,
-                                          ImlibColorModifier * cm,
+                                          int sx, int sy, int sw, int sh,
+                                          int dx, int dy, int dw, int dh,
+                                          const ImlibColorModifier * cm,
                                           ImlibOp op, int clx, int cly,
                                           int clw, int clh);
-void            __imlib_BlendRGBAToData(uint32_t * src, int src_w,
+void            __imlib_BlendRGBAToData(const uint32_t * src, int src_w,
                                         int src_h, uint32_t * dst,
                                         int dst_w, int dst_h, int sx,
                                         int sy, int dx, int dy, int w,
                                         int h, char blend, char merge_alpha,
-                                        ImlibColorModifier * cm, ImlibOp op,
-                                        char rgb_src);
+                                        const ImlibColorModifier * cm,
+                                        ImlibOp op, char rgb_src);
 void            __imlib_build_pow_lut(void);
 
 /* *INDENT-OFF* */

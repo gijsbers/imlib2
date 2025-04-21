@@ -5,19 +5,24 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// decoder code taken from commit 8691a3ba:
+// decoder code taken from commit 8431e3f7:
 // https://codeberg.org/NRK/slashtmp/src/branch/master/compression/qoi-dec.c
+// encoder code taken from commit d81a0c4c:
+// https://codeberg.org/NRK/slashtmp/src/branch/master/compression/qoi-enc.c
 //
 // simple qoi decoder: https://qoiformat.org/
 //
 // This is free and unencumbered software released into the public domain.
 // For more information, please refer to <https://unlicense.org/>
 #define QOIDEC_API static
+#define QOIENC_API static
 #define DBG_PFX "LDR-qoi"
 #if IMLIB2_DEBUG
 #define QOIDEC_ASSERT(X)   do { if (!(X)) D("%d: %s\n", __LINE__, #X); } while (0)
+#define QOIENC_ASSERT(X)   QOIDEC_ASSERT(X)
 #else
 #define QOIDEC_ASSERT(X)
+#define QOIENC_ASSERT(X)
 #endif
 
 static const char *const _formats[] = { "qoi" };
@@ -40,6 +45,7 @@ typedef enum {
     QOIDEC_OK,
     QOIDEC_NOT_QOI, QOIDEC_CORRUPTED, QOIDEC_ZERO_DIM, QOIDEC_TOO_LARGE,
 } QoiDecStatus;
+
 QOIDEC_API QoiDecStatus qoi_dec_init(QoiDecCtx * ctx, const void *buffer,
                                      ptrdiff_t size);
 QOIDEC_API QoiDecStatus qoi_dec(QoiDecCtx * ctx);
@@ -49,7 +55,7 @@ QOIDEC_API QoiDecStatus qoi_dec(QoiDecCtx * ctx);
 QOIDEC_API      QoiDecStatus
 qoi_dec_init(QoiDecCtx *ctx, const void *buffer, ptrdiff_t size)
 {
-    static const uint8_t magic[4] = "qoif";
+    static const char magic[] = "qoif";
 
     QOIDEC_ASSERT(size >= 0);
 
@@ -57,7 +63,7 @@ qoi_dec_init(QoiDecCtx *ctx, const void *buffer, ptrdiff_t size)
 
     ctx->p = buffer;
     ctx->end = ctx->p + size;
-    if (size < 14 || memcmp(ctx->p, magic, sizeof(magic)) != 0)
+    if (size < 14 || memcmp(ctx->p, magic, sizeof(magic) - 1) != 0)
         return QOIDEC_NOT_QOI;
     ctx->p += 4;
 
@@ -97,7 +103,6 @@ qoi_dec(QoiDecCtx *ctx)
     } Clr;
     Clr             t[64] = { 0 };
     Clr             l = {.a = 0xFF };
-    uint8_t         lop = -1;
     static const uint8_t eof[8] = {[7] = 0x1 };
     const uint8_t  *p = ctx->p, *end = ctx->end;
 
@@ -150,10 +155,10 @@ qoi_dec(QoiDecCtx *ctx)
                 {
                     ctx->data[widx++] = c;
                 }
-                goto no_write;
+                goto next_iter;
                 break;
             case 0x0:
-                if (op == lop)
+                if (op == *p)
                 {
                     return QOIDEC_CORRUPTED;    // seriously?
                 }
@@ -180,14 +185,156 @@ qoi_dec(QoiDecCtx *ctx)
         t[(l.r * 3 + l.g * 5 + l.b * 7 + l.a * 11) % 64] = l;
       no_table:
         ctx->data[widx++] = (uint32_t) l.a << 24 | l.r << 16 | l.g << 8 | l.b;
-      no_write:
-        lop = op;
+      next_iter:
+        (void)0;                /* no-op */
     }
     if (end - p < (int)sizeof(eof) || memcmp(p, eof, sizeof(eof)) != 0)
         return QOIDEC_CORRUPTED;
 
     return QOIDEC_OK;
 }
+
+//////////// END QoiDec library
+
+typedef struct {
+    uint8_t         data[15];
+    int8_t          len;
+} QoiEncResult;
+
+typedef struct {
+    uint32_t        prev;
+    uint8_t         run:7;
+    uint8_t         no_alpha:1;
+    uint32_t        dict[64];
+} QoiEncCtx;
+
+enum { QOIENC_NO_ALPHA = 1 << 0, QOIENC_IS_SRGB = 1 << 1 };
+
+/// ctx is assumed to be zero initialized by the caller
+QOIENC_API      QoiEncResult
+qoi_enc_init(QoiEncCtx *ctx, uint32_t width, uint32_t height, uint32_t flags)
+{
+    QoiEncResult    res = {.len = 14 };
+    uint8_t        *p = res.data;
+
+    QOIENC_ASSERT((flags & ~UINT32_C(3)) == 0);
+    QOIENC_ASSERT(ctx->run == 0 && ctx->dict[63] == 0x0);
+
+    *p++ = 'q';
+    *p++ = 'o';
+    *p++ = 'i';
+    *p++ = 'f';
+    *p++ = (uint8_t) (width >> 24);
+    *p++ = (uint8_t) (width >> 16);
+    *p++ = (uint8_t) (width >> 8);
+    *p++ = (uint8_t) (width >> 0);
+    *p++ = (uint8_t) (height >> 24);
+    *p++ = (uint8_t) (height >> 16);
+    *p++ = (uint8_t) (height >> 8);
+    *p++ = (uint8_t) (height >> 0);
+    *p++ = (flags & QOIENC_NO_ALPHA) ? 3 : 4;
+    *p++ = (flags & QOIENC_IS_SRGB) ? 0 : 1;
+    ctx->prev = UINT32_C(0xFF) << 24;
+    ctx->no_alpha = !!(flags & QOIENC_NO_ALPHA);
+
+    return res;
+}
+
+QOIENC_API      QoiEncResult
+qoi_enc(QoiEncCtx *ctx, uint32_t pixel)
+{
+    enum {
+        OP_RUN = 0xC0, OP_IDX = 0x0, OP_DIFF = 0x40, OP_LUMA = 0x80,
+        OP_RGB = 0xFE, OP_RGBA = 0xFF
+    };
+
+    QoiEncResult    res = { 0 };
+    uint8_t        *p = res.data;
+
+    if (ctx->no_alpha)
+        pixel |= UINT32_C(0xFF) << 24;
+
+    if (pixel == ctx->prev)
+    {
+        if (++ctx->run == 62)
+        {
+            *p++ = OP_RUN | (ctx->run - 1);
+            ctx->run = 0;
+        }
+        return (res.len = (int8_t) (p - res.data)), res;
+    }
+
+    if (ctx->run > 0)
+    {
+        *p++ = OP_RUN | (ctx->run - 1);
+        ctx->run = 0;
+    }
+    uint32_t        prev = ctx->prev;
+    ctx->prev = pixel;
+
+    uint32_t        a = ((pixel >> 24) & 0xFF), r = ((pixel >> 16) & 0xFF),
+        g = ((pixel >> 8) & 0xFF), b = ((pixel >> 0) & 0xFF);
+    uint32_t        idx = (r * 3 + g * 5 + b * 7 + a * 11) & 63;
+    if (ctx->dict[idx] == pixel)
+    {
+        *p++ = OP_IDX | idx;
+        return (res.len = (int8_t) (p - res.data)), res;
+    }
+    ctx->dict[idx] = pixel;
+
+    int8_t          dr = (int8_t) (r - ((prev >> 16) & 0xFF));
+    int8_t          dg = (int8_t) (g - ((prev >> 8) & 0xFF));
+    int8_t          db = (int8_t) (b - ((prev >> 0) & 0xFF));
+    int8_t          dr_g = dr - dg;
+    int8_t          db_g = db - dg;
+    if (a != (prev >> 24))
+    {
+        *p++ = OP_RGBA;
+        *p++ = r;
+        *p++ = g;
+        *p++ = b;
+        *p++ = a;
+    }
+    else if (dr >= -2 && dg >= -2 && db >= -2 && dr <= 1 && dg <= 1 && db <= 1)
+    {
+        *p++ = OP_DIFF | (((dr + 2) & 0x3) << 4) |
+            (((dg + 2) & 0x3) << 2) | (((db + 2) & 0x3) << 0);
+    }
+    else if (dg >= -32 && dg < 32 &&
+             dr_g >= -8 && dr_g < 8 && db_g >= -8 && db_g < 8)
+    {
+        *p++ = OP_LUMA | ((dg + 32) & 0x3F);
+        *p++ = ((dr_g + 8) << 4) | (db_g + 8);
+    }
+    else
+    {
+        *p++ = OP_RGB;
+        *p++ = r;
+        *p++ = g;
+        *p++ = b;
+    }
+    return (res.len = (int8_t) (p - res.data)), res;
+}
+
+QOIENC_API      QoiEncResult
+qoi_enc_finish(QoiEncCtx *ctx)
+{
+    QoiEncResult    res = { 0 };
+    uint8_t        *p = res.data;
+    if (ctx->run > 0)
+        *p++ = 0xC0 | (ctx->run - 1);
+    *p++ = 0x0;
+    *p++ = 0x0;
+    *p++ = 0x0;
+    *p++ = 0x0;
+    *p++ = 0x0;
+    *p++ = 0x0;
+    *p++ = 0x0;
+    *p++ = 0x1;
+    return (res.len = (int8_t) (p - res.data)), res;
+}
+
+//////////// END QoiEnc library
 
 static int
 _load(ImlibImage *im, int load_data)
@@ -217,4 +364,44 @@ _load(ImlibImage *im, int load_data)
     return LOAD_SUCCESS;
 }
 
-IMLIB_LOADER(_formats, _load, NULL);
+static int
+_out(FILE *f, QoiEncResult res)
+{
+    return fwrite(res.data, 1, res.len, f) == (size_t)res.len;
+}
+
+static int
+_save(ImlibImage *im)
+{
+    FILE           *f = im->fi->fp;
+    QoiEncCtx       ctx[1] = { 0 };
+    int             flags = 0;
+    int             i, j;
+    int             w = im->w, h = im->h;
+    uint32_t       *imdata = im->data;
+
+    if (!im->has_alpha)
+        flags |= QOIENC_NO_ALPHA;
+
+    if (!_out(f, qoi_enc_init(ctx, w, h, flags)))
+        return LOAD_BADFILE;
+
+    for (i = 0; i < h; ++i)
+    {
+        for (j = 0; j < w; ++j)
+        {
+            if (!_out(f, qoi_enc(ctx, imdata[i * w + j])))
+                return LOAD_BADFILE;
+        }
+
+        if (im->lc && __imlib_LoadProgressRows(im, i, 1))
+            return LOAD_BREAK;
+    }
+
+    if (!_out(f, qoi_enc_finish(ctx)))
+        return LOAD_BADFILE;
+
+    return LOAD_SUCCESS;
+}
+
+IMLIB_LOADER(_formats, _load, _save);

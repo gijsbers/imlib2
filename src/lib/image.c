@@ -21,6 +21,10 @@
 #include "x11_pixmap.h"
 #endif
 
+#define LDR_ALPHA_NO            0       /* No alpha */
+#define LDR_ALPHA_YES           1       /* Has alpha */
+#define LDR_ALPHA_CHECK         2       /* May have alpa pixels */
+
 struct _ImlibImageFileInfo {
     struct _ImlibImageFileInfo *next;
     char           *name;
@@ -410,6 +414,26 @@ __imlib_CreateImage(int w, int h, uint32_t *data, int zero)
     return im;
 }
 
+static void
+__imlib_ImageCheckAlpha(ImlibImage *im)
+{
+    int             x, y;
+    const uint32_t *p;
+
+    p = im->data;
+
+    for (y = 0; y < im->h; y++)
+    {
+        for (x = 0; x < im->w; x++, p++)
+        {
+            if (A_VAL(p) != 0xff)
+                return;
+        }
+    }
+
+    im->has_alpha = 0;
+}
+
 static int
 __imlib_LoadImageWrapper(const ImlibLoader *l, ImlibImage *im, int load_data)
 {
@@ -422,17 +446,13 @@ __imlib_LoadImageWrapper(const ImlibLoader *l, ImlibImage *im, int load_data)
     unsigned int    t0 = __imlib_time_us();
 #endif
 
-    if (l->module->load)
-    {
-        if (!im->format)
-            im->format = strdup(l->name);
-
-        rc = l->module->load(im, load_data);
-    }
-    else
-    {
+    if (!l->module->load)
         return LOAD_FAIL;
-    }
+
+    if (!im->format)
+        im->format = strdup(l->name);
+
+    rc = l->module->load(im, load_data);
 
     DP("%s: %-4s: %s: Elapsed time: %.3f ms\n", __func__,
        l->name, im->fi->name, 1e-3 * (__imlib_time_us() - t0));
@@ -446,6 +466,12 @@ __imlib_LoadImageWrapper(const ImlibLoader *l, ImlibImage *im, int load_data)
         __imlib_FreeData(im);
         free(im->format);
         im->format = NULL;
+    }
+
+    if (load_data && im->has_alpha >= LDR_ALPHA_CHECK)
+    {
+        im->has_alpha = !!im->has_alpha;        /* Normalize */
+        __imlib_ImageCheckAlpha(im);
     }
 
     return rc;

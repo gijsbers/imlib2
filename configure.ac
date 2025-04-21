@@ -1,4 +1,4 @@
-AC_INIT([imlib2],[1.12.3],[enlightenment-devel@lists.sourceforge.net])
+AC_INIT([imlib2],[1.12.4],[enlightenment-devel@lists.sourceforge.net])
 AC_CONFIG_SRCDIR(configure.ac)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CANONICAL_BUILD
@@ -21,7 +21,7 @@ define([AC_LIBTOOL_LANG_F77_CONFIG], [:])dnl
 LT_INIT
 
 VERSION_CUR=13
-VERSION_REV=3
+VERSION_REV=4
 VERSION_AGE=12
 lt_version=${VERSION_CUR}:${VERSION_REV}:${VERSION_AGE}
 AC_SUBST(lt_version)
@@ -90,6 +90,17 @@ if test "$enable_text" = "yes"; then
   AC_DEFINE(ENABLE_TEXT, 1, [Enable text functions])
 fi
 AM_CONDITIONAL(ENABLE_TEXT, test "$enable_text" = "yes")
+
+AC_ARG_ENABLE([progs],
+  [AS_HELP_STRING([--enable-progs], [Build demo programs @<:@default=yes@:>@])],
+  enable_progs="$enableval",
+  enable_progs="yes"
+)
+if test "$enable_progs" = "yes"; then
+  AC_DEFINE(ENABLE_PROGS, 1, [Build demo programs])
+  PKG_CHECK_MODULES(ZLIB, zlib)
+fi
+AM_CONDITIONAL(ENABLE_PROGS, test "$enable_progs" = "yes")
 
 
 mmx=no
@@ -215,6 +226,7 @@ loader_check_gif() {
   fi
 }
 
+EC_LOADER_CHECK(AVIF, auto, libavif)
 EC_LOADER_CHECK(GIF,  auto, , loader_check_gif)
 EC_LOADER_CHECK(HEIF, auto, libheif)
 EC_LOADER_CHECK(JPEG, auto, libjpeg)
@@ -313,6 +325,7 @@ echo "Configuration Options Summary:"
 echo
 echo "Image loaders:"
 echo " Regular image loaders"
+echo "  AVIF....................: $avif_ok"
 echo "  GIF.....................: $gif_ok"
 echo "  HEIF....................: $heif_ok"
 echo "  JPEG....................: $jpeg_ok"
@@ -342,6 +355,8 @@ echo "Include filters...........: $enable_filters"
 echo "Include text functions....: $enable_text"
 echo "Use visibility hiding.....: $enable_visibility_hiding"
 echo "Use struct packing........: $enable_packing"
+echo
+echo "Build demo programs.......: $enable_progs"
 echo
 echo "Installation path.........: $prefix"
 echo
