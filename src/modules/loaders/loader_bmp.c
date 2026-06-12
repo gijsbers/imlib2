@@ -170,7 +170,7 @@ _load(ImlibImage *im, int load_data)
     uint32_t       *imdata, pixel;
     const unsigned char *buffer_ptr, *buffer_end, *buffer_end_safe;
     RGBQUAD         rgbQuads[256];
-    uint32_t        argbCmap[256];
+    uint32_t        argbCmap[256] = {0};
     unsigned int    amask, rmask, gmask, bmask;
     int             ashift1, rshift1, gshift1, bshift1;
     int             ashift2, rshift2, gshift2, bshift2;
