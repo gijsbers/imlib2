@@ -98,10 +98,17 @@ _load(ImlibImage *im, int load_data)
     if (!__imlib_AllocateData(im))
         QUIT_WITH_RC(LOAD_OOM);
 
+#ifdef WORDS_BIGENDIAN
+    if (WebPDecodeARGBInto
+        (iter.fragment.bytes, iter.fragment.size, (uint8_t *) im->data,
+         sizeof(uint32_t) * im->w * im->h, im->w * 4) == NULL)
+        goto quit;
+#else
     if (WebPDecodeBGRAInto
         (iter.fragment.bytes, iter.fragment.size, (uint8_t *) im->data,
          sizeof(uint32_t) * im->w * im->h, im->w * 4) == NULL)
         goto quit;
+#endif
 
     if (im->lc)
         __imlib_LoadProgress(im, 0, 0, im->w, im->h);
@@ -133,6 +140,8 @@ _save(ImlibImage *im)
     WebPPicture     pic;
     int             lossless;
     int             free_pic = 0;
+    const uint8_t  *buffer = (const uint8_t *)im->data;
+    uint8_t        *swapped = NULL;
 
     rc = LOAD_BADFILE;
 
@@ -165,8 +174,41 @@ _save(ImlibImage *im)
     pic.height = im->h;
     pic.writer = webp_write;
     pic.custom_ptr = f;
-    if (!WebPPictureImportBGRA(&pic, (uint8_t *) im->data, im->w * 4))
-        QUIT_WITH_RC(LOAD_OOM);
+
+#ifdef WORDS_BIGENDIAN
+    /* big-endian pixels are A,R,G,B in memory; libwebp wants B,G,R,A */
+    {
+        size_t          i, n = (size_t)im->w * im->h;
+        const uint8_t  *s;
+        uint8_t        *d;
+
+        swapped = malloc(n * 4);
+        if (!swapped)
+            QUIT_WITH_RC(LOAD_OOM);
+
+        for (i = 0; i < n; i++)
+        {
+            s = buffer + i * 4;
+            d = swapped + i * 4;
+            d[0] = s[3];
+            d[1] = s[2];
+            d[2] = s[1];
+            d[3] = s[0];
+        }
+        buffer = swapped;
+    }
+#endif
+
+    if (im->has_alpha)
+    {
+        if (!WebPPictureImportBGRA(&pic, buffer, im->w * 4))
+            QUIT_WITH_RC(LOAD_OOM);
+    }
+    else
+    {
+        if (!WebPPictureImportBGRX(&pic, buffer, im->w * 4))
+            QUIT_WITH_RC(LOAD_OOM);
+    }
     free_pic = 1;
 
     if (!WebPEncode(&conf, &pic))
@@ -177,6 +219,7 @@ _save(ImlibImage *im)
   quit:
     if (free_pic)
         WebPPictureFree(&pic);
+    free(swapped);
 
     return rc;
 }

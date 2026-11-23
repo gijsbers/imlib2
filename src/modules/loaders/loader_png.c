@@ -3,7 +3,6 @@
 #include "ldrs_util.h"
 
 #include <png.h>
-#include <stdbool.h>
 #include <arpa/inet.h>
 
 #define DBG_PFX "LDR-png"

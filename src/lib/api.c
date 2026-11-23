@@ -2278,3 +2278,41 @@ imlib_strerror(int err)
 
     return str;
 }
+
+EAPI int
+imlib_have_loader_for(const char *name)
+{
+    ImlibLoader    *l, **ll;
+
+    ll = __imlib_GetLoaderList();
+    if (!ll)
+        return 0;
+
+    for (l = *ll; l; l = l->next)
+    {
+        if (strcasecmp(name, l->name))
+            continue;
+        return l->module && l->module->load;
+    }
+
+    return 0;
+}
+
+EAPI int
+imlib_have_saver_for(const char *name)
+{
+    ImlibLoader    *l, **ll;
+
+    ll = __imlib_GetLoaderList();
+    if (!ll)
+        return 0;
+
+    for (l = *ll; l; l = l->next)
+    {
+        if (strcasecmp(name, l->name))
+            continue;
+        return l->module && l->module->save;
+    }
+
+    return 0;
+}

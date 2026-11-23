@@ -1,8 +1,6 @@
 #include "config.h"
 #include "Imlib2_Loader.h"
 
-#include <stdbool.h>
-
 #define DBG_PFX "LDR-xpm"
 
 static const char *const _formats[] = { "xpm" };

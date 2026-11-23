@@ -3,7 +3,6 @@
 
 #include <limits.h>
 #include <stddef.h>
-#include <stdint.h>
 
 #include <libyuv.h>
 

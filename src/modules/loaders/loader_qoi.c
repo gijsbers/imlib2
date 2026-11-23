@@ -3,7 +3,6 @@
 
 #include <limits.h>
 #include <stddef.h>
-#include <stdint.h>
 
 // decoder code taken from commit 8431e3f7:
 // https://codeberg.org/NRK/slashtmp/src/branch/master/compression/qoi-dec.c

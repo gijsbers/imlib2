@@ -156,8 +156,8 @@ ico_read_icon(ico_t *ico, int ino)
     SWAP_LE_32_INPLACE(ie->bih.width);
     SWAP_LE_32_INPLACE(ie->bih.height);
 
-    SWAP_LE_32_INPLACE(ie->bih.planes);
-    SWAP_LE_32_INPLACE(ie->bih.bpp);
+    SWAP_LE_16_INPLACE(ie->bih.planes);
+    SWAP_LE_16_INPLACE(ie->bih.bpp);
 
     SWAP_LE_32_INPLACE(ie->bih.compression);
     SWAP_LE_32_INPLACE(ie->bih.size);

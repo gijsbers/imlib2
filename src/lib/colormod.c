@@ -159,13 +159,6 @@ __imlib_CmodModBrightness(ImlibColorModifier *cm, double v)
         if (val2 > 255)
             val2 = 255;
         cm->blue_mapping[i] = (uint8_t) val2;
-
-        val2 = (int)cm->alpha_mapping[i] + val;
-        if (val2 < 0)
-            val2 = 0;
-        if (val2 > 255)
-            val2 = 255;
-        cm->alpha_mapping[i] = (uint8_t) val2;
     }
 }
 
@@ -196,13 +189,6 @@ __imlib_CmodModContrast(ImlibColorModifier *cm, double v)
         if (val2 > 255)
             val2 = 255;
         cm->blue_mapping[i] = (uint8_t) val2;
-
-        val2 = (int)(((double)cm->alpha_mapping[i] - 127) * v) + 127;
-        if (val2 < 0)
-            val2 = 0;
-        if (val2 > 255)
-            val2 = 255;
-        cm->alpha_mapping[i] = (uint8_t) val2;
     }
 }
 
@@ -235,20 +221,5 @@ __imlib_CmodModGamma(ImlibColorModifier *cm, double v)
         if (val2 > 255)
             val2 = 255;
         cm->blue_mapping[i] = (uint8_t) val2;
-
-        val2 = (int)(pow(((double)cm->alpha_mapping[i] / 255), (1 / v)) * 255);
-        if (val2 < 0)
-            val2 = 0;
-        if (val2 > 255)
-            val2 = 255;
-        cm->alpha_mapping[i] = (uint8_t) val2;
     }
 }
-
-#if 0
-void
-__imlib_ImageCmodApply(ImlibImage *im, ImlibColorModifier *cm)
-{
-    __imlib_DataCmodApply(im->data, im->w, im->h, 0, cm);
-}
-#endif

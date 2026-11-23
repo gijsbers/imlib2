@@ -2,8 +2,6 @@
 #include "Imlib2_Loader.h"
 
 #include <ctype.h>
-#include <stdbool.h>
-#include <string.h>
 
 #define DBG_PFX "LDR-pnm"
 

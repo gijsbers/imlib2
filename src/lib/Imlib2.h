@@ -4,8 +4,8 @@
  * Imlib2 library API
  */
 #define IMLIB2_VERSION_MAJOR 1
-#define IMLIB2_VERSION_MINOR 12
-#define IMLIB2_VERSION_MICRO 7
+#define IMLIB2_VERSION_MINOR 13
+#define IMLIB2_VERSION_MICRO 0
 
 #define IMLIB2_VERSION_(maj, min, mic) (10000 * (maj) + 100 * (min) + (mic))
 #define IMLIB2_VERSION IMLIB2_VERSION_(IMLIB2_VERSION_MAJOR, IMLIB2_VERSION_MINOR, IMLIB2_VERSION_MICRO)
@@ -2901,6 +2901,24 @@ EAPI void       imlib_image_get_frame_info(Imlib_Frame_Info * info);
  * @return String describing the error code
  */
 EAPI const char *imlib_strerror(int err);
+
+/**
+ * Query if loader is available
+ *
+ * @param name          Image type (e.g. "png", etc.)
+ *
+ * @return 1 if available, 0 if not
+ */
+EAPI int        imlib_have_loader_for(const char *name);
+
+/**
+ * Query if saver is available
+ *
+ * @param name          Image type (e.g. "png", etc.)
+ *
+ * @return 1 if available, 0 if not
+ */
+EAPI int        imlib_have_saver_for(const char *name);
 
 /*--------------------------------
  * Deprecated functionality

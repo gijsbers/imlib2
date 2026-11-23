@@ -5,6 +5,7 @@
  *
  * NB! TO BE USED BY LOADERS ONLY
  */
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

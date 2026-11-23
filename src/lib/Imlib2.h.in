@@ -2902,6 +2902,24 @@ EAPI void       imlib_image_get_frame_info(Imlib_Frame_Info * info);
  */
 EAPI const char *imlib_strerror(int err);
 
+/**
+ * Query if loader is available
+ *
+ * @param name          Image type (e.g. "png", etc.)
+ *
+ * @return 1 if available, 0 if not
+ */
+EAPI int        imlib_have_loader_for(const char *name);
+
+/**
+ * Query if saver is available
+ *
+ * @param name          Image type (e.g. "png", etc.)
+ *
+ * @return 1 if available, 0 if not
+ */
+EAPI int        imlib_have_saver_for(const char *name);
+
 /*--------------------------------
  * Deprecated functionality
  */

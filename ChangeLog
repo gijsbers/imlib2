@@ -1,3 +1,26 @@
+v1.13.0 - 2026-11-13
+--------------------
+Dominique Leuenberger (2):
+      loader_ico: fix 32-bit byteswap macro usage on 16-bit struct fields
+      loader_jpeg: silence -Wcast-align error on 32-bit ARM architectures
+
+Kim Woelders (10):
+      HEIF loader: Require libheif >= 1.17
+      test: Additions for libheif 1.17
+      loaders: Include stdbool.h from Imlib2_Loader.h
+      test: Fix test_load when running configure with absolute path
+      colormodifiers: Remove never used commented out function
+      colormodifiers: Don't change alpha in colormodifier modifier functions
+      test_save: Additions for libheif 1.23
+      test_save: Corrections for avif
+      Add imlib_have_loader/saver_for() to query loader/saver support
+      v1.13.0
+
+NRK (3):
+      WEBP saver: fix saving of opaque images
+      WEBP loader: fix decoding on big-endian
+      WEBP saver: fix saving on big-endian
+
 v1.12.7 - 2026-08-28
 --------------------
 Acts1631 (6):

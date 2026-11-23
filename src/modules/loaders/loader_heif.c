@@ -9,7 +9,6 @@
 #include "ldrs_util.h"
 
 #include <errno.h>
-#include <stdbool.h>
 #include <libheif/heif.h>
 
 #define DBG_PFX "LDR-heif"
